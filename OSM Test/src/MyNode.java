@@ -1,3 +1,5 @@
+import java.awt.geom.Point2D;
+
 public class MyNode {
     public Double getLati() {
         return lati;
@@ -30,4 +32,9 @@ public class MyNode {
     protected Double lati;
     protected Double longi;
     protected long nodeId;
+
+    public Point2D.Double getPoint() {
+        return new Point2D.Double(this.longi, this.lati);
+    }
+
 }

@@ -1,7 +1,8 @@
 import java.util.ArrayList;
+import java.util.List;
 
 public class MyWay {
-    public ArrayList<Long> getWayNodes() {
+    public List<Long> getWayNodes() {
         return wayNodes;
     }
 
@@ -13,7 +14,7 @@ public class MyWay {
         wayNodes.add(wayNode);
     }
 
-    public ArrayList<Long> wayNodes = new ArrayList<Long>();
+    public List<Long> wayNodes = new ArrayList<Long>();
 
     public long getWayId() {
         return wayId;
@@ -42,5 +43,15 @@ public class MyWay {
     }
 
     WayType type;
+
+    public RoadType getRoadType() {
+        return roadType;
+    }
+
+    public void setRoadType(RoadType roadType) {
+        this.roadType = roadType;
+    }
+
+    RoadType roadType;
 
 }
