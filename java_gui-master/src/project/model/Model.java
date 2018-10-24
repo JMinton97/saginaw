@@ -1,5 +1,6 @@
 package project.model;
 
+import project.map.MyGraph;
 import project.map.MyMap;
 import project.utils.ImageFile;
 import project.utils.UnsupportedImageTypeException;
@@ -130,8 +131,6 @@ public class Model
 			throws IOException
 	{
 		this.map = null;
-		System.out.println("null");
-		System.out.println(Long.toString(file.length()));
 		this.map = new MyMap(file); //note - loading file twice
 //		int numImages = newImageFile.getNumImages();
 //		if (numImages == 0)

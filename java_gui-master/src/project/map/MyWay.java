@@ -4,6 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MyWay {
+
+    public MyWay(List<Long> wayNodes){
+        this.wayNodes = wayNodes;
+    }
+
+    public MyWay(){}
+
     public List<Long> getWayNodes() {
         return wayNodes;
     }

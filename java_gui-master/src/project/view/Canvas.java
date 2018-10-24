@@ -79,7 +79,6 @@ class Canvas extends JPanel
 		if (model.isActive())
 		{
 			BufferedImage image = model.getImage();
-			System.out.println("sah");
 			List<Rectangle> rects = model.getRects();
 
 			// Draw the display image on the full size canvas

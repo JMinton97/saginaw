@@ -3,41 +3,43 @@ package project.map;
 import crosby.binary.*;
 import crosby.binary.Osmformat.*;
 import crosby.binary.file.*;
-import javafx.scene.canvas.GraphicsContext;
 //import crosby.binary.test.MyNode;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.GeneralPath;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 public class MyMap {
 //    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
-    protected static Map<Long, MyNode> fullDictionary;
-    protected static Map<Long, MyNode> dictionary;
-    protected static ArrayList<MyWay> mapRoads;
-    protected static ArrayList<MyWay> mapRails;
-    protected static ArrayList<MyWay> mapGreens;
-    protected static ArrayList<MyWay> mapForests;
-    protected static ArrayList<MyWay> mapWaterBodies;
-    protected static ArrayList<MyWay> mapWaterWays;
-    protected static ArrayList<MyWay> mapCycles;
-    protected Double northMost, westMost, southMost, eastMost;
-    protected Double spaceModifierX;
-    protected Double spaceModifierY;
-    protected Double paneHeight = 10000.00;
-    protected Double paneWidth;
-    protected BufferedImage map;
-    protected int level;
+    private static Map<Long, MyNode> dictionary;
+    private static ArrayList<MyWay> mapRoads;
+    private static ArrayList<MyWay> mapRoadsSplit;
+    private static ArrayList<MyWay> mapRails;
+    private static ArrayList<MyWay> mapGreens;
+    private static ArrayList<MyWay> mapForests;
+    private static ArrayList<MyWay> mapWaterBodies;
+    private static ArrayList<MyWay> mapWaterWays;
+    private static ArrayList<MyWay> mapCycles;
+    private static HashMap<Long, Integer> allWayNodes;
+    private double northMost, westMost, southMost, eastMost;
+    private double spaceModifierX;
+    private double spaceModifierY;
+    private double paneHeight = 2000.00;
+    private double paneWidth;
+    private BufferedImage map;
+    protected BufferedImage[][] mapArray;
+    private int level;
+    private static boolean parsingNodes;
+    private static int counter;
+    private static HashSet<Long> junctions;
+    private int linesDrawn;
+
 
     public MyMap(File file) throws IOException {
         int level;
-        fullDictionary = new HashMap<Long, MyNode>(); //NOTE - STORING NODE ID TWICE!!!
         dictionary = new HashMap<>(); //NOTE - STORING NODE ID TWICE!!!
         mapRoads = new ArrayList<>();
         mapRails = new ArrayList<>();
@@ -46,10 +48,22 @@ public class MyMap {
         mapWaterBodies = new ArrayList<>();
         mapWaterWays = new ArrayList<>();
         mapCycles = new ArrayList<>();
-//        MyMap.class.getResourceAsStream(mapName)
+        allWayNodes = new HashMap<>();
+        junctions = new HashSet<>();
+        parsingNodes = false;
+        counter = 0;
         InputStream input = new FileInputStream(file);
         BlockReaderAdapter brad = new TestBinaryParser();
         new BlockInputStream(input, brad).process();
+        System.out.println("Number of way nodes: " + allWayNodes.size());
+        System.out.println("Number of junction nodes: " + junctions.size());
+        System.out.println("Map roads pre-split:      " + mapRoads.size());
+        mapRoadsSplit = splitWays(mapRoads);
+        System.out.println("Map roads post-split:     " + mapRoadsSplit.size());
+        parsingNodes = true;
+        InputStream input2 = new FileInputStream(file);
+        BlockReaderAdapter brad2 = new TestBinaryParser();
+        new BlockInputStream(input2, brad2).process();
         northMost = -Double.MAX_VALUE;
         westMost = Double.MAX_VALUE;
         southMost = Double.MAX_VALUE;
@@ -68,9 +82,8 @@ public class MyMap {
                 eastMost = n.getLongi();
             }
         }
-        System.out.println(dictionary.size());  //what if douglas peucker returns a list of deleted nodes?
-        trimDictionary();
-        Double height, width;
+        System.out.println("Dictionary size: " + dictionary.size());  //what if douglas peucker returns a list of deleted nodes?
+        double height, width;
         if(northMost > southMost) {
             height = Math.abs(northMost - southMost);
         } else {
@@ -81,6 +94,8 @@ public class MyMap {
         } else {
             width = Math.abs(westMost - eastMost);
         }
+        System.out.println(northMost + " " + southMost);
+        System.out.println("Height is " + height);
         paneWidth = (paneHeight * (width / height)) * 0.75;
         spaceModifierY = paneHeight / height;
         spaceModifierX = spaceModifierY * 0.75;
@@ -88,7 +103,7 @@ public class MyMap {
 
     public void drawMap(int level){
         this.level = level;
-        map = new BufferedImage(paneWidth.intValue(), paneHeight.intValue(), 1);
+        map = new BufferedImage((int) Math.round(paneWidth), (int) Math.round(paneHeight), 1);
         Graphics2D mapGraphics = map.createGraphics();
         mapGraphics.setColor(new Color(255, 255, 243));
         mapGraphics.fillRect(0, 0, map.getWidth(), map.getHeight());
@@ -120,15 +135,19 @@ public class MyMap {
         }
         System.out.println("drew rails");
 
+        linesDrawn = 0;
         for(MyWay w: mapRoads){
             drawWay(w, mapGraphics, true);
         }
         System.out.println("drew roads under");
+        System.out.println(linesDrawn);
 
-        for(MyWay w: mapRoads){
+        linesDrawn = 0;
+        for(MyWay w: mapRoadsSplit){
             drawWay(w, mapGraphics, false);
         }
         System.out.println("drew roads over");
+        System.out.println(linesDrawn);
 
         for(MyWay w: mapCycles){
             drawWay(w, mapGraphics, false);
@@ -143,22 +162,18 @@ public class MyMap {
         System.out.println("All finished.");
     }
 
-    public void trimDictionary(){
-    }
-
     public BufferedImage getMap() {
         return map;
     }
 
-    public void drawWay(MyWay way, Graphics2D mapGraphics, boolean underlay) {
+    private void drawWay(MyWay way, Graphics2D mapGraphics, boolean underlay) {
         if (isVisible(way.getType(), level)) {
             Color wayColor = Color.WHITE;
             if (isVisible(way.getRoadType(), level)) {
-//                List<Long> wayNodes = way.getWayNodes();
-                List<Long> wayNodes = DouglasPeucker.decimate(way.getWayNodes(), 0.0001, dictionary);
+                List<Long> wayNodes = way.getWayNodes();
+//                List<Long> allWayNodes = DouglasPeucker.decimate(way.getWayNodes(), 0.0001, dictionary);
                 switch (way.getType()) {
                     case ROAD:
-
                         switch (way.getRoadType()) {
                             case MOTORWAY:
                                 wayColor = Color.BLUE;
@@ -209,8 +224,8 @@ public class MyMap {
                         for (int node = 0; node < wayNodes.size(); node++) {
                             if (dictionary.containsKey(wayNodes.get(node))) {
                                 MyNode u = dictionary.get(wayNodes.get(node)); //efficiency by using previous v?
-                                Double uy = Math.abs(u.getLati() - northMost) * spaceModifierY;
-                                Double ux = Math.abs(u.getLongi() - westMost) * spaceModifierX;
+                                double uy = Math.abs(u.getLati() - northMost) * spaceModifierY;
+                                double ux = Math.abs(u.getLongi() - westMost) * spaceModifierX;
                                 if (node == 0) {
                                     path.moveTo(ux, uy);
                                 } else {
@@ -232,8 +247,8 @@ public class MyMap {
                         for (int node = 0; node < wayNodes.size(); node++) {
                             if (dictionary.containsKey(wayNodes.get(node))) {
                                 MyNode u = dictionary.get(wayNodes.get(node)); //efficiency by using previous v?
-                                Double uy = Math.abs(u.getLati() - northMost) * spaceModifierY;
-                                Double ux = Math.abs(u.getLongi() - westMost) * spaceModifierX;
+                                double uy = Math.abs(u.getLati() - northMost) * spaceModifierY;
+                                double ux = Math.abs(u.getLongi() - westMost) * spaceModifierX;
                                 if (node == 0) {
                                     treePath.moveTo(ux, uy);
                                 } else {
@@ -255,8 +270,8 @@ public class MyMap {
                         for (int node = 0; node < wayNodes.size(); node++) {
                             if (dictionary.containsKey(wayNodes.get(node))) {
                                 MyNode u = dictionary.get(wayNodes.get(node)); //efficiency by using previous v?
-                                Double uy = Math.abs(u.getLati() - northMost) * spaceModifierY;
-                                Double ux = Math.abs(u.getLongi() - westMost) * spaceModifierX;
+                                double uy = Math.abs(u.getLati() - northMost) * spaceModifierY;
+                                double ux = Math.abs(u.getLongi() - westMost) * spaceModifierX;
                                 if (node == 0) {
                                     waterPath.moveTo(ux, uy);
                                 } else {
@@ -278,32 +293,30 @@ public class MyMap {
 
     private void drawWay2(Graphics2D mapGraphics, List<Long> wayNodes) {
         for (int node = 0; node < wayNodes.size() - 1; node++) {
-//                System.out.println(dictionary.get(wayNodes.get(node)).getNodeId());
-//                System.out.println(dictionary.get(wayNodes.get(node + 1)).getNodeId());
+//                System.out.println(dictionary.get(allWayNodes.get(node)).getNodeId());
+//                System.out.println(dictionary.get(allWayNodes.get(node + 1)).getNodeId());
             if (dictionary.containsKey(wayNodes.get(node)) && dictionary.containsKey(wayNodes.get(node + 1))) {
                 MyNode u = dictionary.get(wayNodes.get(node)); //efficiency by using previous v?
                 MyNode v = dictionary.get(wayNodes.get(node + 1));
-                Double uy = Math.abs(u.getLati() - northMost) * spaceModifierY;
-                Double ux = Math.abs(u.getLongi() - westMost) * spaceModifierX;
-                Double vy = Math.abs(v.getLati() - northMost) * spaceModifierY;
-                Double vx = Math.abs(v.getLongi() - westMost) * spaceModifierX;
-                mapGraphics.drawLine(ux.intValue(), uy.intValue(), vx.intValue(), vy.intValue());
+                double uy = Math.abs(u.getLati() - northMost) * spaceModifierY;
+                double ux = Math.abs(u.getLongi() - westMost) * spaceModifierX;
+                double vy = Math.abs(v.getLati() - northMost) * spaceModifierY;
+                double vx = Math.abs(v.getLongi() - westMost) * spaceModifierX;
+                mapGraphics.drawLine((int) Math.round(ux), (int) Math.round(uy), (int) Math.round(vx), (int) Math.round(vy));
+                linesDrawn++;
             }
         }
     }
 
-    public boolean isVisible(Enum type, int level) {
+    private boolean isVisible(Enum type, int level) {
         if(type != null){
             if(level == 0){
                 return true;
             } else if(level == 1){
-                if(type.equals(RoadType.ROAD)){
-                    return false;
-                }
+                    return type.equals(RoadType.ROAD);
             } else {
                 return true;
             }
-            return true;
         }
         return true;
     }
@@ -312,6 +325,7 @@ public class MyMap {
 
         @Override
         protected void parseRelations(List<Relation> rels) {
+//            System.out.println("Parsing relations.");
 //            if (!rels.isEmpty()) {
 //                System.out.println("Got some relations to parse.");
 //
@@ -340,27 +354,34 @@ public class MyMap {
 
         @Override
         protected void parseDense(DenseNodes nodes) {
-            long lastId=0;
-            long lastLat=0;
-            long lastLon=0;
+            if(parsingNodes){
+//                System.out.println("Parsing dense nodes.");
+                long lastId=0;
+                long lastLat=0;
+                long lastLon=0;
 
-            for (int i=0 ; i<nodes.getIdCount() ; i++) {
-                MyNode tempDense = new MyNode();
-                lastId += nodes.getId(i);
-                lastLat += nodes.getLat(i);
-                lastLon += nodes.getLon(i);
+                for (int i=0 ; i<nodes.getIdCount() ; i++) {
+                    lastId += nodes.getId(i);
+                    lastLat += nodes.getLat(i);
+                    lastLon += nodes.getLon(i);
+                    if(allWayNodes.containsKey(lastId)){
 //                System.out.printf("Dense node, ID %d @ %.6f,%.6f\n",
 //                        lastId,parseLat(lastLat),parseLon(lastLon));
-                tempDense.setLati(parseLat(lastLat));
-                tempDense.setLongi(parseLon(lastLon));
-                tempDense.setNodeId(lastId);
-                dictionary.put(lastId, tempDense);
-//                mapNodes.add(tempDense);
+                        MyNode tempDense = new MyNode();
+                        tempDense.setLati(parseLat(lastLat));
+                        tempDense.setLongi(parseLon(lastLon));
+                        tempDense.setNodeId(lastId);
+                        dictionary.put(lastId, tempDense);
+//                        counter++;
+//                        System.out.println(counter);
+                    }
+                }
             }
         }
 
         @Override
         protected void parseNodes(List<Node> nodes) {
+//            System.out.println("Parsing nodes.");
             for (Node n : nodes) {
                 System.out.printf("Regular node, ID %d @ %.6f,%.6f\n",
                         n.getId(),parseLat(n.getLat()),parseLon(n.getLon()));
@@ -369,80 +390,96 @@ public class MyMap {
 
         @Override
         protected void parseWays(List<Way> ways) {
-            for (Way w : ways) {
-                MyWay tempWay = new MyWay();
-                tempWay.setWayId(w.getId());
-                long lastRef = 0;
-                for (Long ref : w.getRefsList()) {
-                    lastRef+= ref;
-                    tempWay.addWayNode(lastRef);
-                }
-                String key;
-                String value;
-                for (int i=0 ; i<w.getKeysCount() ; i++) {
-                    key = getStringById(w.getKeys(i));
-                    value = getStringById(w.getVals(i));
-                    if(key.equals("highway")){
-                        tempWay.setType(WayType.ROAD);
-                        if(value.matches("motorway|motorway_link")){
-                            tempWay.setRoadType(RoadType.MOTORWAY);
-                            mapRoads.add(tempWay);
-                        } else if (value.matches("trunk|trunk_link")){
-                            tempWay.setRoadType(RoadType.TRUNK);
-                            mapRoads.add(tempWay);
-                        } else if (value.matches("primary|primary_link")){
-                            tempWay.setRoadType(RoadType.PRIMARY);
-                            mapRoads.add(tempWay);
-                        } else if (value.matches("secondary|secondary_link")){
-                            tempWay.setRoadType(RoadType.SECONDARY);
-                            mapRoads.add(tempWay);
-                        } else if (value.matches("tertiary|unclassified|residential|service|tertiary_link|road")){
-                            tempWay.setRoadType(RoadType.ROAD);
-                            mapRoads.add(tempWay);
+            if(!parsingNodes){
+//                System.out.println("Parsing ways.");
+                for (Way w : ways) {
+                    String key;
+                    String value;
+                    for (int i=0 ; i<w.getKeysCount() ; i++) {
+                        key = getStringById(w.getKeys(i));
+                        value = getStringById(w.getVals(i));
+                        if(key.equals("highway")){
+                            if(value.matches("motorway|motorway_link")){
+                                MyWay tempWay = buildMyWay(w);
+                                tempWay.setType(WayType.ROAD);
+                                tempWay.setRoadType(RoadType.MOTORWAY);
+                                mapRoads.add(tempWay);
+                            } else if (value.matches("trunk|trunk_link")){
+                                MyWay tempWay = buildMyWay(w);
+                                tempWay.setType(WayType.ROAD);
+                                tempWay.setRoadType(RoadType.TRUNK);
+                                mapRoads.add(tempWay);
+                            } else if (value.matches("primary|primary_link")){
+                                MyWay tempWay = buildMyWay(w);
+                                tempWay.setType(WayType.ROAD);
+                                tempWay.setRoadType(RoadType.PRIMARY);
+                                mapRoads.add(tempWay);
+                            } else if (value.matches("secondary|secondary_link")){
+                                MyWay tempWay = buildMyWay(w);
+                                tempWay.setType(WayType.ROAD);
+                                tempWay.setRoadType(RoadType.SECONDARY);
+                                mapRoads.add(tempWay);
+                            } else if (value.matches("tertiary|unclassified|residential|service|tertiary_link|road")){
+                                MyWay tempWay = buildMyWay(w);
+                                tempWay.setType(WayType.ROAD);
+                                tempWay.setRoadType(RoadType.ROAD);
+                                mapRoads.add(tempWay);
+                            }
                         }
-                        if(w.getId() == 596189407){
-                            System.out.println("hey");
-                            System.out.println(tempWay.getType());
-                            System.out.println(tempWay.getRoadType());
-                            System.out.println(mapRoads);
-                        }
-                    }
-                    if(key.equals("railway")){
-                        tempWay.setType(WayType.RAILWAY);
-                        mapRails.add(tempWay);
-                    }
-                    if((key.equals("natural") && value.equals("grass"))
-                            || (key.equals("leisure") && value.equals("common"))
-                            || (key.equals("leisure") && value.equals("park"))
-                            || (key.equals("leisure") && value.equals("golf_course"))
-                            || value.equals("meadow")
-                            || value.equals("recreation_ground")
-                            || value.equals("conservation")
-                            || value.equals("park")){
-                        tempWay.setType(WayType.GREEN);
-                        mapGreens.add(tempWay);
-                    }
-                    if((key.equals("natural")) && (value.matches("river|stream|canal"))){
-                        tempWay.setType(WayType.WATERWAY);
-                        mapWaterWays.add(tempWay);
-                    }
-                    if((key.equals("natural") && value.equals("water"))
-                            || value.matches("reservoir|basin")){
-                        tempWay.setType(WayType.WATERBODY);
-                        mapWaterBodies.add(tempWay);
-                    }
-                    if((key.equals("natural") && value.equals("wood"))
-                            || (key.equals("landuse") && value.equals("forest"))){
-                        tempWay.setType(WayType.TREE);
-                        mapForests.add(tempWay);
-                    }
+//                        if(key.equals("railway")){
+//                            tempWay.setType(WayType.RAILWAY);
+//                            mapRails.add(tempWay);
+//                        }
+//                        if((key.equals("natural") && value.equals("grass"))
+//                                || (key.equals("leisure") && value.equals("common"))
+//                                || (key.equals("leisure") && value.equals("park"))
+//                                || (key.equals("leisure") && value.equals("golf_course"))
+//                                || value.equals("meadow")
+//                                || value.equals("recreation_ground")
+//                                || value.equals("conservation")
+//                                || value.equals("park")){
+//                            tempWay.setType(WayType.GREEN);
+//                            mapGreens.add(tempWay);
+//                        }
+//                        if((key.equals("natural")) && (value.matches("river|stream|canal"))){
+//                            tempWay.setType(WayType.WATERWAY);
+//                            mapWaterWays.add(tempWay);
+//                        }
+//                        if((key.equals("natural") && value.equals("water"))
+//                                || value.matches("reservoir|basin")){
+//                            tempWay.setType(WayType.WATERBODY);
+//                            mapWaterBodies.add(tempWay);
+//                        }
+//                        if((key.equals("natural") && value.equals("wood"))
+//                                || (key.equals("landuse") && value.equals("forest"))){
+//                            tempWay.setType(WayType.TREE);
+//                            mapForests.add(tempWay);
+//                        }
 //                    if(key.equals("cycleway") || value.equals("cycleway") ||
 //                            (key.equals("route") && value.equals("bicycle"))){
 //                        tempWay.setType(WayType.CYCLE);
 //                        mapCycles.add(tempWay);
 //                    }
+                    }
                 }
             }
+        }
+
+        private MyWay buildMyWay(Way w){
+            MyWay tempWay = new MyWay();
+            tempWay.setWayId(w.getId());
+            long lastRef = 0;
+            for (Long ref : w.getRefsList()) {
+                lastRef+= ref;
+                tempWay.addWayNode(lastRef);
+                if(allWayNodes.containsKey(lastRef)){
+                    junctions.add(lastRef);
+                    allWayNodes.put(lastRef, allWayNodes.get(lastRef) + 1);
+                } else {
+                    allWayNodes.put(lastRef, 1);
+                }
+            }
+            return tempWay;
         }
 
         @Override
@@ -456,6 +493,36 @@ public class MyMap {
 
     }
 
+    private ArrayList<MyWay> splitWays(ArrayList<MyWay> ways){
+        ArrayList<MyWay> newWays = new ArrayList<>();
+        for(MyWay w : ways){
+            ArrayList<MyWay> splitWays = splitWay(w);
+            if (splitWays.size() > 1){
+                newWays.addAll(splitWays);
+            } else {
+                newWays.add(w);
+            }
+        }
+        return newWays;
+    }
 
-
+    private ArrayList<MyWay> splitWay(MyWay way){
+        ArrayList<MyWay> returnWays = new ArrayList<>();
+        returnWays.add(way);
+        for(int i = 1; i < (way.getWayNodes().size() - 1); i++){
+            if(allWayNodes.get(way.getWayNodes().get(i)) > 1){
+                MyWay firstWay = new MyWay (way.getWayNodes().subList(0, i + 1));
+                firstWay.setRoadType(way.getRoadType());
+                firstWay.setType(way.getType());
+                MyWay restWay = new MyWay (way.getWayNodes().subList(i, way.getWayNodes().size()));
+                restWay.setRoadType(way.getRoadType());
+                restWay.setType(way.getType());
+                ArrayList<MyWay> restWays = splitWay(restWay);
+                restWays.add(firstWay);
+                returnWays = restWays;
+                break;
+            }
+        }
+        return returnWays;
+    }
 }
