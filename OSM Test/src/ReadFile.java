@@ -1,3 +1,5 @@
+package project.map;
+
 import crosby.binary.*;
 import crosby.binary.Osmformat.*;
 import crosby.binary.file.*;

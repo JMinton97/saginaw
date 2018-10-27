@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 public class MyMap {
-//    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
+    //    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
     public static Map<Long, MyNode> fullDictionary = new HashMap<Long, MyNode>(); //NOTE - STORING NODE ID TWICE!!!
     public static Map<Long, MyNode> dictionary = new HashMap<Long, MyNode>(); //NOTE - STORING NODE ID TWICE!!!
     public static ArrayList<MyWay> mapRoads = new ArrayList<MyWay>();
@@ -28,7 +28,7 @@ public class MyMap {
     public Double northMost, westMost, southMost, eastMost;
     protected Double spaceModifierX;
     protected Double spaceModifierY;
-    protected Double paneHeight = 5000.00;
+    protected Double paneHeight = 1000.00;
     protected Double paneWidth;
 
     public MyMap(String mapName) throws IOException {
@@ -54,8 +54,7 @@ public class MyMap {
                 eastMost = n.getLongi();
             }
         }
-        System.out.println(northMost + " " + westMost);
-        System.out.println(dictionary.size());
+        System.out.println("Dictionary size: " + dictionary.size());  //what if douglas peucker returns a list of deleted nodes?
         trimDictionary();
         Double height, width;
         if(northMost > southMost) {
@@ -81,30 +80,30 @@ public class MyMap {
         BasicStroke bs = new BasicStroke(1);
         mapGraphics.setStroke(bs);
 
-//        for(MyWay w: mapGreens){
-//            drawWay(w, mapGraphics, false);
-//        }
-//        System.out.println("drew greens");
+        for(MyWay w: mapGreens){
+            drawWay(w, mapGraphics, false);
+        }
+        System.out.println("drew greens");
 
-//        for(MyWay w: mapForests){
-//            drawWay(w, mapGraphics, false);
-//        }
-//        System.out.println("drew forests");
+        for(MyWay w: mapForests){
+            drawWay(w, mapGraphics, false);
+        }
+        System.out.println("drew forests");
 
-//        for(MyWay w: mapWaterBodies){
-//            drawWay(w, mapGraphics, false);
-//        }
-//        System.out.println("drew water");
+        for(MyWay w: mapWaterBodies){
+            drawWay(w, mapGraphics, false);
+        }
+        System.out.println("drew water");
 
-//        for(MyWay w: mapWaterWays){
-//            drawWay(w, mapGraphics, false);
-//        }
-//        System.out.println("drew rivers");
+        for(MyWay w: mapWaterWays){
+            drawWay(w, mapGraphics, false);
+        }
+        System.out.println("drew rivers");
 
-//        for(MyWay w: mapRails){
-//            drawWay(w, mapGraphics, false);
-//        }
-//        System.out.println("drew rails");
+        for(MyWay w: mapRails){
+            drawWay(w, mapGraphics, false);
+        }
+        System.out.println("drew rails");
 
         for(MyWay w: mapRoads){
             drawWay(w, mapGraphics, true);
@@ -116,10 +115,10 @@ public class MyMap {
         }
         System.out.println("drew roads over");
 
-//        for(MyWay w: mapCycles){
-//            drawWay(w, mapGraphics, false);
-//        }
-//        System.out.println("drew cycles");
+        for(MyWay w: mapCycles){
+            drawWay(w, mapGraphics, false);
+        }
+        System.out.println("drew cycles");
         try {
             File outputfile = new File("saved.png");
             ImageIO.write(map, "png", outputfile);
@@ -133,8 +132,8 @@ public class MyMap {
     }
 
     public void drawWay(MyWay way, Graphics2D mapGraphics, boolean underlay){
-        List<Long> wayNodes = DouglasPeucker.decimate(way.getWayNodes(), 0.1, dictionary);
-//        List<Long> wayNodes = way.getWayNodes();
+//        List<Long> wayNodes = DouglasPeucker.decimate(way.getWayNodes(), 0.0001, dictionary);
+        List<Long> wayNodes = way.getWayNodes();
         Color wayColor = Color.WHITE;
         switch (way.getType()) {
             case ROAD:
@@ -143,10 +142,13 @@ public class MyMap {
                         wayColor = Color.BLUE;
                         break;
                     case TRUNK:
-                        wayColor = Color.ORANGE;
+                        wayColor = Color.magenta;
                         break;
                     case PRIMARY:
-                        wayColor = Color.MAGENTA;
+                        wayColor = Color.ORANGE;
+                        break;
+                    case SECONDARY:
+                        wayColor = Color.YELLOW;
                         break;
                     case ROAD:
                         wayColor = Color.WHITE;
@@ -402,40 +404,40 @@ public class MyMap {
                             mapRoads.add(tempWay);
                         }
                     }
-                    if(key.equals("railway")){
-                        tempWay.setType(WayType.RAILWAY);
-                        mapRails.add(tempWay);
-                    }
-                    if((key.equals("natural") && value.equals("grass"))
-                            || (key.equals("leisure") && value.equals("common"))
-                            || (key.equals("leisure") && value.equals("park"))
-                            || (key.equals("leisure") && value.equals("golf_course"))
-                            || value.equals("meadow")
-                            || value.equals("recreation_ground")
-                            || value.equals("conservation")
-                            || value.equals("park")){
-                        tempWay.setType(WayType.GREEN);
-                        mapGreens.add(tempWay);
-                    }
-                    if(value.matches("river|stream|canal")){
-                        tempWay.setType(WayType.WATERWAY);
-                        mapWaterWays.add(tempWay);
-                    }
-                    if((key.equals("natural") && value.equals("water"))
-                            || value.matches("reservoir|basin")){
-                        tempWay.setType(WayType.WATERBODY);
-                        mapWaterBodies.add(tempWay);
-                    }
-                    if((key.equals("natural") && value.equals("wood"))
-                            || (key.equals("landuse") && value.equals("forest"))){
-                        tempWay.setType(WayType.TREE);
-                        mapForests.add(tempWay);
-                    }
-                    if(key.equals("cycleway") || value.equals("cycleway") ||
-                            (key.equals("route") && value.equals("bicycle"))){
-                        tempWay.setType(WayType.CYCLE);
-                        mapCycles.add(tempWay);
-                    }
+//                    if(key.equals("railway")){
+//                        tempWay.setType(WayType.RAILWAY);
+//                        mapRails.add(tempWay);
+//                    }
+//                    if((key.equals("natural") && value.equals("grass"))
+//                            || (key.equals("leisure") && value.equals("common"))
+//                            || (key.equals("leisure") && value.equals("park"))
+//                            || (key.equals("leisure") && value.equals("golf_course"))
+//                            || value.equals("meadow")
+//                            || value.equals("recreation_ground")
+//                            || value.equals("conservation")
+//                            || value.equals("park")){
+//                        tempWay.setType(WayType.GREEN);
+//                        mapGreens.add(tempWay);
+//                    }
+//                    if(value.matches("river|stream|canal")){
+//                        tempWay.setType(WayType.WATERWAY);
+//                        mapWaterWays.add(tempWay);
+//                    }
+//                    if((key.equals("natural") && value.equals("water"))
+//                            || value.matches("reservoir|basin")){
+//                        tempWay.setType(WayType.WATERBODY);
+//                        mapWaterBodies.add(tempWay);
+//                    }
+//                    if((key.equals("natural") && value.equals("wood"))
+//                            || (key.equals("landuse") && value.equals("forest"))){
+//                        tempWay.setType(WayType.TREE);
+//                        mapForests.add(tempWay);
+//                    }
+//                    if(key.equals("cycleway") || value.equals("cycleway") ||
+//                            (key.equals("route") && value.equals("bicycle"))){
+//                        tempWay.setType(WayType.CYCLE);
+//                        mapCycles.add(tempWay);
+//                    }
                 }
             }
         }
