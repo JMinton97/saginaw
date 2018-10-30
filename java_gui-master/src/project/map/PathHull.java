@@ -3,11 +3,12 @@ package project.map;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.LinkedList;
 import java.util.Stack;
 
 public class PathHull {
-    Deque<Point2D> deque;
-    private Stack<Point2D> historyPoints;
+    Deque<Integer> deque;
+    private Stack<Integer> historyPoints;
     private Stack<Integer> historyOps;
     int top;
     int bot;
@@ -22,71 +23,78 @@ public class PathHull {
 
     private int phTag;
 
-    protected PathHull(Point2D e1, Point2D e2){
+    protected PathHull(Integer e1, Integer e2){
+        deque = new LinkedList<>();
         deque.add(e1);
-        deque.add(e2);
+        deque.addFirst(e2);
+        deque.addLast(e2);
         historyPoints = new Stack<>();
         historyOps = new Stack<>();
         historyPoints.add(e2);
         historyOps.add(0); //pushop
+        System.out.println(deque.toString());
     }
 
-    public void add(Point2D p){
+    public void add(Integer p, ArrayList<Point2D> nodes){
         boolean topFlag, botFlag;
-        topFlag = DouglasPeucker.leftOf(deque.getFirst(), getSecond(), p);
-        botFlag = DouglasPeucker.leftOf(getSecondLast(), deque.getLast(), p);
+        topFlag = DouglasPeucker.leftOf(nodes.get(deque.getFirst()), nodes.get(getSecond()), nodes.get(p));
+        botFlag = DouglasPeucker.leftOf(nodes.get(getSecondLast()), nodes.get(deque.getLast()), nodes.get(p));
         if(topFlag || botFlag){
             while(topFlag){
                 popTop();
-                topFlag = DouglasPeucker.leftOf(deque.getFirst(), getSecond(), p);
+                topFlag = DouglasPeucker.leftOf(nodes.get(deque.getFirst()), nodes.get(getSecond()), nodes.get(p));
             }
             while(botFlag){
                 popBottom();
-                botFlag = DouglasPeucker.leftOf(getSecondLast(), deque.getLast(), p);
+                botFlag = DouglasPeucker.leftOf(nodes.get(getSecondLast()), nodes.get(deque.getLast()), nodes.get(p));
             }
             push(p);
         }
+//        System.out.println(getQueueAsList());
     }
 
-    private Point2D getSecond(){
-        Point2D tempRemove = deque.removeFirst();
-        Point2D second = deque.getFirst();
+    private int getSecond(){
+        int tempRemove = deque.removeFirst();
+        int second = deque.getFirst();
         deque.addFirst(tempRemove);
         return second;
     }
 
-    private Point2D getSecondLast(){
-        Point2D tempRemove = deque.removeLast();
-        Point2D secondLast = deque.getLast();
+    private int getSecondLast(){
+        int tempRemove = deque.removeLast();
+        int secondLast = deque.getLast();
         deque.addLast(tempRemove);
         return secondLast;
     }
 
     private void popTop(){
         historyPoints.add(deque.getFirst());
+        deque.removeFirst();
         historyOps.add(1); //topop
     }
 
     private void popBottom(){
         historyPoints.add(deque.getLast());
+        deque.removeLast();
         historyOps.add(2); //botop
     }
 
-    private void push(Point2D p){
+    private void push(int p){
         deque.addFirst(p);
         deque.addLast(p);
         historyPoints.add(p);
         historyOps.add(0);
     }
 
-    protected void split(Point2D p){
-        Point2D tempPoint;
+    protected void split(Integer p){
+        int tempPoint;
         int tempOp = historyOps.peek();
-        int hp = historyOps.size();
-        while(!historyOps.empty() && ((historyPoints.get(hp)) != p || tempOp != 0)){
-            tempOp = historyOps.get(hp);
-            tempPoint = historyPoints.get(hp);
-            hp--;
+//        System.out.println(getQueueAsList());
+        while(!historyOps.empty() && ((historyPoints.peek()) != p || historyOps.peek() != 0)){
+//            System.out.println("loop");
+            tempOp = historyOps.pop();
+            tempPoint = historyPoints.pop();
+//            System.out.println(tempOp + " " + tempPoint);
             if(tempOp == 0){
                 deque.removeFirst();
                 deque.removeLast();
@@ -94,13 +102,15 @@ public class PathHull {
             if(tempOp == 1){
                 deque.addFirst(tempPoint);
             }
-            if(tempOp == 1){
+            if(tempOp == 2){
                 deque.addLast(tempPoint);
             }
+//            System.out.println(getQueueAsList());
+//            System.out.println("Next: " history);
         }
     }
 
-    protected ArrayList<Point2D> getQueueAsList(){
+    protected ArrayList<Integer> getQueueAsList(){
         return new ArrayList(deque);
     }
 }
