@@ -45,6 +45,7 @@ public class MyGraph {
         for(MyWay w : mapRoads){
             junctions2.add(w.getWayNodes().get(0));
             junctions2.add(w.getWayNodes().get(w.getWayNodes().size() - 1));
+            System.out.println("This many nodes: " + w.getWayNodes().size());
 //            System.out.println(w.getWayNodes().get(0) + ", " + (w.getWayNodes().get(w.getWayNodes().size() - 1)));
         }
         for(Long j : junctions){

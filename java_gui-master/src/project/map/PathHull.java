@@ -1,15 +1,13 @@
 package project.map;
 
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.Stack;
+import java.util.*;
 
 public class PathHull {
-    Deque<Integer> deque;
+//    Deque<Integer> deque;
     private Stack<Integer> historyPoints;
     private Stack<Integer> historyOps;
+    private int[] deque;
     int top;
     int bot;
 
@@ -24,71 +22,85 @@ public class PathHull {
     private int phTag;
 
     protected PathHull(Integer e1, Integer e2){
-        deque = new LinkedList<>();
-        deque.add(e1);
-        deque.addFirst(e2);
-        deque.addLast(e2);
+//        deque = new LinkedList<>();
+//        deque.add(e1);
+//        deque.addFirst(e2);
+//        deque.addLast(e2);
+        top = 5000;
+        bot = 5000;
+        deque = new int[10000];
+        deque[top] = e1;
+        top++;
+        bot--;
+        deque[bot] = e2;
+        deque[top] = e2;
         historyPoints = new Stack<>();
         historyOps = new Stack<>();
         historyPoints.add(e2);
         historyOps.add(0); //pushop
-        System.out.println(deque.toString());
+//        System.out.println(deque.toString());
     }
 
-    public void add(Integer p, ArrayList<Point2D> nodes){
+    public void add(int p, Point2D[] nodes){
         boolean topFlag, botFlag;
-        topFlag = DouglasPeucker.leftOf(nodes.get(deque.getFirst()), nodes.get(getSecond()), nodes.get(p));
-        botFlag = DouglasPeucker.leftOf(nodes.get(getSecondLast()), nodes.get(deque.getLast()), nodes.get(p));
+        topFlag = DouglasPeucker.leftOf(nodes[deque[top]], nodes[deque[top - 1]], nodes[p]);
+        botFlag = DouglasPeucker.leftOf(nodes[deque[bot + 1]], nodes[deque[bot]], nodes[p]);
         if(topFlag || botFlag){
             while(topFlag){
+//                System.out.println(top + " " + bot);
                 popTop();
-                topFlag = DouglasPeucker.leftOf(nodes.get(deque.getFirst()), nodes.get(getSecond()), nodes.get(p));
+                topFlag = DouglasPeucker.leftOf(nodes[deque[top]], nodes[deque[top - 1]], nodes[p]);
+//                System.out.println("comparing " + nodes[deque[top]].toString() + " " + nodes[deque[top - 1]].toString());
             }
             while(botFlag){
                 popBottom();
-                botFlag = DouglasPeucker.leftOf(nodes.get(getSecondLast()), nodes.get(deque.getLast()), nodes.get(p));
+                botFlag = DouglasPeucker.leftOf(nodes[deque[bot + 1]], nodes[deque[bot]], nodes[p]);
             }
             push(p);
         }
 //        System.out.println(getQueueAsList());
     }
 
-    private int getSecond(){
-        int tempRemove = deque.removeFirst();
-        int second = deque.getFirst();
-        deque.addFirst(tempRemove);
-        return second;
-    }
-
-    private int getSecondLast(){
-        int tempRemove = deque.removeLast();
-        int secondLast = deque.getLast();
-        deque.addLast(tempRemove);
-        return secondLast;
-    }
+//    private int getSecond(){
+//        int tempRemove = deque.removeFirst();
+//        int second = deque.getFirst();
+//        deque.addFirst(tempRemove);
+//        return second;
+//    }
+//
+//    private int getSecondLast(){
+//        int tempRemove = deque.removeLast();
+//        int secondLast = deque.getLast();
+//        deque.addLast(tempRemove);
+//        return secondLast;
+//    }
 
     private void popTop(){
-        historyPoints.add(deque.getFirst());
-        deque.removeFirst();
+        historyPoints.add(deque[top]);
+        top--;
         historyOps.add(1); //topop
     }
 
     private void popBottom(){
-        historyPoints.add(deque.getLast());
-        deque.removeLast();
+        historyPoints.add(deque[bot]);
+        bot++;
         historyOps.add(2); //botop
     }
 
     private void push(int p){
-        deque.addFirst(p);
-        deque.addLast(p);
+        deque[top + 1] = p;
+        deque[bot - 1] = p;
+        top++;
+        bot--;
         historyPoints.add(p);
         historyOps.add(0);
     }
 
     protected void split(Integer p){
+//        System.out.println("split");
+//        System.out.println("split");
         int tempPoint;
-        int tempOp = historyOps.peek();
+        int tempOp;
 //        System.out.println(getQueueAsList());
         while(!historyOps.empty() && ((historyPoints.peek()) != p || historyOps.peek() != 0)){
 //            System.out.println("loop");
@@ -96,21 +108,28 @@ public class PathHull {
             tempPoint = historyPoints.pop();
 //            System.out.println(tempOp + " " + tempPoint);
             if(tempOp == 0){
-                deque.removeFirst();
-                deque.removeLast();
+                top--;
+                bot++;
             }
             if(tempOp == 1){
-                deque.addFirst(tempPoint);
+                top++;
+                deque[top] = tempPoint;
             }
             if(tempOp == 2){
-                deque.addLast(tempPoint);
+                bot--;
+                deque[bot] = tempPoint;
             }
 //            System.out.println(getQueueAsList());
 //            System.out.println("Next: " history);
         }
     }
 
-    protected ArrayList<Integer> getQueueAsList(){
-        return new ArrayList(deque);
+    protected int[] getQueueAsList(){
+//        return new ArrayList<Integer>(Arrays.asList(Arrays.copyOfRange(deque, bot, top)));
+//        System.out.println(top + " " + bot);
+        int[] sub = Arrays.copyOfRange(deque, bot, top);
+        return sub;
+//        return new ArrayList<Integer>(Arrays.asList(sub));
+//        return new ArrayList(deque);
     }
 }

@@ -31,7 +31,7 @@ import java.util.List;
 public class Model
 {
 	private BufferedImage	image	= null;
-	private MyMap map = null;
+	private MyGraph map = null;
 	private List<Rectangle>	rects	= new ArrayList<Rectangle>();
 
 	public Model()
@@ -131,13 +131,13 @@ public class Model
 			throws IOException
 	{
 		this.map = null;
-		this.map = new MyMap(file); //note - loading file twice
+		this.map = new MyGraph(file); //note - loading file twice
 //		int numImages = newImageFile.getNumImages();
 //		if (numImages == 0)
 //			throw new IOException("Image file contains no images");
-		map.drawMap(0);
-		BufferedImage bi = map.getMap();
-		setImage(bi);
+//		map.drawMap(0);
+//		BufferedImage bi = map.getMap();
+//		setImage(bi);
 	}
 
 }
