@@ -1,5 +1,6 @@
 package project.map;
 
+import com.sun.tools.javac.util.Pair;
 import crosby.binary.*;
 import crosby.binary.Osmformat.*;
 import crosby.binary.file.*;
@@ -18,8 +19,9 @@ import java.util.List;
 public class MyGraph {
     //    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
     private static Map<Long, MyNode> dictionary;
-    private static ArrayList<MyWay> mapRoads;
-    private static HashMap<Long, Integer> allWayNodes;
+    private static Map<Long, MyWay> mapRoads;
+    private static HashMap<Long, ArrayList<Long>> allWayNodes;  //contains each node referenced in the ways we extract,
+                                                                // mapped to a list of way ids that the node is part of
     private static boolean parsingNodes;
     private static int counter;
     private static HashSet<Long> junctions;
@@ -28,7 +30,7 @@ public class MyGraph {
 
     public MyGraph(File file) throws IOException {
         dictionary = new HashMap<>(); //NOTE - STORING NODE ID TWICE!!!
-        mapRoads = new ArrayList<>();
+        mapRoads = new HashMap<>();
         allWayNodes = new HashMap<>();
         junctions = new HashSet<>();
         junctions2 = new HashSet<>();
@@ -38,32 +40,73 @@ public class MyGraph {
         BlockReaderAdapter brad = new TestBinaryParser();
         new BlockInputStream(input, brad).process();
         System.out.println("Map roads pre-split:      " + mapRoads.size());
-        mapRoads = splitWays(mapRoads);
+        mapRoads = splitWays(mapRoads, false);
         System.out.println("Map roads post-split:     " + mapRoads.size());
         System.out.println("Number of way nodes:      " + allWayNodes.size());
-        System.out.println("Number of junction nodes: " + junctions.size());
-        for(MyWay w : mapRoads){
-            junctions2.add(w.getWayNodes().get(0));
-            junctions2.add(w.getWayNodes().get(w.getWayNodes().size() - 1));
-            System.out.println("This many nodes: " + w.getWayNodes().size());
-//            System.out.println(w.getWayNodes().get(0) + ", " + (w.getWayNodes().get(w.getWayNodes().size() - 1)));
-        }
-        for(Long j : junctions){
-            if(!junctions2.contains(j)){
-                System.out.println("AWWW NO");
-            }
-        }
-//        for(Long j : junctions2){
-//            if(!junctions.contains(j)){
-//                System.out.println(j);
+//        System.out.println("Number of junction nodes: " + junctions.size());
+
+        System.out.println(junctions2.size());
+
+//        for(Long j : junctions){
+//            if(!junctions2.contains(j)){
 //                System.out.println("AWWW NO");
 //            }
 //        }
-        System.out.println("AWWWW YEAH");
-//        parsingNodes = true;
-//        InputStream input2 = new FileInputStream(file);
-//        BlockReaderAdapter brad2 = new TestBinaryParser();
-//        new BlockInputStream(input2, brad2).process();
+
+        parsingNodes = true;
+        InputStream input2 = new FileInputStream(file);
+        BlockReaderAdapter brad2 = new TestBinaryParser();
+        new BlockInputStream(input2, brad2).process();
+
+        for(MyWay way : mapRoads.values()){
+            double length = 0;
+            long lastNode = way.getWayNodes().get(0);
+            for(long node : way.getWayNodes()){
+                length = length + haversineDistance(lastNode, node);
+                lastNode = node;
+            }
+            way.setLength(length);
+        }
+
+        Map<Long, Set<Pair<Long, Double>>> graph = new HashMap<Long, Set<Pair<Long, Double>>>();
+
+
+        for(Long node : allWayNodes.keySet()){ //adding each vertex to the graph
+            graph.put(node, new HashSet<Pair<Long, Double>>());
+        }
+
+        for(Long node : allWayNodes.keySet()){ //iterate through each vertice
+            for(long way : allWayNodes.get(node)){ //iterate through each edge for each vertice
+                List<Long> edgeNodes = mapRoads.get(mapRoads.lastIndexOf(way)).wayNodes; //get the edge
+                long otherEnd;
+                if(edgeNodes.get(0).equals(node)) {
+                    otherEnd = edgeNodes.get(edgeNodes.size() - 1);
+                } else {
+                    otherEnd = edgeNodes.get(0);
+                }
+                Double length = mapRoads.get(mapRoads.lastIndexOf(way)).getLength();
+                graph.get(node).add(new Pair(otherEnd, length));
+            }
+        }
+    }
+
+    public double haversineDistance(long a, long b){
+        MyNode nodeA = dictionary.get(a);
+        MyNode nodeB = dictionary.get(b);
+        double rad = 6371000; //radius of earth in metres
+        double aLatRadians = Math.toRadians(nodeA.getLati());
+        double bLatRadians = Math.toRadians(nodeB.getLati());
+        double deltaLatRadians = Math.toRadians(nodeB.getLati() - nodeA.getLati());
+        double deltaLongRadians = Math.toRadians(nodeB.getLongi() - nodeA.getLongi());
+
+        double x = Math.sin(deltaLatRadians/2) * Math.sin(deltaLatRadians/2) +
+                Math.cos(aLatRadians) * Math.cos(bLatRadians) *
+                        Math.sin(deltaLongRadians/2) * Math.sin(deltaLongRadians/2);
+        double y = 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+        double distance = rad * y;
+        return distance;
+
+//        return Math.sqrt(Math.pow((nodeB.getLati() - nodeA.getLati()), 2) + Math.pow((nodeB.getLongi() - nodeA.getLongi()), 2));
     }
 
     public static class TestBinaryParser extends BinaryParser {
@@ -148,27 +191,27 @@ public class MyGraph {
                                 MyWay tempWay = buildMyWay(w);
                                 tempWay.setType(WayType.ROAD);
                                 tempWay.setRoadType(RoadType.MOTORWAY);
-                                mapRoads.add(tempWay);
+                                mapRoads.put(w.getId(), tempWay);
                             } else if (value.matches("trunk|trunk_link")){
                                 MyWay tempWay = buildMyWay(w);
                                 tempWay.setType(WayType.ROAD);
                                 tempWay.setRoadType(RoadType.TRUNK);
-                                mapRoads.add(tempWay);
+                                mapRoads.put(w.getId(), tempWay);
                             } else if (value.matches("primary|primary_link")){
                                 MyWay tempWay = buildMyWay(w);
                                 tempWay.setType(WayType.ROAD);
                                 tempWay.setRoadType(RoadType.PRIMARY);
-                                mapRoads.add(tempWay);
+                                mapRoads.put(w.getId(), tempWay);
                             } else if (value.matches("secondary|secondary_link")){
                                 MyWay tempWay = buildMyWay(w);
                                 tempWay.setType(WayType.ROAD);
                                 tempWay.setRoadType(RoadType.SECONDARY);
-                                mapRoads.add(tempWay);
+                                mapRoads.put(w.getId(), tempWay);
                             } else if (value.matches("tertiary|unclassified|residential|service|tertiary_link|road")){
                                 MyWay tempWay = buildMyWay(w);
                                 tempWay.setType(WayType.ROAD);
                                 tempWay.setRoadType(RoadType.ROAD);
-                                mapRoads.add(tempWay);
+                                mapRoads.put(w.getId(), tempWay);
                             }
                         }
 //                        if(key.equals("railway")){
@@ -219,9 +262,11 @@ public class MyGraph {
                 tempWay.addWayNode(lastRef);
                 if(allWayNodes.containsKey(lastRef)){
                     junctions.add(lastRef);
-                    allWayNodes.put(lastRef, allWayNodes.get(lastRef) + 1);
+                    allWayNodes.get(lastRef).add(w.getId());
                 } else {
-                    allWayNodes.put(lastRef, 1);
+                    ArrayList<Long> nodeWays = new ArrayList<>();
+                    nodeWays.add(w.getId());
+                    allWayNodes.put(lastRef, nodeWays);
                 }
             }
             return tempWay;
@@ -237,33 +282,40 @@ public class MyGraph {
         }
     }
 
-    private ArrayList<MyWay> splitWays(ArrayList<MyWay> ways){
+    private ArrayList<MyWay> splitWays(Map<Long, MyWay> ways, boolean strip){
         ArrayList<MyWay> newWays = new ArrayList<>();
-        for(MyWay w : ways){
-            ArrayList<MyWay> splitWays = splitWay(w);
-            if (splitWays.size() > 1){
+        for(MyWay w : ways.values()){
+            ArrayList<MyWay> splitWays = splitWay(w, strip);
                 newWays.addAll(splitWays);
-            } else {
-                newWays.add(w);
             }
-        }
         return newWays;
     }
 
-    private ArrayList<MyWay> splitWay(MyWay way){
+    private MyWay stripWay(MyWay way){
+        ArrayList<Long> newNodes = new ArrayList<Long>();
+        newNodes.add(way.wayNodes.get(0));
+        newNodes.add(way.wayNodes.get(way.wayNodes.size() - 1));
+        way.wayNodes = newNodes;
+        return way;
+    }
+
+    private ArrayList<MyWay> splitWay(MyWay way, boolean strip){
         ArrayList<MyWay> returnWays = new ArrayList<>();
         returnWays.add(way);
         for(int i = 1; i < (way.getWayNodes().size() - 1); i++){
-            if(allWayNodes.get(way.getWayNodes().get(i)) > 1){
+            if(allWayNodes.get(way.getWayNodes().get(i)).size() > 1){
                 MyWay tempWay = new MyWay (way.getWayNodes().subList(0, i + 1));
-                ArrayList<MyWay> tempWayRest = splitWay(new MyWay (way.getWayNodes().subList(i, way.getWayNodes().size())));
+                ArrayList<MyWay> tempWayRest = splitWay(new MyWay (way.getWayNodes().subList(i, way.getWayNodes().size())), strip);
                 tempWayRest.add(tempWay);
                 returnWays = tempWayRest;
                 break;
             }
         }
+        if(strip){
+            for(MyWay w : returnWays){
+                w = stripWay(w);
+            }
+        }
         return returnWays;
     }
-
-
 }

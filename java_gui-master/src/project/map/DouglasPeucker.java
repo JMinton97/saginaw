@@ -38,36 +38,35 @@ public class DouglasPeucker {
         }
     }
 
-    public static ArrayList<Point2D> simplify(Point2D[] nodes, double tolerance){
+    public static ArrayList<Point2D> simplify(ArrayList<Point2D> nodes, double tolerance){
         long startTime = System.nanoTime();
-        PathHull[] leftAndRight = build(nodes, 0, nodes.length - 1);
+        PathHull[] leftAndRight = build(nodes, 0, nodes.size() - 1);
         long endTime = System.nanoTime();
-        System.out.println("Inner: " + (endTime - startTime) / 10000);
+        System.out.println("Inner: " + (endTime - startTime) / 1000);
         ArrayList<Point2D> newNodes = new ArrayList<>();
-        newNodes.add(nodes[0]);
-        newNodes.addAll(DPHull(nodes, 0, nodes.length - 1, leftAndRight, tolerance));
+        newNodes.add(nodes.get(0));
+        newNodes.addAll(DPHull(nodes, 0, nodes.size() - 1, leftAndRight, tolerance));
         return newNodes;
     }
 
-    public static ArrayList<Point2D> DPHull(Point2D[] points, int i, int j, PathHull[] leftAndRight, double tolerance) {
-        System.out.println("hulling");
+    public static ArrayList<Point2D> DPHull(ArrayList<Point2D> points, int i, int j, PathHull[] leftAndRight, double tolerance) {
         ArrayList<Point2D> returnPoints = new ArrayList<>();
         PathHull left = leftAndRight[0];
         PathHull right = leftAndRight[1];
-        double[] line = crossProduct(points[i], points[j]);
+        double[] line = crossProduct(points.get(i), points.get(j));
         if (j - i <= 1) {
-            returnPoints.add(points[j]);
+            returnPoints.add(points.get(j));
             return returnPoints;
         }
         int lextr = findExtreme(points, left, line);
-        double ldist = dotProduct(points[lextr], line);
+        double ldist = dotProduct(points.get(lextr), line);
         double len_sq = line[1] * line[1] + line[2] * line[2];
         int rextr = findExtreme(points, right, line);
-        double rdist = dotProduct(points[rextr], line);
+        double rdist = dotProduct(points.get(rextr), line);
         if (ldist <= rdist) { //split on rextr
             if (rdist * rdist <= len_sq * (tolerance * tolerance)) {
 
-                returnPoints.add(points[j]);
+                returnPoints.add(points.get(j));
                 return returnPoints;
             } else {
                 if (right.getPhTag() == rextr) {
@@ -83,7 +82,7 @@ public class DouglasPeucker {
             }
         } else { //split on lextr
             if (ldist * ldist <= len_sq * (tolerance * tolerance)) {
-                returnPoints.add(points[j]);
+                returnPoints.add(points.get(j));
                 return returnPoints;
             } else {
                 left.split(lextr);
@@ -95,8 +94,7 @@ public class DouglasPeucker {
         }
     }
 
-    private static PathHull[] build(Point2D[] points, int i, int j){
-        System.out.println("building");
+    private static PathHull[] build(ArrayList<Point2D> points, int i, int j){
         int phTag = i + ((j - i) / 2);
         PathHull left = new PathHull(phTag, phTag - 1);
         for(int k = phTag - 2; k >= i; k--){
@@ -112,8 +110,7 @@ public class DouglasPeucker {
         return new PathHull[] {left, right};
     }
 
-    private static int findExtreme(Point2D[] nodes, PathHull pathHull, double[] line){
-        System.out.println("looking");
+    private static int findExtreme(ArrayList<Point2D> nodes, PathHull pathHull, double[] line){
 //        ArrayList<Integer> list = pathHull.getQueueAsList();
         int[] list = pathHull.getQueueAsList();
         if(list.length > 6){
@@ -121,13 +118,13 @@ public class DouglasPeucker {
             int low = 0;
             int high = list.length - 2;
             boolean signBreak;
-            boolean signBase = slopeSign(line, nodes[list[low]], nodes[list[high]]);
+            boolean signBase = slopeSign(line, nodes.get(list[low]), nodes.get(list[high]));
             do{
-//                System.out.println("here");
+                System.out.println("here");
                 brk = (low + high) / 2;
-                signBreak = slopeSign(line, nodes[list[brk]], nodes[list[brk + 1]]);
+                signBreak = slopeSign(line, nodes.get(list[brk]), nodes.get(list[brk + 1]));
                 if (signBase == signBreak){
-                    if (signBase == (slopeSign(line, nodes[list[low]], nodes[list[brk + 1]]))){
+                    if (signBase == (slopeSign(line, nodes.get(list[low]), nodes.get(list[brk + 1])))){
                         low = brk + 1;
                     }else{
                         high = brk;
@@ -138,7 +135,7 @@ public class DouglasPeucker {
             m1 = brk;
             while (low < m1){
                 mid = (low + m1) / 2;
-                if (signBase == (slopeSign(line, nodes[list[mid]], nodes[list[mid + 1]]))){
+                if (signBase == (slopeSign(line, nodes.get(list[mid]), nodes.get(list[mid + 1])))){
                     low = mid + 1;
                 } else {
                     m1 = mid;
@@ -148,14 +145,14 @@ public class DouglasPeucker {
             m2 = brk;
             while (m2 < high){
                 mid = (m2 + high) / 2;
-                if (signBase == (slopeSign(line, nodes[list[mid]], nodes[list[mid + 1]]))){
+                if (signBase == (slopeSign(line, nodes.get(list[mid]), nodes.get(list[mid + 1])))){
                     high = mid;
                 } else {
                     m2 = mid + 1;
                 }
             }
 
-            if(dotProduct(nodes[list[low]], line) > dotProduct(nodes[list[m2]], line)){
+            if(dotProduct(nodes.get(list[low]), line) > dotProduct(nodes.get(list[m2]), line)){
                 return list[low];
             } else {
                 return list[m2];
@@ -164,8 +161,8 @@ public class DouglasPeucker {
             double maxDist = 0;
             int max = 0;
             for(Integer p : list){
-                if (dotProduct(nodes[p], line) > maxDist){
-                    maxDist = dotProduct(nodes[p], line);
+                if (dotProduct(nodes.get(p), line) > maxDist){
+                    maxDist = dotProduct(nodes.get(p), line);
                     max = p;
                 }
             }

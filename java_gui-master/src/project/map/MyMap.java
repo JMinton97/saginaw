@@ -196,6 +196,11 @@ public class MyMap {
                         } else {
                             mapGraphics.setPaint(wayColor);
                             mapGraphics.setStroke(new BasicStroke((4)));
+//                            MyNode u = dictionary.get(wayNodes.get(0)); //efficiency by using previous v?
+//                            double uy = Math.abs(u.getLati() - northMost) * spaceModifierY;
+//                            double ux = Math.abs(u.getLongi() - westMost) * spaceModifierX;
+//                            mapGraphics.drawOval((int) ux, (int) uy, 3, 3);
+//                            break;
                         }
                         drawWay2(mapGraphics, wayNodes);
                         break;
@@ -292,12 +297,15 @@ public class MyMap {
     }
 
     private void drawWay2(Graphics2D mapGraphics, List<Long> wayNodes) {
+        MyNode u;
+        MyNode v = dictionary.get(wayNodes.get(0));
         for (int node = 0; node < wayNodes.size() - 1; node++) {
 //                System.out.println(dictionary.get(allWayNodes.get(node)).getNodeId());
 //                System.out.println(dictionary.get(allWayNodes.get(node + 1)).getNodeId());
             if (dictionary.containsKey(wayNodes.get(node)) && dictionary.containsKey(wayNodes.get(node + 1))) {
-                MyNode u = dictionary.get(wayNodes.get(node)); //efficiency by using previous v?
-                MyNode v = dictionary.get(wayNodes.get(node + 1));
+                u = v; //dictionary.get(wayNodes.get(node)); //efficiency by using previous v?
+                v = dictionary.get(wayNodes.get(node + 1));
+                System.out.println(u.toString());
                 double uy = Math.abs(u.getLati() - northMost) * spaceModifierY;
                 double ux = Math.abs(u.getLongi() - westMost) * spaceModifierX;
                 double vy = Math.abs(v.getLati() - northMost) * spaceModifierY;

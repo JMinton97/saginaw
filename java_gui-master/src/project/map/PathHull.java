@@ -41,20 +41,18 @@ public class PathHull {
 //        System.out.println(deque.toString());
     }
 
-    public void add(int p, Point2D[] nodes){
+    public void add(int p, ArrayList<Point2D> nodes){
         boolean topFlag, botFlag;
-        topFlag = DouglasPeucker.leftOf(nodes[deque[top]], nodes[deque[top - 1]], nodes[p]);
-        botFlag = DouglasPeucker.leftOf(nodes[deque[bot + 1]], nodes[deque[bot]], nodes[p]);
+        topFlag = DouglasPeucker.leftOf(nodes.get(deque[top]), nodes.get(deque[top - 1]), nodes.get(p));
+        botFlag = DouglasPeucker.leftOf(nodes.get(deque[bot + 1]), nodes.get(deque[bot]), nodes.get(p));
         if(topFlag || botFlag){
             while(topFlag){
-//                System.out.println(top + " " + bot);
                 popTop();
-                topFlag = DouglasPeucker.leftOf(nodes[deque[top]], nodes[deque[top - 1]], nodes[p]);
-//                System.out.println("comparing " + nodes[deque[top]].toString() + " " + nodes[deque[top - 1]].toString());
+                topFlag = DouglasPeucker.leftOf(nodes.get(deque[top]), nodes.get(deque[top - 1]), nodes.get(p));
             }
             while(botFlag){
                 popBottom();
-                botFlag = DouglasPeucker.leftOf(nodes[deque[bot + 1]], nodes[deque[bot]], nodes[p]);
+                botFlag = DouglasPeucker.leftOf(nodes.get(deque[bot + 1]), nodes.get(deque[bot]), nodes.get(p));
             }
             push(p);
         }

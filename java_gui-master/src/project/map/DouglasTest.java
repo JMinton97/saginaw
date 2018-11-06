@@ -15,71 +15,45 @@ public class DouglasTest {
     static Point2D phTag;
 
     public static void main(String[] args) {
-        Point2D[] nodes = new Point2D[10000];
+        ArrayList<Point2D> nodes = new ArrayList<>();
         ArrayList<Point2D> nodes2 = new ArrayList<>();
 
-        Random rand = new Random(12);
+        Random rand = new Random();
 
-        for(int x = 0; x < 10000; x++) {
-            nodes[x] = new Point2D.Double(x + rand.nextInt(10), x - rand.nextInt(10));
-        }
+        boolean s = true;
 
-//        for(Point2D p : nodes){
-//            System.out.println(p.toString());
+//        for(int x = 0; x < 1000; x++) {
+//                int j = rand.nextInt(100);
+//                int k = rand.nextInt(100);
+//                nodes.add(new Point2D.Double(j, k));
+//                nodes.add(new Point2D.Double(j, k));
 //        }
 
-        rand = new Random(1);
-//
-        for(int x = 0; x < 10000; x++) {
-                nodes2.add( new Point2D.Double(x + rand.nextInt(10), x - rand.nextInt(10)));
+        for(int x = 0; x < 6; x++) {
+            int j = x * 100;
+            nodes.add(new Point2D.Double(10, j + 10));
+            nodes.add(new Point2D.Double(20, j + 5));
+            nodes.add(new Point2D.Double(30, j + 20));
+            nodes.add(new Point2D.Double(40, j + 40));
+            nodes.add(new Point2D.Double(50, j + 20));
+            nodes.add(new Point2D.Double(60, j + 10));
+            nodes.add(new Point2D.Double(70, j + 15));
+            nodes.add(new Point2D.Double(80, j + 5));
+            nodes.add(new Point2D.Double(99, j + 50));
+            nodes.add(new Point2D.Double(80, j + 60));
+            nodes.add(new Point2D.Double(75, j + 50));
+            nodes.add(new Point2D.Double(80, j + 70));
+            nodes.add(new Point2D.Double(70, j + 70));
+            nodes.add(new Point2D.Double(60, j + 40));
+            nodes.add(new Point2D.Double(50, j + 45)); //
+            nodes.add(new Point2D.Double(50, j + 75));
+            nodes.add(new Point2D.Double(40, j + 99));
+            nodes.add(new Point2D.Double(30, j + 80));
+            nodes.add(new Point2D.Double(20, j + 60)); //
+            nodes.add(new Point2D.Double(15, j + 50)); //
+            nodes.add(new Point2D.Double(10, j + 60)); //
+            nodes.add(new Point2D.Double(5, j + 90)); //
         }
-
-//        {
-//            nodes2.add(new Point2D.Double(10, 10));
-//            nodes2.add(new Point2D.Double(20, 5));
-//            nodes2.add(new Point2D.Double(30, 20));
-//            nodes2.add(new Point2D.Double(40, 40));
-//            nodes2.add(new Point2D.Double(50, 20));
-//            nodes2.add(new Point2D.Double(60, 10));
-//            nodes2.add(new Point2D.Double(70, 15));
-//            nodes2.add(new Point2D.Double(80, 5));
-//            nodes2.add(new Point2D.Double(99, 50));
-//            nodes2.add(new Point2D.Double(80, 60));
-//            nodes2.add(new Point2D.Double(75, 50));
-//            nodes2.add(new Point2D.Double(80, 70));
-//            nodes2.add(new Point2D.Double(70, 70));
-//            nodes2.add(new Point2D.Double(60, 40));
-//            nodes2.add(new Point2D.Double(50, 45)); //
-//            nodes2.add(new Point2D.Double(50, 75));
-//            nodes2.add(new Point2D.Double(40, 99));
-//            nodes2.add(new Point2D.Double(30, 80));
-//            nodes2.add(new Point2D.Double(20, 60)); //
-//            nodes2.add(new Point2D.Double(15, 50)); //
-//            nodes2.add(new Point2D.Double(10, 60)); //
-//            nodes2.add(new Point2D.Double(5, 35)); //
-//            nodes[0] = new Point2D.Double(10, 10);
-//            nodes[1] = new Point2D.Double(20, 5);
-//            nodes[2] = new Point2D.Double(30, 20);
-//            nodes[3] = new Point2D.Double(40, 40);
-//            nodes[4] = new Point2D.Double(50, 20);
-//            nodes[5] = new Point2D.Double(60, 10);
-//            nodes[6] = new Point2D.Double(70, 15);
-//            nodes[7] = new Point2D.Double(80, 5);
-//            nodes[8] = new Point2D.Double(99, 50);
-//            nodes[9] = new Point2D.Double(80, 60);
-//            nodes[10] = new Point2D.Double(75, 50);
-//            nodes[11] = new Point2D.Double(80, 70);
-//            nodes[12] = new Point2D.Double(70, 70);
-//            nodes[13] = new Point2D.Double(60, 40);
-//            nodes[14] = new Point2D.Double(50, 45); //
-//            nodes[15] = new Point2D.Double(50, 75);
-//            nodes[16] = new Point2D.Double(40, 99);
-//            nodes[17] = new Point2D.Double(30, 80);
-//            nodes[18] = new Point2D.Double(20, 60); //
-//            nodes[19] = new Point2D.Double(15, 50); //
-//            nodes[20] = new Point2D.Double(10, 60); //
-//            nodes[21] = new Point2D.Double(5, 35); //
-//        }
 
 //        try {
 //            Thread.sleep(7000);
@@ -88,14 +62,16 @@ public class DouglasTest {
 //        }
 
         long startTime = System.nanoTime();
-        ArrayList<Point2D> newNodes = DouglasPeucker.simplify(nodes, 7);
+        ArrayList<Point2D> newNodes = DouglasPeucker.simplify(nodes, 10);
+//        ArrayList<Point2D> newNodes2 = (ArrayList<Point2D>) DouglasPeucker.decimate(nodes, 10.0);
         long endTime = System.nanoTime();
-        System.out.println("Size " + newNodes.size());
-        System.out.println((endTime - startTime) / 10000);
-         startTime = System.nanoTime();
-        ArrayList<Point2D> newNodes2 = (ArrayList<Point2D>) DouglasPeucker.decimate(nodes2,7.0);
-         endTime = System.nanoTime();
-        System.out.println((endTime - startTime) / 10000);
+        System.out.println((endTime - startTime) / 1000);
+
+        startTime = System.nanoTime();
+//        ArrayList<Point2D> newNodes2 = DouglasPeucker.simplify(nodes, 10);
+        ArrayList<Point2D> newNodes2 = (ArrayList<Point2D>) DouglasPeucker.decimate(nodes, 10.0);
+        endTime = System.nanoTime();
+        System.out.println((endTime - startTime) / 1000);
 //
 //
 //        try {
@@ -104,7 +80,7 @@ public class DouglasTest {
 //            e.printStackTrace();
 //        }
 
-        BufferedImage image = new BufferedImage(1000, 1000, 1);
+        BufferedImage image = new BufferedImage(1000, 10000, 1);
         Graphics2D graphics = image.createGraphics();
 
 //        int phTag = (nodes.size() - 1) / 2; //or points.size() - 1 / 2?
@@ -151,26 +127,16 @@ public class DouglasTest {
 
         graphics.setPaint(Color.WHITE);
         graphics.setStroke(new BasicStroke(1));
-        for (int node = 0; node < nodes2.size() - 1; node++) {
-            double uy = nodes2.get(node).getY() * 10;
-            double ux = nodes2.get(node).getX() * 10;
-            double vy = nodes2.get(node + 1).getY() * 10;
-            double vx = nodes2.get(node + 1).getX() * 10;
-            graphics.drawLine((int) ux, (int) uy, (int) vx, (int) vy);
-        }
-
-        graphics.setPaint(Color.WHITE);
-        graphics.setStroke(new BasicStroke(1));
-        for (int node = 0; node < nodes.length - 1; node++) {
-            double uy = nodes[node].getY() * 10;
-            double ux = nodes[node].getX() * 10;
-            double vy = nodes[node + 1].getY() * 10;
-            double vx = nodes[node + 1].getX() * 10;
+        for (int node = 0; node < nodes.size() - 1; node++) {
+            double uy = nodes.get(node).getY() * 10;
+            double ux = nodes.get(node).getX() * 10;
+            double vy = nodes.get(node + 1).getY() * 10;
+            double vx = nodes.get(node + 1).getX() * 10;
             graphics.drawLine((int) ux, (int) uy, (int) vx, (int) vy);
         }
 
         graphics.setPaint(Color.BLUE);
-        graphics.setStroke(new BasicStroke(2));
+        graphics.setStroke(new BasicStroke(4));
         for (int node = 0; node < newNodes.size() - 1; node++) {
             double uy = newNodes.get(node).getY() * 10;
             double ux = newNodes.get(node).getX() * 10;
@@ -178,9 +144,9 @@ public class DouglasTest {
             double vx = newNodes.get(node + 1).getX() * 10;
             graphics.drawLine((int) ux, (int) uy, (int) vx, (int) vy);
         }
-
+//
         graphics.setPaint(Color.GREEN);
-        graphics.setStroke(new BasicStroke(1));
+        graphics.setStroke(new BasicStroke(2));
         for (int node = 0; node < newNodes2.size() - 1; node++) {
             double uy = newNodes2.get(node).getY() * 10;
             double ux = newNodes2.get(node).getX() * 10;
