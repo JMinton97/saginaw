@@ -19,9 +19,8 @@ import java.util.List;
 public class MyGraph {
     //    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
     private static Map<Long, MyNode> dictionary;
-    private static Map<Long, MyWay> mapRoads;
-    private static HashMap<Long, ArrayList<Long>> allWayNodes;  //contains each node referenced in the ways we extract,
-                                                                // mapped to a list of way ids that the node is part of
+    private static ArrayList<MyWay> mapRoads;
+    private static HashMap<Long, ArrayList<Long>> allWayNodes;
     private static boolean parsingNodes;
     private static int counter;
     private static HashSet<Long> junctions;
@@ -30,7 +29,7 @@ public class MyGraph {
 
     public MyGraph(File file) throws IOException {
         dictionary = new HashMap<>(); //NOTE - STORING NODE ID TWICE!!!
-        mapRoads = new HashMap<>();
+        mapRoads = new ArrayList<>();
         allWayNodes = new HashMap<>();
         junctions = new HashSet<>();
         junctions2 = new HashSet<>();
@@ -39,13 +38,13 @@ public class MyGraph {
         InputStream input = new FileInputStream(file);
         BlockReaderAdapter brad = new TestBinaryParser();
         new BlockInputStream(input, brad).process();
+        System.out.println(allWayNodes.get(Long.parseLong("3442775930")));
         System.out.println("Map roads pre-split:      " + mapRoads.size());
-        mapRoads = splitWays(mapRoads, false);
+        mapRoads = splitWays(mapRoads, true);
         System.out.println("Map roads post-split:     " + mapRoads.size());
         System.out.println("Number of way nodes:      " + allWayNodes.size());
+        System.out.println(allWayNodes.get(Long.parseLong("3442775930")));
 //        System.out.println("Number of junction nodes: " + junctions.size());
-
-        System.out.println(junctions2.size());
 
 //        for(Long j : junctions){
 //            if(!junctions2.contains(j)){
@@ -58,7 +57,7 @@ public class MyGraph {
         BlockReaderAdapter brad2 = new TestBinaryParser();
         new BlockInputStream(input2, brad2).process();
 
-        for(MyWay way : mapRoads.values()){
+        for(MyWay way : mapRoads){
             double length = 0;
             long lastNode = way.getWayNodes().get(0);
             for(long node : way.getWayNodes()){
@@ -68,26 +67,43 @@ public class MyGraph {
             way.setLength(length);
         }
 
+        System.out.println(allWayNodes.get(Long.parseLong("3442775930")));
+
         Map<Long, Set<Pair<Long, Double>>> graph = new HashMap<Long, Set<Pair<Long, Double>>>();
 
-
         for(Long node : allWayNodes.keySet()){ //adding each vertex to the graph
-            graph.put(node, new HashSet<Pair<Long, Double>>());
-        }
-
-        for(Long node : allWayNodes.keySet()){ //iterate through each vertice
-            for(long way : allWayNodes.get(node)){ //iterate through each edge for each vertice
-                List<Long> edgeNodes = mapRoads.get(mapRoads.lastIndexOf(way)).wayNodes; //get the edge
-                long otherEnd;
-                if(edgeNodes.get(0).equals(node)) {
-                    otherEnd = edgeNodes.get(edgeNodes.size() - 1);
-                } else {
-                    otherEnd = edgeNodes.get(0);
-                }
-                Double length = mapRoads.get(mapRoads.lastIndexOf(way)).getLength();
-                graph.get(node).add(new Pair(otherEnd, length));
+            if(allWayNodes.get(node).size() > 1){
+                graph.put(node, new HashSet<Pair<Long, Double>>());
             }
         }
+
+        for(MyWay way : mapRoads){ //iterate through every edge
+//            System.out.println(way.getWayId());
+            List<Long> wayNodes = way.getWayNodes();
+            if(wayNodes.size() > 1){
+                long fstVert = wayNodes.get(0);
+                long lstVert = wayNodes.get(1); //should be a two-item list
+                if(!graph.containsKey(fstVert)){
+                    graph.put(fstVert, new HashSet<Pair<Long, Double>>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
+                }
+                if(!graph.containsKey(lstVert)){
+                    graph.put(lstVert, new HashSet<Pair<Long, Double>>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
+                }
+                graph.get(fstVert).add(new Pair(wayNodes.get(1), way.getLength()));
+                graph.get(lstVert).add(new Pair(wayNodes.get(0), way.getLength()));
+            }
+        }
+
+        for(long vert : graph.keySet()){
+            Set<Pair<Long, Double>> neighbours = graph.get(vert);
+            ArrayList<Long> neighbourNodes = new ArrayList<>();
+            for(Pair<Long, Double> neighbour : neighbours){
+                neighbourNodes.add(neighbour.fst);
+            }
+            System.out.println("Node: " + vert + " Neighbours: " + neighbourNodes.toString());
+        }
+
+        System.out.println(graph.size());
     }
 
     public double haversineDistance(long a, long b){
@@ -191,27 +207,27 @@ public class MyGraph {
                                 MyWay tempWay = buildMyWay(w);
                                 tempWay.setType(WayType.ROAD);
                                 tempWay.setRoadType(RoadType.MOTORWAY);
-                                mapRoads.put(w.getId(), tempWay);
+                                mapRoads.add(tempWay);
                             } else if (value.matches("trunk|trunk_link")){
                                 MyWay tempWay = buildMyWay(w);
                                 tempWay.setType(WayType.ROAD);
                                 tempWay.setRoadType(RoadType.TRUNK);
-                                mapRoads.put(w.getId(), tempWay);
+                                mapRoads.add(tempWay);
                             } else if (value.matches("primary|primary_link")){
                                 MyWay tempWay = buildMyWay(w);
                                 tempWay.setType(WayType.ROAD);
                                 tempWay.setRoadType(RoadType.PRIMARY);
-                                mapRoads.put(w.getId(), tempWay);
+                                mapRoads.add(tempWay);
                             } else if (value.matches("secondary|secondary_link")){
                                 MyWay tempWay = buildMyWay(w);
                                 tempWay.setType(WayType.ROAD);
                                 tempWay.setRoadType(RoadType.SECONDARY);
-                                mapRoads.put(w.getId(), tempWay);
+                                mapRoads.add(tempWay);
                             } else if (value.matches("tertiary|unclassified|residential|service|tertiary_link|road")){
                                 MyWay tempWay = buildMyWay(w);
                                 tempWay.setType(WayType.ROAD);
                                 tempWay.setRoadType(RoadType.ROAD);
-                                mapRoads.put(w.getId(), tempWay);
+                                mapRoads.add(tempWay);
                             }
                         }
 //                        if(key.equals("railway")){
@@ -282,9 +298,9 @@ public class MyGraph {
         }
     }
 
-    private ArrayList<MyWay> splitWays(Map<Long, MyWay> ways, boolean strip){
+    private ArrayList<MyWay> splitWays(ArrayList<MyWay> ways, boolean strip){
         ArrayList<MyWay> newWays = new ArrayList<>();
-        for(MyWay w : ways.values()){
+        for(MyWay w : ways){
             ArrayList<MyWay> splitWays = splitWay(w, strip);
                 newWays.addAll(splitWays);
             }
@@ -305,6 +321,7 @@ public class MyGraph {
         for(int i = 1; i < (way.getWayNodes().size() - 1); i++){
             if(allWayNodes.get(way.getWayNodes().get(i)).size() > 1){
                 MyWay tempWay = new MyWay (way.getWayNodes().subList(0, i + 1));
+                allWayNodes.get(way.getWayNodes().get(i)).add(way.wayId);
                 ArrayList<MyWay> tempWayRest = splitWay(new MyWay (way.getWayNodes().subList(i, way.getWayNodes().size())), strip);
                 tempWayRest.add(tempWay);
                 returnWays = tempWayRest;
