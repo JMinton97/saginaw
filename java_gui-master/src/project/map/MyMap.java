@@ -5,6 +5,7 @@ import crosby.binary.Osmformat.*;
 import crosby.binary.file.*;
 //import crosby.binary.test.MyNode;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.GeneralPath;
 import java.awt.image.BufferedImage;
@@ -313,6 +314,22 @@ public class MyMap {
                 mapGraphics.drawLine((int) Math.round(ux), (int) Math.round(uy), (int) Math.round(vx), (int) Math.round(vy));
                 linesDrawn++;
             }
+        }
+    }
+
+    public void drawRoute(List<Long> route) {
+        Graphics2D mapGraphics = map.createGraphics();
+        mapGraphics.setPaint(Color.RED);
+        mapGraphics.setStroke(new BasicStroke((8)));
+        drawWay2(mapGraphics, route);
+    }
+
+    public void saveMap(){
+        try {
+            File outputfile = new File("route.png");
+            ImageIO.write(map, "png", outputfile);
+        } catch (IOException e) {
+            // handle exception
         }
     }
 

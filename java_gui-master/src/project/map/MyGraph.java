@@ -44,30 +44,33 @@ public class MyGraph {
         System.out.println("Map roads post-split:     " + edges.size());
         System.out.println("Number of way nodes:      " + allWayNodes.size());
 
-//        parsingNodes = true;
-//        InputStream input2 = new FileInputStream(file);
-//        BlockReaderAdapter brad2 = new OSMBinaryParser();
-//        new BlockInputStream(input2, brad2).process();
+        parsingNodes = true;
+        InputStream input2 = new FileInputStream(file);
+        BlockReaderAdapter brad2 = new OSMBinaryParser();
+        new BlockInputStream(input2, brad2).process();
 
         for(MyWay way : edges){ //determine the length of every edge
             double length = 0;
             long lastNode = way.getWayNodes().get(0);
             for(long node : way.getWayNodes()){
-//                length = length + haversineDistance(lastNode, node);
-                length = 0;
+                length = length + haversineDistance(lastNode, node);
+//                length = 0;
                 lastNode = node;
+            }
+            if (length < 0){
+                System.out.println("waaaah");
             }
             way.setLength(length);
         }
 
         graph = new HashMap<Long, Set<Pair<Long, Double>>>();
 
-        System.out.println("Adding vertices");
-        for(Long node : allWayNodes.keySet()){ //adding each vertex to the graph
-            if(allWayNodes.get(node) > 1){
-                graph.put(node, new HashSet<Pair<Long, Double>>());
-            }
-        }
+//        System.out.println("Adding vertices");
+//        for(Long node : allWayNodes.keySet()){ //adding each vertex to the graph
+//            if(allWayNodes.get(node) > 1){
+//                graph.put(node, new HashSet<Pair<Long, Double>>());
+//            }
+//        } //this bit is actually redundant
 
         System.out.println("Adding connections");
         for(MyWay way : edges){ //iterate through every edge and add neighbours to graph vertices accordingly
@@ -75,7 +78,7 @@ public class MyGraph {
             List<Long> wayNodes = way.getWayNodes();
             if(wayNodes.size() > 1){
                 long fstVert = wayNodes.get(0);
-                long lstVert = wayNodes.get(1); //should be a two-item list
+                long lstVert = wayNodes.get(wayNodes.size() - 1); //could be .get(0) if we've stripped the ways
                 if(!graph.containsKey(fstVert)){
                     graph.put(fstVert, new HashSet<Pair<Long, Double>>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
                 }
@@ -88,6 +91,7 @@ public class MyGraph {
         }
 
         System.out.println(graph.size());
+        System.out.println(graph.containsKey(Long.parseLong("1107401572")));
         try {
             Thread.sleep(60000);
         } catch (InterruptedException e) {
@@ -103,7 +107,7 @@ public class MyGraph {
             for(Pair<Long, Double> neighbour : neighbours){
                 neighbourNodes.add(neighbour.fst);
             }
-            System.out.println("Node: " + vert + " Neighbours: " + neighbourNodes.toString());
+//            System.out.println("Node: " + vert + " Neighbours: " + neighbourNodes.toString());
         }
 
         System.out.println(graph.size());
@@ -347,5 +351,13 @@ public class MyGraph {
             }
         }
         return returnWays;
+    }
+
+    public Map<Long, Set<Pair<Long, Double>>> getGraph() {
+        return graph;
+    }
+
+    public Set<Pair<Long, Double>> adj(Long v){
+        return graph.get(v);
     }
 }
