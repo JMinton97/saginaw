@@ -18,66 +18,59 @@ import java.util.List;
 
 public class MyGraph {
     //    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
-    private static Map<Long, MyNode> dictionary;
-    private static ArrayList<MyWay> mapRoads;
-    private static HashMap<Long, ArrayList<Long>> allWayNodes;
+    private static Map<Long, MyNode> dictionary; //maps a node id to a MyNode object containing more details
+    private static ArrayList<MyWay> mapRoads; //a list of all connections between nodes. Later becomes all graph edges.
+    private static HashMap<Long, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a list of ways each one is part of
     private static boolean parsingNodes;
-    private static int counter;
     private static HashSet<Long> junctions;
-    private static HashSet<Long> junctions2;
+    private static Map<Long, Set<Pair<Long, Double>>> graph;
 
 
     public MyGraph(File file) throws IOException {
         dictionary = new HashMap<>(); //NOTE - STORING NODE ID TWICE!!!
         mapRoads = new ArrayList<>();
+        ArrayList<MyWay> edges = new ArrayList<>();
         allWayNodes = new HashMap<>();
         junctions = new HashSet<>();
-        junctions2 = new HashSet<>();
         parsingNodes = false;
-        counter = 0;
         InputStream input = new FileInputStream(file);
-        BlockReaderAdapter brad = new TestBinaryParser();
+        BlockReaderAdapter brad = new OSMBinaryParser();
+        long startTime = System.nanoTime();
         new BlockInputStream(input, brad).process();
-        System.out.println(allWayNodes.get(Long.parseLong("3442775930")));
+        long endTime = System.nanoTime();
+        System.out.println((endTime - startTime) / 1000000000);
         System.out.println("Map roads pre-split:      " + mapRoads.size());
-        mapRoads = splitWays(mapRoads, true);
-        System.out.println("Map roads post-split:     " + mapRoads.size());
+        edges = splitWays(mapRoads, true);
+        System.out.println("Map roads post-split:     " + edges.size());
         System.out.println("Number of way nodes:      " + allWayNodes.size());
-        System.out.println(allWayNodes.get(Long.parseLong("3442775930")));
-//        System.out.println("Number of junction nodes: " + junctions.size());
 
-//        for(Long j : junctions){
-//            if(!junctions2.contains(j)){
-//                System.out.println("AWWW NO");
-//            }
-//        }
+//        parsingNodes = true;
+//        InputStream input2 = new FileInputStream(file);
+//        BlockReaderAdapter brad2 = new OSMBinaryParser();
+//        new BlockInputStream(input2, brad2).process();
 
-        parsingNodes = true;
-        InputStream input2 = new FileInputStream(file);
-        BlockReaderAdapter brad2 = new TestBinaryParser();
-        new BlockInputStream(input2, brad2).process();
-
-        for(MyWay way : mapRoads){
+        for(MyWay way : edges){ //determine the length of every edge
             double length = 0;
             long lastNode = way.getWayNodes().get(0);
             for(long node : way.getWayNodes()){
-                length = length + haversineDistance(lastNode, node);
+//                length = length + haversineDistance(lastNode, node);
+                length = 0;
                 lastNode = node;
             }
             way.setLength(length);
         }
 
-        System.out.println(allWayNodes.get(Long.parseLong("3442775930")));
+        graph = new HashMap<Long, Set<Pair<Long, Double>>>();
 
-        Map<Long, Set<Pair<Long, Double>>> graph = new HashMap<Long, Set<Pair<Long, Double>>>();
-
+        System.out.println("Adding vertices");
         for(Long node : allWayNodes.keySet()){ //adding each vertex to the graph
-            if(allWayNodes.get(node).size() > 1){
+            if(allWayNodes.get(node) > 1){
                 graph.put(node, new HashSet<Pair<Long, Double>>());
             }
         }
 
-        for(MyWay way : mapRoads){ //iterate through every edge
+        System.out.println("Adding connections");
+        for(MyWay way : edges){ //iterate through every edge and add neighbours to graph vertices accordingly
 //            System.out.println(way.getWayId());
             List<Long> wayNodes = way.getWayNodes();
             if(wayNodes.size() > 1){
@@ -94,6 +87,16 @@ public class MyGraph {
             }
         }
 
+        System.out.println(graph.size());
+        try {
+            Thread.sleep(60000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        print();
+    }
+
+    public void print(){ //print graph contents
         for(long vert : graph.keySet()){
             Set<Pair<Long, Double>> neighbours = graph.get(vert);
             ArrayList<Long> neighbourNodes = new ArrayList<>();
@@ -125,7 +128,7 @@ public class MyGraph {
 //        return Math.sqrt(Math.pow((nodeB.getLati() - nodeA.getLati()), 2) + Math.pow((nodeB.getLongi() - nodeA.getLongi()), 2));
     }
 
-    public static class TestBinaryParser extends BinaryParser {
+    public static class OSMBinaryParser extends BinaryParser {
 
         @Override
         protected void parseRelations(List<Relation> rels) {
@@ -194,6 +197,7 @@ public class MyGraph {
 
         @Override
         protected void parseWays(List<Way> ways) {
+//            System.out.println("Parsing way");
             if(!parsingNodes){
 //                System.out.println("Parsing ways.");
                 for (Way w : ways) {
@@ -271,19 +275,28 @@ public class MyGraph {
 
         private MyWay buildMyWay(Way w){
             MyWay tempWay = new MyWay();
-            tempWay.setWayId(w.getId());
+            long id = w.getId();
+            tempWay.setWayId(id);
             long lastRef = 0;
             for (Long ref : w.getRefsList()) {
                 lastRef+= ref;
                 tempWay.addWayNode(lastRef);
-                if(allWayNodes.containsKey(lastRef)){
-                    junctions.add(lastRef);
-                    allWayNodes.get(lastRef).add(w.getId());
+                int wayCount;
+                if(allWayNodes.get(lastRef) != null){
+                    wayCount = allWayNodes.get(lastRef);
                 } else {
-                    ArrayList<Long> nodeWays = new ArrayList<>();
-                    nodeWays.add(w.getId());
-                    allWayNodes.put(lastRef, nodeWays);
+                    wayCount = 0;
                 }
+                allWayNodes.put(lastRef, wayCount + 1);
+
+//                if(allWayNodes.containsKey(lastRef)){
+//                    junctions.add(lastRef);
+//                    allWayNodes.get(lastRef).add(w.getId());
+//                } else {
+//                    ArrayList<Long> nodeWays = new ArrayList<>();
+//                    nodeWays.add(w.getId());
+//                    allWayNodes.put(lastRef, nodeWays);
+//                }
             }
             return tempWay;
         }
@@ -319,9 +332,9 @@ public class MyGraph {
         ArrayList<MyWay> returnWays = new ArrayList<>();
         returnWays.add(way);
         for(int i = 1; i < (way.getWayNodes().size() - 1); i++){
-            if(allWayNodes.get(way.getWayNodes().get(i)).size() > 1){
+            if(allWayNodes.get(way.getWayNodes().get(i)) > 1){
                 MyWay tempWay = new MyWay (way.getWayNodes().subList(0, i + 1));
-                allWayNodes.get(way.getWayNodes().get(i)).add(way.wayId);
+//                allWayNodes.get(way.getWayNodes().get(i)).add(way.wayId);
                 ArrayList<MyWay> tempWayRest = splitWay(new MyWay (way.getWayNodes().subList(i, way.getWayNodes().size())), strip);
                 tempWayRest.add(tempWay);
                 returnWays = tempWayRest;
