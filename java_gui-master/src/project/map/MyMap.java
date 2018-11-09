@@ -56,11 +56,11 @@ public class MyMap {
         InputStream input = new FileInputStream(file);
         BlockReaderAdapter brad = new TestBinaryParser();
         new BlockInputStream(input, brad).process();
-        System.out.println("Number of way nodes: " + allWayNodes.size());
-        System.out.println("Number of junction nodes: " + junctions.size());
-        System.out.println("Map roads pre-split:      " + mapRoads.size());
+//        System.out.println("Number of way nodes: " + allWayNodes.size());
+//        System.out.println("Number of junction nodes: " + junctions.size());
+//        System.out.println("Map roads pre-split:      " + mapRoads.size());
         mapRoadsSplit = splitWays(mapRoads);
-        System.out.println("Map roads post-split:     " + mapRoadsSplit.size());
+//        System.out.println("Map roads post-split:     " + mapRoadsSplit.size());
         parsingNodes = true;
         InputStream input2 = new FileInputStream(file);
         BlockReaderAdapter brad2 = new TestBinaryParser();
@@ -114,46 +114,46 @@ public class MyMap {
         for(MyWay w: mapGreens){
             drawWay(w, mapGraphics, false);
         }
-        System.out.println("drew greens");
+//        System.out.println("drew greens");
 
         for(MyWay w: mapForests){
             drawWay(w, mapGraphics, false);
         }
-        System.out.println("drew forests");
+//        System.out.println("drew forests");
 
         for(MyWay w: mapWaterBodies){
             drawWay(w, mapGraphics, false);
         }
-        System.out.println("drew water");
+//        System.out.println("drew water");
 
         for(MyWay w: mapWaterWays){
             drawWay(w, mapGraphics, false);
         }
-        System.out.println("drew rivers");
+//        System.out.println("drew rivers");
 
         for(MyWay w: mapRails){
             drawWay(w, mapGraphics, false);
         }
-        System.out.println("drew rails");
+//        System.out.println("drew rails");
 
         linesDrawn = 0;
         for(MyWay w: mapRoads){
             drawWay(w, mapGraphics, true);
         }
-        System.out.println("drew roads under");
-        System.out.println(linesDrawn);
+//        System.out.println("drew roads under");
+//        System.out.println(linesDrawn);
 
         linesDrawn = 0;
         for(MyWay w: mapRoadsSplit){
             drawWay(w, mapGraphics, false);
         }
-        System.out.println("drew roads over");
+//        System.out.println("drew roads over");
         System.out.println(linesDrawn);
 
         for(MyWay w: mapCycles){
             drawWay(w, mapGraphics, false);
         }
-        System.out.println("drew cycles");
+//        System.out.println("drew cycles");
 //        try {
 //            File outputfile = new File("saved.png");
 //            ImageIO.write(map, "png", outputfile);
@@ -306,7 +306,7 @@ public class MyMap {
             if (dictionary.containsKey(wayNodes.get(node)) && dictionary.containsKey(wayNodes.get(node + 1))) {
                 u = v; //dictionary.get(wayNodes.get(node)); //efficiency by using previous v?
                 v = dictionary.get(wayNodes.get(node + 1));
-                System.out.println(u.toString());
+//                System.out.println(u.toString());
                 double uy = Math.abs(u.getLati() - northMost) * spaceModifierY;
                 double ux = Math.abs(u.getLongi() - westMost) * spaceModifierX;
                 double vy = Math.abs(v.getLati() - northMost) * spaceModifierY;

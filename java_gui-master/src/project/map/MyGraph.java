@@ -91,13 +91,7 @@ public class MyGraph {
         }
 
         System.out.println(graph.size());
-        System.out.println(graph.containsKey(Long.parseLong("1107401572")));
-        try {
-            Thread.sleep(60000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        print();
+
     }
 
     public void print(){ //print graph contents
@@ -359,5 +353,21 @@ public class MyGraph {
 
     public Set<Pair<Long, Double>> adj(Long v){
         return graph.get(v);
+    }
+
+    public ArrayList<MyNode> refsToNodes(ArrayList<Long> refs){
+        ArrayList<MyNode> nodes = new ArrayList<>();
+        for(Long ref : refs){
+            nodes.add(dictionary.get(ref));
+        }
+        return nodes;
+    }
+
+    public ArrayList<Long> nodesToRefs(ArrayList<MyNode> nodes){
+        ArrayList<Long> refs = new ArrayList<>();
+        for(MyNode node : nodes){
+            refs.add(node.getNodeId());
+        }
+        return refs;
     }
 }

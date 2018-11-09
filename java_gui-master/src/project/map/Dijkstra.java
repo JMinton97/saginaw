@@ -25,7 +25,7 @@ public class Dijkstra {
         pq.add(startNode);
 
         while(!pq.isEmpty()){
-            System.out.println("Dijkstra!");
+//            System.out.println("Dijkstra!");
             long v = pq.poll();
             for (Pair<Long, Double> e : graph.adj(v)){
                 relax(v, e);

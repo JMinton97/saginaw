@@ -45,4 +45,12 @@ public class MyNode {
         visited++;
     }
 
+    public double getX(){
+        return longi;
+    }
+
+    public double getY(){
+        return lati;
+    }
+
 }

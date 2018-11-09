@@ -12,45 +12,45 @@ import java.util.Map;
 
 public class DouglasPeucker {
 
-    public static List<Point2D> decimate(List<Point2D> nodes, Double threshold) {
-        Point2D first = nodes.get(0);
-        Point2D last = nodes.get(nodes.size() - 1);
-        Line2D line = new Line2D.Double(first, last);
-        int furthest = 0;
-        Double distance = 0.0;
-        for(int i = 0; i < nodes.size(); i++) {
-            Double thisDistance = line.ptLineDist(nodes.get(i));
-            if (thisDistance > distance) {
-                furthest = i;
-                distance = thisDistance;
-            }
-        }
-        if(distance > threshold){
-            List<Point2D> segment1 = decimate(nodes.subList(0, furthest + 1), threshold);
-            List<Point2D> segment2 = decimate(nodes.subList(furthest, nodes.size()), threshold);
-            segment1.addAll(segment2.subList(1, segment2.size()));
-            return segment1;
-        } else {
-            ArrayList<Point2D> returnList = new ArrayList<Point2D>();
-            returnList.add(nodes.get(0));
-            returnList.add(nodes.get(nodes.size() - 1));
-            return returnList;
-        }
-    }
+//    public static List<MyNode> decimate(List<MyNode> nodes, Double threshold) {
+//        MyNode first = nodes.get(0);
+//        MyNode last = nodes.get(nodes.size() - 1);
+//        Line2D line = new Line2D.Double(first, last);
+//        int furthest = 0;
+//        Double distance = 0.0;
+//        for(int i = 0; i < nodes.size(); i++) {
+//            Double thisDistance = line.ptLineDist(nodes.get(i));
+//            if (thisDistance > distance) {
+//                furthest = i;
+//                distance = thisDistance;
+//            }
+//        }
+//        if(distance > threshold){
+//            List<MyNode> segment1 = decimate(nodes.subList(0, furthest + 1), threshold);
+//            List<MyNode> segment2 = decimate(nodes.subList(furthest, nodes.size()), threshold);
+//            segment1.addAll(segment2.subList(1, segment2.size()));
+//            return segment1;
+//        } else {
+//            ArrayList<MyNode> returnList = new ArrayList<MyNode>();
+//            returnList.add(nodes.get(0));
+//            returnList.add(nodes.get(nodes.size() - 1));
+//            return returnList;
+//        }
+//    }
 
-    public static ArrayList<Point2D> simplify(ArrayList<Point2D> nodes, double tolerance){
+    public static ArrayList<MyNode> simplify(ArrayList<MyNode> nodes, double tolerance){
         long startTime = System.nanoTime();
         PathHull[] leftAndRight = build(nodes, 0, nodes.size() - 1);
         long endTime = System.nanoTime();
         System.out.println("Inner: " + (endTime - startTime) / 1000);
-        ArrayList<Point2D> newNodes = new ArrayList<>();
+        ArrayList<MyNode> newNodes = new ArrayList<>();
         newNodes.add(nodes.get(0));
         newNodes.addAll(DPHull(nodes, 0, nodes.size() - 1, leftAndRight, tolerance));
         return newNodes;
     }
 
-    public static ArrayList<Point2D> DPHull(ArrayList<Point2D> points, int i, int j, PathHull[] leftAndRight, double tolerance) {
-        ArrayList<Point2D> returnPoints = new ArrayList<>();
+    public static ArrayList<MyNode> DPHull(ArrayList<MyNode> points, int i, int j, PathHull[] leftAndRight, double tolerance) {
+        ArrayList<MyNode> returnPoints = new ArrayList<>();
         PathHull left = leftAndRight[0];
         PathHull right = leftAndRight[1];
         double[] line = crossProduct(points.get(i), points.get(j));
@@ -86,7 +86,7 @@ public class DouglasPeucker {
                 return returnPoints;
             } else {
                 left.split(lextr);
-                ArrayList<Point2D> returnPoints2 = new ArrayList<>(DPHull(points, lextr, j, new PathHull[]{left, right}, tolerance));                leftAndRight = build(points, i, lextr);
+                ArrayList<MyNode> returnPoints2 = new ArrayList<>(DPHull(points, lextr, j, new PathHull[]{left, right}, tolerance));                leftAndRight = build(points, i, lextr);
                 returnPoints = DPHull(points, i, lextr, leftAndRight, tolerance);
                 returnPoints.addAll(returnPoints2);
                 return returnPoints;
@@ -94,7 +94,7 @@ public class DouglasPeucker {
         }
     }
 
-    private static PathHull[] build(ArrayList<Point2D> points, int i, int j){
+    private static PathHull[] build(ArrayList<MyNode> points, int i, int j){
         int phTag = i + ((j - i) / 2);
         PathHull left = new PathHull(phTag, phTag - 1);
         for(int k = phTag - 2; k >= i; k--){
@@ -110,7 +110,7 @@ public class DouglasPeucker {
         return new PathHull[] {left, right};
     }
 
-    private static int findExtreme(ArrayList<Point2D> nodes, PathHull pathHull, double[] line){
+    private static int findExtreme(ArrayList<MyNode> nodes, PathHull pathHull, double[] line){
 //        ArrayList<Integer> list = pathHull.getQueueAsList();
         int[] list = pathHull.getQueueAsList();
         if(list.length > 6){
@@ -118,15 +118,20 @@ public class DouglasPeucker {
             int low = 0;
             int high = list.length - 2;
             boolean signBreak;
-            boolean signBase = slopeSign(line, nodes.get(list[low]), nodes.get(list[high]));
+            boolean signBase = slopeSign(line, nodes.get(list[high]), nodes.get(list[low]));
             do{
                 System.out.println("here");
+                System.out.println("high " + high + " low " + low);
+                for(int x : pathHull.getQueueAsList()){
+                    System.out.print(nodes.get(x).getNodeId() + " ");
+                }
                 brk = (low + high) / 2;
                 signBreak = slopeSign(line, nodes.get(list[brk]), nodes.get(list[brk + 1]));
                 if (signBase == signBreak){
                     if (signBase == (slopeSign(line, nodes.get(list[low]), nodes.get(list[brk + 1])))){
                         low = brk + 1;
                     }else{
+
                         high = brk;
                     }
                 }
@@ -170,12 +175,12 @@ public class DouglasPeucker {
         }
     }
 
-    public static boolean slopeSign (double[] line, Point2D a, Point2D b){ //returns true for a 'positive' line, false otherwise
+    public static boolean slopeSign (double[] line, MyNode a, MyNode b){ //returns true for a 'positive' line, false otherwise
         double res = (line[1] * (a.getX() - b.getX())) + (line[2] * (a.getY() - b.getY()));
         return res >= 0;
     }
 
-    public static double[] crossProduct(Point2D p, Point2D q){
+    public static double[] crossProduct(MyNode p, MyNode q){
         double[] line = new double[3];
         line[0] = (p.getX() * q.getY()) - (p.getY() * q.getX());
         line[1] = - q.getY() + p.getY();
@@ -183,7 +188,7 @@ public class DouglasPeucker {
         return line;
     }
 
-    public static double dotProduct(Point2D p, double[] line){
+    public static double dotProduct(MyNode p, double[] line){
         return Math.abs(line[0] + (p.getX() * line[1]) + (p.getY() * line[2]));
     }
 
@@ -195,7 +200,14 @@ public class DouglasPeucker {
      @return {@code true} if {@code r} is to the left of {@code p} as {@code p} faces {@code q}, else {@code false}
      */
 
-    public static boolean leftOf(Point2D p, Point2D q, Point2D r) {
-        return ( ((q.getX() - p.getX()) * (r.getY() - p.getY()) - (q.getY() - p.getY()) * (r.getX() - p.getX()) ) > 0);
+    public static boolean leftOf(MyNode p, MyNode q, MyNode r) {
+        double qx = q.getX();
+        double qy = q.getY();
+        double px = p.getX();
+        double py = p.getY();
+        double rx = r.getX();
+        double ry = r.getY();
+
+        return ( ((qx - px) * (ry - py) - (qy - py) * (rx - px) ) > 0);
     }
 }

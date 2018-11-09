@@ -41,7 +41,7 @@ public class PathHull {
 //        System.out.println(deque.toString());
     }
 
-    public void add(int p, ArrayList<Point2D> nodes){
+    public void add(int p, ArrayList<MyNode> nodes){
         boolean topFlag, botFlag;
         topFlag = DouglasPeucker.leftOf(nodes.get(deque[top]), nodes.get(deque[top - 1]), nodes.get(p));
         botFlag = DouglasPeucker.leftOf(nodes.get(deque[bot + 1]), nodes.get(deque[bot]), nodes.get(p));
