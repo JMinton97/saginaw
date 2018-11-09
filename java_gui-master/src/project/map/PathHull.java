@@ -97,11 +97,22 @@ public class PathHull {
     protected void split(Integer p){
 //        System.out.println("split");
 //        System.out.println("split");
+        for(int j : getQueueAsList()){
+            System.out.print(j + " ");
+        }
+        System.out.println();
+        for(int j = 0; j < historyPoints.size(); j++){
+            System.out.print("(" + historyPoints.get(j) + " " + historyOps.get(j) + ")");
+        }
+        System.out.println();
         int tempPoint;
         int tempOp;
 //        System.out.println(getQueueAsList());
-        while(!historyOps.empty() && ((historyPoints.peek()) != p || historyOps.peek() != 0)){
-//            System.out.println("loop");
+        while(!historyOps.empty() && ((!(historyPoints.peek()).equals(p)) || historyOps.peek() != 0)){
+            for(int j : getQueueAsList()){
+                System.out.print(j + " ");
+            }
+            System.out.println();
             tempOp = historyOps.pop();
             tempPoint = historyPoints.pop();
 //            System.out.println(tempOp + " " + tempPoint);
@@ -119,6 +130,9 @@ public class PathHull {
             }
 //            System.out.println(getQueueAsList());
 //            System.out.println("Next: " history);
+        }
+        if(getQueueAsList().length == 0){
+            System.out.println("Split on " + p + " gave us empty stack");
         }
     }
 

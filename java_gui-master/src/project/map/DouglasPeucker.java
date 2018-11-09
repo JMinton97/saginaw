@@ -50,43 +50,76 @@ public class DouglasPeucker {
     }
 
     public static ArrayList<MyNode> DPHull(ArrayList<MyNode> points, int i, int j, PathHull[] leftAndRight, double tolerance) {
+//        System.out.println("DPHull");
+        System.out.println("i = " + i + " j = " + j );
         ArrayList<MyNode> returnPoints = new ArrayList<>();
         PathHull left = leftAndRight[0];
         PathHull right = leftAndRight[1];
         double[] line = crossProduct(points.get(i), points.get(j));
+        double len_sq = line[1] * line[1] + line[2] * line[2];
+
         if (j - i <= 1) {
             returnPoints.add(points.get(j));
             return returnPoints;
         }
+
         int lextr = findExtreme(points, left, line);
         double ldist = dotProduct(points.get(lextr), line);
-        double len_sq = line[1] * line[1] + line[2] * line[2];
+        System.out.println("ldist " + ldist);
+        if(left.getQueueAsList().length == 0){
+            ldist = 0;
+            System.exit(0);
+        }
+
         int rextr = findExtreme(points, right, line);
         double rdist = dotProduct(points.get(rextr), line);
-        if (ldist <= rdist) { //split on rextr
-            if (rdist * rdist <= len_sq * (tolerance * tolerance)) {
+        System.out.println("rdist " + rdist);
+        if(right.getQueueAsList().length == 0){
+            rdist = 0;
+            System.out.println("WAAAAAAH");
+            System.exit(0);
+        }
+        System.out.println(points.get(lextr).getNodeId());
 
+//        System.out.println(i + " " + j);
+//        System.out.println(points.get(i).getNodeId() + " " + points.get(j).getNodeId());
+//        System.out.println((rdist == 0 && ldist == 0));
+//        if((rdist == 0 && ldist == 0)){
+//            System.exit(0);
+//        }
+        if (ldist <= rdist) { //split on rextr
+//            System.out.println("right");
+            if (rdist * rdist <= len_sq * (tolerance * tolerance)) {
                 returnPoints.add(points.get(j));
                 return returnPoints;
             } else {
+                System.out.println("OOOOOHHHHHH");
                 if (right.getPhTag() == rextr) {
                     leftAndRight = build(points, i, rextr);
                 } else {
                     right.split(rextr);
                     leftAndRight = new PathHull[]{left, right};
                 }
+                System.out.println("Hulling to rextr " + rextr);
                 returnPoints = DPHull(points, i, rextr, leftAndRight, tolerance);
                 leftAndRight = build(points, rextr, j);
+                System.out.println("Hulling from rextr " + rextr);
                 returnPoints.addAll(DPHull(points, rextr, j, leftAndRight, tolerance));
                 return returnPoints;
             }
         } else { //split on lextr
+//            System.out.println("left");
             if (ldist * ldist <= len_sq * (tolerance * tolerance)) {
                 returnPoints.add(points.get(j));
                 return returnPoints;
             } else {
                 left.split(lextr);
-                ArrayList<MyNode> returnPoints2 = new ArrayList<>(DPHull(points, lextr, j, new PathHull[]{left, right}, tolerance));                leftAndRight = build(points, i, lextr);
+                System.out.println("Hulling from lextr " + lextr);
+                ArrayList<MyNode> returnPoints2 = new ArrayList<>();
+                returnPoints2 = DPHull(points, lextr, j, new PathHull[]{left, right}, tolerance);
+                leftAndRight = build(points, i, lextr);
+//                System.out.println("i " + i + " lextr " + lextr);
+                System.out.println("Hulling to lextr " + lextr);
                 returnPoints = DPHull(points, i, lextr, leftAndRight, tolerance);
                 returnPoints.addAll(returnPoints2);
                 return returnPoints;
@@ -104,6 +137,7 @@ public class DouglasPeucker {
         for(int k = phTag + 2; k <= j; k++){
             right.add(k, points);
         }
+//        System.out.println("Built from " + i + " to " + j + ". Left length: " + left.getQueueAsList().length + ". Right length: " + right.getQueueAsList().length);
         right.setPhTag(phTag);
         left.setPhTag(phTag);
 
@@ -113,6 +147,7 @@ public class DouglasPeucker {
     private static int findExtreme(ArrayList<MyNode> nodes, PathHull pathHull, double[] line){
 //        ArrayList<Integer> list = pathHull.getQueueAsList();
         int[] list = pathHull.getQueueAsList();
+//        System.out.println("List length" + list.length);
         if(list.length > 6){
             int brk, mid, m1, m2;
             int low = 0;
@@ -120,11 +155,11 @@ public class DouglasPeucker {
             boolean signBreak;
             boolean signBase = slopeSign(line, nodes.get(list[high]), nodes.get(list[low]));
             do{
-                System.out.println("here");
-                System.out.println("high " + high + " low " + low);
-                for(int x : pathHull.getQueueAsList()){
-                    System.out.print(nodes.get(x).getNodeId() + " ");
-                }
+//                System.out.println("here");
+//                System.out.println("high " + high + " low " + low);
+//                for(int x : pathHull.getQueueAsList()){
+//                    System.out.print(nodes.get(x).getNodeId() + " ");
+//                }
                 brk = (low + high) / 2;
                 signBreak = slopeSign(line, nodes.get(list[brk]), nodes.get(list[brk + 1]));
                 if (signBase == signBreak){
@@ -158,19 +193,24 @@ public class DouglasPeucker {
             }
 
             if(dotProduct(nodes.get(list[low]), line) > dotProduct(nodes.get(list[m2]), line)){
+                System.out.println("extremity is " + list[low]);
                 return list[low];
             } else {
+                System.out.println("extremity is " + list[m2]);
                 return list[m2];
             }
         } else {
+//            System.out.println("yeah");
+            System.out.println("less than six, in fact " + list.length);
             double maxDist = 0;
-            int max = 0;
+            int max = list[0];
             for(Integer p : list){
                 if (dotProduct(nodes.get(p), line) > maxDist){
                     maxDist = dotProduct(nodes.get(p), line);
                     max = p;
                 }
             }
+            System.out.println("extremity (6) is " + max + "at distance " + maxDist);
             return max;
         }
     }
