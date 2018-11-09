@@ -1,6 +1,5 @@
 package project.map;
 
-import java.awt.geom.Point2D;
 import java.util.*;
 
 public class PathHull {
@@ -8,8 +7,8 @@ public class PathHull {
     private Stack<Integer> historyPoints;
     private Stack<Integer> historyOps;
     private int[] deque;
-    int top;
-    int bot;
+    private int top;
+    private int bot;
 
     public int getPhTag() {
         return phTag;
@@ -21,11 +20,7 @@ public class PathHull {
 
     private int phTag;
 
-    protected PathHull(Integer e1, Integer e2){
-//        deque = new LinkedList<>();
-//        deque.add(e1);
-//        deque.addFirst(e2);
-//        deque.addLast(e2);
+    PathHull(Integer e1, Integer e2){
         top = 5000;
         bot = 5000;
         deque = new int[10000];
@@ -95,27 +90,11 @@ public class PathHull {
     }
 
     protected void split(Integer p){
-//        System.out.println("split");
-//        System.out.println("split");
-        for(int j : getQueueAsList()){
-            System.out.print(j + " ");
-        }
-        System.out.println();
-        for(int j = 0; j < historyPoints.size(); j++){
-            System.out.print("(" + historyPoints.get(j) + " " + historyOps.get(j) + ")");
-        }
-        System.out.println();
         int tempPoint;
         int tempOp;
-//        System.out.println(getQueueAsList());
         while(!historyOps.empty() && ((!(historyPoints.peek()).equals(p)) || historyOps.peek() != 0)){
-            for(int j : getQueueAsList()){
-                System.out.print(j + " ");
-            }
-            System.out.println();
             tempOp = historyOps.pop();
             tempPoint = historyPoints.pop();
-//            System.out.println(tempOp + " " + tempPoint);
             if(tempOp == 0){
                 top--;
                 bot++;
@@ -128,19 +107,13 @@ public class PathHull {
                 bot--;
                 deque[bot] = tempPoint;
             }
-//            System.out.println(getQueueAsList());
-//            System.out.println("Next: " history);
-        }
-        if(getQueueAsList().length == 0){
-            System.out.println("Split on " + p + " gave us empty stack");
         }
     }
 
     protected int[] getQueueAsList(){
 //        return new ArrayList<Integer>(Arrays.asList(Arrays.copyOfRange(deque, bot, top)));
 //        System.out.println(top + " " + bot);
-        int[] sub = Arrays.copyOfRange(deque, bot, top);
-        return sub;
+        return Arrays.copyOfRange(deque, bot, top);
 //        return new ArrayList<Integer>(Arrays.asList(sub));
 //        return new ArrayList(deque);
     }

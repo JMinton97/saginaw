@@ -22,16 +22,16 @@ public class MyGraph {
     private static ArrayList<MyWay> mapRoads; //a list of all connections between nodes. Later becomes all graph edges.
     private static HashMap<Long, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a list of ways each one is part of
     private static boolean parsingNodes;
-    private static HashSet<Long> junctions;
+//    private static HashSet<Long> junctions;
     private static Map<Long, Set<Pair<Long, Double>>> graph;
 
 
     public MyGraph(File file) throws IOException {
         dictionary = new HashMap<>(); //NOTE - STORING NODE ID TWICE!!!
         mapRoads = new ArrayList<>();
-        ArrayList<MyWay> edges = new ArrayList<>();
+        ArrayList<MyWay> edges;
         allWayNodes = new HashMap<>();
-        junctions = new HashSet<>();
+//        junctions = new HashSet<>();
         parsingNodes = false;
         InputStream input = new FileInputStream(file);
         BlockReaderAdapter brad = new OSMBinaryParser();
@@ -63,7 +63,7 @@ public class MyGraph {
             way.setLength(length);
         }
 
-        graph = new HashMap<Long, Set<Pair<Long, Double>>>();
+        graph = new HashMap<>();
 
 //        System.out.println("Adding vertices");
 //        for(Long node : allWayNodes.keySet()){ //adding each vertex to the graph
@@ -107,7 +107,7 @@ public class MyGraph {
         System.out.println(graph.size());
     }
 
-    public double haversineDistance(long a, long b){
+    private double haversineDistance(long a, long b){
         MyNode nodeA = dictionary.get(a);
         MyNode nodeB = dictionary.get(b);
         double rad = 6371000; //radius of earth in metres
@@ -120,8 +120,7 @@ public class MyGraph {
                 Math.cos(aLatRadians) * Math.cos(bLatRadians) *
                         Math.sin(deltaLongRadians/2) * Math.sin(deltaLongRadians/2);
         double y = 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
-        double distance = rad * y;
-        return distance;
+        return rad * y;
 
 //        return Math.sqrt(Math.pow((nodeB.getLati() - nodeA.getLati()), 2) + Math.pow((nodeB.getLongi() - nodeA.getLongi()), 2));
     }

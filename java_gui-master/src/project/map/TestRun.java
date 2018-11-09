@@ -1,8 +1,5 @@
 package project.map;
 
-import crosby.binary.file.BlockInputStream;
-
-import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,7 +24,7 @@ public class TestRun {
             long startTime = System.nanoTime();
             Dijkstra dijk = new Dijkstra(graph, src);
             long endTime = System.nanoTime();
-            System.out.println("Dijkstra time: " + (float) (((float) endTime - (float)startTime) / 1000000000));
+            System.out.println("Dijkstra time: " + (((float) endTime - (float)startTime) / 1000000000));
             System.out.println("Distance: " + dijk.getDistTo().get(dst));
             ArrayList<Long> route = new ArrayList<>();
             Long next = dst;
@@ -41,8 +38,9 @@ public class TestRun {
             System.out.println(graph.refsToNodes(route).get(0).getNodeId());
             System.out.println(graph.refsToNodes(route).get(graph.refsToNodes(route).size() - 1).getNodeId());
             startTime = System.nanoTime();
-            ArrayList<MyNode> newNodes = DouglasPeucker.simplify(graph.refsToNodes(route), 0.001);            endTime = System.nanoTime();
-            System.out.println("Douglas time: " + (float) (((float) endTime - (float)startTime) / 1000000000));
+            ArrayList<MyNode> newNodes = DouglasPeucker.simplify(graph.refsToNodes(route), 0.0001);
+            endTime = System.nanoTime();
+            System.out.println("Douglas time: " + (((float) endTime - (float)startTime) / 1000000000));
 
             map = new MyMap(f);
             map.drawMap(0);
