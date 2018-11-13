@@ -1,22 +1,34 @@
 package project.map;
 
+import sun.tools.java.Environment;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
 public class TestRun {
     public static void main(String[] args) {
-        File f = new File("london.osm.pbf");
+        String mapDir = System.getProperty("user.dir").concat("/res/");
+        File f = new File(mapDir.concat("England-latest.osm.pbf"));
         MyGraph graph;
-        MyMap map;
         try {
+
+
+            File fe = new File(System.getProperty("user.dir").concat("/draw/"));
+            fe.mkdirs();
+            fe.createNewFile();
+
+
+
+            MyMap map = new MyMap(f, 7.0);
+
             graph = new MyGraph(f);
 
-//            Long src = Long.parseLong("1349207723"); //wales
-//            Long dst = Long.parseLong("707151082");
+            Long src = Long.parseLong("1349207723"); //wales
+            Long dst = Long.parseLong("707151082");
 
-            Long src = Long.parseLong("27144564"); //london
-            Long dst = Long.parseLong("59838278");
+//            Long src = Long.parseLong("27144564"); //london
+//            Long dst = Long.parseLong("59838278");
 
 //            Long src = Long.parseLong("1107401572"); //brum
 //            Long dst = Long.parseLong("1635424953");
@@ -35,18 +47,16 @@ public class TestRun {
                 next = dijk.getEdgeTo().get(next);
             }
             System.out.println("Route is " + route.size());
-            System.out.println(graph.refsToNodes(route).get(0).getNodeId());
-            System.out.println(graph.refsToNodes(route).get(graph.refsToNodes(route).size() - 1).getNodeId());
             startTime = System.nanoTime();
             ArrayList<MyNode> newNodes = DouglasPeucker.simplify(graph.refsToNodes(route), 0.0001);
             endTime = System.nanoTime();
             System.out.println("Douglas time: " + (((float) endTime - (float)startTime) / 1000000000));
 
-            map = new MyMap(f);
-            map.drawMap(0);
-            map.drawRoute(graph.nodesToRefs(newNodes));
+//            map = new MyMap(f);
+//            map.drawMap(0);
+//            map.drawRoute(graph.nodesToRefs(newNodes));
 //            map.drawRoute(route);
-            map.saveMap();
+//            map.saveMap();
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -128,7 +128,7 @@ public class DouglasPeucker {
             }
         } else {
             double maxDist = 0;
-            int max = list[0];
+            int max = 0;
             for(Integer p : list){
                 if (dotProduct(nodes.get(p), line) > maxDist){
                     maxDist = dotProduct(nodes.get(p), line);
