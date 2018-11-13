@@ -9,7 +9,7 @@ import java.util.ArrayList;
 public class TestRun {
     public static void main(String[] args) {
         String mapDir = System.getProperty("user.dir").concat("/res/");
-        File f = new File(mapDir.concat("England-latest.osm.pbf"));
+        File f = new File(mapDir.concat("wales.osm.pbf"));
         MyGraph graph;
         try {
 
