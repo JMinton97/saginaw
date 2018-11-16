@@ -2,7 +2,7 @@ package project.map;
 
 import java.awt.geom.Point2D;
 
-public class MyNode {
+public class MyNode implements java.io.Serializable {
     public double getLati() {
         return lati;
     }

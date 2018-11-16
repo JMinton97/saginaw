@@ -15,6 +15,9 @@ import java.io.*;
 import java.util.*;
 import java.util.List;
 
+import gnu.trove.map.hash.THashMap;
+import gnu.trove.set.hash.THashSet;
+
 public class MyMap {
 //    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
     private static Map<Long, MyNode> dictionary;
@@ -27,7 +30,8 @@ public class MyMap {
     private static ArrayList<MyWay> mapWaterWays;
     private static ArrayList<MyWay> mapCycles;
     private static ArrayList<Long> tileWays;
-    private static HashMap<Long, long[]> allWayNodes;
+    private static ArrayList<Long> tileNodes;
+    private static THashSet<Long> allWayNodes;
     private static double northMost, westMost, southMost, eastMost;
     private static long northMostNode, westMostNode, southMostNode, eastMostNode;
     private double spaceModifierX;
@@ -38,7 +42,7 @@ public class MyMap {
     private BufferedImage map;
     protected BufferedImage[][] mapArray;
     private int level;
-    private static boolean parsingNodes, findingMax, tile;
+    private static boolean parsingNodes, findingMax, tile, test;
     private static int counter;
     private static HashSet<Long> junctions;
     private static int linesDrawn, maxEdge;
@@ -60,7 +64,7 @@ public class MyMap {
         mapWaterBodies = new ArrayList<>();
         mapWaterWays = new ArrayList<>();
         mapCycles = new ArrayList<>();
-        allWayNodes = new HashMap<>();
+        allWayNodes = new THashSet<>();
         junctions = new HashSet<>();
         parsingNodes = false;
         counter = 0;
@@ -114,6 +118,7 @@ public class MyMap {
     }
 
     public MyMap(File file, double scale) throws IOException{
+
         counter = 0;
         this.file = file;
         scale = 40000; //40000 pixels per degree!
@@ -126,7 +131,7 @@ public class MyMap {
         mapWaterBodies = new ArrayList<>();
         mapWaterWays = new ArrayList<>();
         mapCycles = new ArrayList<>();
-        allWayNodes = new HashMap<>();
+        allWayNodes = new THashSet<>();
 
         northMost = -Double.MAX_VALUE;
         westMost = Double.MAX_VALUE;
@@ -134,6 +139,7 @@ public class MyMap {
         eastMost = -Double.MAX_VALUE;
 
         parsingNodes = false;
+        test = true;
         InputStream input = new FileInputStream(file);
         BlockReaderAdapter brad = new TestBinaryParser();
         BlockInputStream wayReader = new BlockInputStream(input, brad);
@@ -144,15 +150,20 @@ public class MyMap {
 
         wayReader.close();
 
-        System.out.println("This many nodes in the region: " + allWayNodes.size());
+        serialize(allWayNodes, "nodes");
 
-        findingMax = true;
-        System.out.println("Finding the extremities.");
-        InputStream input2 = new FileInputStream(file);
-        BlockReaderAdapter brad2 = new TestBinaryParser();
-        BlockInputStream extremityReader = new BlockInputStream(input2, brad2);
-        extremityReader.process(); //then find the extremities of the map
-        extremityReader.close();
+        System.out.println("This many nodes in the region: " + allWayNodes.size());
+//
+//        findingMax = true;
+//        System.out.println("Finding the extremities.");
+//        InputStream input2 = new FileInputStream(file);
+//        BlockReaderAdapter brad2 = new TestBinaryParser();
+//        BlockInputStream extremityReader = new BlockInputStream(input2, brad2);
+//        startTime = System.nanoTime();
+//        extremityReader.process(); //then find the extremities of the map
+//        endTime = System.nanoTime();
+//        extremityReader.close();
+//        System.out.println("Extremity time: " + (((float) endTime - (float)startTime) / 1000000000));
 
 //        System.out.println("North most " + northMostNode);
 //        System.out.println("South most " + southMostNode);
@@ -165,6 +176,11 @@ public class MyMap {
 
 //        System.out.println("West most degree" + westMost);
 //        System.out.println("East most degree" + eastMost);
+
+        northMost = 56;
+        westMost = -6;
+        southMost = 49.5;
+        eastMost = 2;
 
         double height;
         if(northMost > southMost) {
@@ -231,42 +247,74 @@ public class MyMap {
                     xHigh = bounds[x][y][1];
                     yLow = bounds[x][y-1][0];
                     yHigh = bounds[x][y][0];
-                    startTime = System.nanoTime();
-                    readTile(x, y, bounds);
-                    endTime = System.nanoTime();
-                    System.out.println("Read time: " + (((float) endTime - (float)startTime) / 1000000000));
+                    if(!(x < 9 || y < 9)){
+                         startTime = System.nanoTime();
+                        readTile(x, y, bounds);
+                         endTime = System.nanoTime();
+//                        System.out.println("Read time: " + (((float) endTime - (float)startTime) / 1000000000));
 
-                    startTime = System.nanoTime();
-                    tiles[x - 1][y - 1] = drawTile(x, y, bounds, maxEdge);
-                    endTime = System.nanoTime();
-                    System.out.println("Draw time: " + (((float) endTime - (float)startTime) / 1000000000));
+                        startTime = System.nanoTime();
+                        tiles[x - 1][y - 1] = drawTile(x, y, bounds, maxEdge);
+                        endTime = System.nanoTime();
+                        System.out.println("Draw time: " + (((float) endTime - (float)startTime) / 1000000000));
 
-                    startTime = System.nanoTime();
-                    saveMap(tiles[x - 1][y - 1], x, y);
-                    endTime = System.nanoTime();
-                    System.out.println("Save time: " + (((float) endTime - (float)startTime) / 1000000000));
-                    tiles[x - 1][y - 1] = null;
-                    System.out.println();
+                        startTime = System.nanoTime();
+                        saveMap(tiles[x - 1][y - 1], x, y);
+                        endTime = System.nanoTime();
+                        System.out.println("Save time: " + (((float) endTime - (float)startTime) / 1000000000));
+                        tiles[x - 1][y - 1] = null;
+                        System.out.println();
+                    }
                 }
             }
         }
     }
 
     public void readTile(int x, int y, double[][][] bounds) throws IOException{
-        tileWays.clear();
         dictionary.clear();
         tile = true;
         parsingNodes = true;
+        findingMax = false;
         bX = x;
         bY = y;
-        System.out.println("Reading " + bX + " " + bY);
         this.bounds = bounds;
+
+        System.out.println("Reading nodes from " + bX + " " + bY);
         InputStream input2 = new FileInputStream(file);
         BlockReaderAdapter brad2 = new TestBinaryParser();
-        BlockInputStream tileReader = new BlockInputStream(input2, brad2);
+        BlockInputStream nodeReader = new BlockInputStream(input2, brad2);
+        long startTime = System.nanoTime();
+        nodeReader.process();
+        long endTime = System.nanoTime();
+        System.out.println("Read node time: " + (((float) endTime - (float)startTime) / 1000000000));
+        nodeReader.close();
 
-        tileReader.process();
-        tileReader.close();
+        System.out.println("DICTIONARY SIZE " + dictionary.size());
+
+
+        startTime = System.nanoTime();
+        FileOutputStream fileOut =
+                new FileOutputStream("employee.ser");
+        ObjectOutputStream writeHashMap = new ObjectOutputStream(fileOut);
+        writeHashMap.writeObject(dictionary);
+        writeHashMap.close();
+        fileOut.close();
+        endTime = System.nanoTime();
+        System.out.println("Save nodes time: " + (((float) endTime - (float)startTime) / 1000000000));
+
+
+        parsingNodes = false;
+        System.out.println("Reading ways from " + bX + " " + bY);
+        InputStream input3 = new FileInputStream(file);
+        BlockReaderAdapter brad3 = new TestBinaryParser();
+        BlockInputStream wayReader = new BlockInputStream(input3, brad3);
+        startTime = System.nanoTime();
+        wayReader.process();
+        endTime = System.nanoTime();
+        System.out.println("Read way time: " + (((float) endTime - (float)startTime) / 1000000000));
+        wayReader.close();
+
+
         System.out.println("DICTIONARY SIZE " + dictionary.size());
     }
 
@@ -290,56 +338,63 @@ public class MyMap {
         mapGraphics.setStroke(bs);
 
         for(MyWay w: mapGreens){
-            if(tileWays.contains(w)){
+//            if(tileWays.contains(w)){
                 drawWay(w, mapGraphics, false, axis);
-            }
+//            }
         }
 //        System.out.println("drew greens");
 
         for(MyWay w: mapForests){
-            if(tileWays.contains(w)){
+//            if(tileWays.contains(w)){
                 drawWay(w, mapGraphics, false, axis);
-            }        }
+//            }
+        }
 //        System.out.println("drew forests");
 
-        for(MyWay w: mapWaterBodies){
-            if(tileWays.contains(w)){
-                drawWay(w, mapGraphics, false, axis);
-            }        }
-//        System.out.println("drew water");
-
         for(MyWay w: mapWaterWays){
-            if(tileWays.contains(w)){
-                drawWay(w, mapGraphics, false, axis);
-            }        }
+//            if(tileWays.contains(w)){
+            drawWay(w, mapGraphics, false, axis);
+//            }
+        }
 //        System.out.println("drew rivers");
 
-        for(MyWay w: mapRails){
-            if(tileWays.contains(w)){
+        for(MyWay w: mapWaterBodies){
+//            if(tileWays.contains(w)){
                 drawWay(w, mapGraphics, false, axis);
-            }        }
+//            }
+        }
+//        System.out.println("drew water");
+
+        for(MyWay w: mapRails){
+//            if(tileWays.contains(w)){
+                drawWay(w, mapGraphics, false, axis);
+//            }
+        }
 //        System.out.println("drew rails");
 
         linesDrawn = 0;
         for(MyWay w: mapRoads){
-            if(tileWays.contains(w)){
+//            if(tileWays.contains(w)){
                 drawWay(w, mapGraphics, true, axis);
-            }        }
+//            }
+        }
 //        System.out.println("drew roads under");
 //        System.out.println(linesDrawn);
 
         linesDrawn = 0;
         for(MyWay w: mapRoads){
-            if(tileWays.contains(w)){
+//            if(tileWays.contains(w)){
                 drawWay(w, mapGraphics, false, axis);
-            }        }
+            }
+//        }
 //        System.out.println("drew roads over");
         System.out.println(linesDrawn);
 
         for(MyWay w: mapCycles){
-            if(tileWays.contains(w)){
+//            if(tileWays.contains(w)){
                 drawWay(w, mapGraphics, false, axis);
-            }        }
+//            }
+        }
 
         return tile;
     }
@@ -604,47 +659,45 @@ public class MyMap {
 
         @Override
         protected void parseDense(DenseNodes nodes) {
-            if(findingMax){
-                long lastId=0;
-                long lastLat=0;
-                long lastLon=0;
-                for (int i=0 ; i<nodes.getIdCount() ; i++) {
-                    lastId += nodes.getId(i);
-                    lastLat += nodes.getLat(i);
-                    lastLon += nodes.getLon(i);
-                    if(allWayNodes.containsKey(lastId)) {
-                        if (parseLat(lastLat) > northMost) {
-                            northMost = parseLat(lastLat);
-                            northMostNode = lastId;
-                        }
-                        if (parseLon(lastLon) < westMost) {
-                            westMost = parseLon(lastLon);
-                            westMostNode = lastId;
-                        }
-                        if (parseLat(lastLat) < southMost) {
-                            southMost = parseLat(lastLat);
-                            southMostNode = lastId;
-                        }
-                        if (parseLon(lastLon) > eastMost) {
-                            eastMost = parseLon(lastLon);
-                            eastMostNode = lastId;
-                        }
-                    }
-                }
-            }
+//            if(findingMax){
+//                long lastId=0;
+//                long lastLat=0;
+//                long lastLon=0;
+//                for (int i=0 ; i<nodes.getIdCount() ; i++) {
+//                    lastId += nodes.getId(i);
+//                    lastLat += nodes.getLat(i);
+//                    lastLon += nodes.getLon(i);
+//                    if(allWayNodes.contains(lastId)) {
+//                        if (parseLat(lastLat) > northMost) {
+//                            northMost = parseLat(lastLat);
+//                            northMostNode = lastId;
+//                        }
+//                        if (parseLon(lastLon) < westMost) {
+//                            westMost = parseLon(lastLon);
+//                            westMostNode = lastId;
+//                        }
+//                        if (parseLat(lastLat) < southMost) {
+//                            southMost = parseLat(lastLat);
+//                            southMostNode = lastId;
+//                        }
+//                        if (parseLon(lastLon) > eastMost) {
+//                            eastMost = parseLon(lastLon);
+//                            eastMostNode = lastId;
+//                        }
+//                    }
+//                }
+//            }
             if(parsingNodes){
-
 //                System.out.println("Parsing dense nodes.");
                 long lastId=0;
                 long lastLat=0;
                 long lastLon=0;
-
                 if(tile){
                     for (int i=0 ; i<nodes.getIdCount() ; i++) {
                         lastId += nodes.getId(i);
                         lastLat += nodes.getLat(i);
                         lastLon += nodes.getLon(i);
-                        if(allWayNodes.containsKey(lastId)){
+//                        if(allWayNodes.contains(lastId)){
 //                            setBounds(bX, bY);
 //                            int xLow = bX - 1;
 //                            int xHigh = bX;
@@ -660,18 +713,18 @@ public class MyMap {
                                 tempDense.setLongi(parseLon(lastLon));
                                 tempDense.setNodeId(lastId);
                                 dictionary.put(lastId, tempDense);
-                                for(long way : allWayNodes.get(lastId)){
-                                    tileWays.add(way);
-                                }
+//                                for(long way : allWayNodes.get(lastId)){
+//                                    tileWays.add(way);
+//                                }
                             }
-                        }
+//                        }
                     }
                 } else {
                     for (int i=0 ; i<nodes.getIdCount() ; i++) {
                         lastId += nodes.getId(i);
                         lastLat += nodes.getLat(i);
                         lastLon += nodes.getLon(i);
-                        if(allWayNodes.containsKey(lastId)){
+                        if(allWayNodes.contains(lastId)){
                             MyNode tempDense = new MyNode();
                             tempDense.setLati(parseLat(lastLat));
                             tempDense.setLongi(parseLon(lastLon));
@@ -696,84 +749,96 @@ public class MyMap {
         @Override
         protected void parseWays(List<Way> ways) {
             if(!parsingNodes){
-//                System.out.println("Parsing ways.");
-                for (Way w : ways) {
-                    counter++;
-                    System.out.println(counter);
-                    String key;
-                    String value;
-                    for (int i=0 ; i<w.getKeysCount() ; i++) {
-                        key = getStringById(w.getKeys(i));
-                        value = getStringById(w.getVals(i));
-                        if(key.equals("highway")){
-//                            System.out.println("GOT A ROAD");
-                            if(value.matches("motorway|motorway_link")){
-                                MyWay tempWay = buildMyWay(w);
-                                tempWay.setType(WayType.ROAD);
-                                tempWay.setRoadType(RoadType.MOTORWAY);
-                                mapRoads.add(tempWay);
-                            } else if (value.matches("trunk|trunk_link")){
-                                MyWay tempWay = buildMyWay(w);
-                                  tempWay.setType(WayType.ROAD);
-                                tempWay.setRoadType(RoadType.TRUNK);
-                                mapRoads.add(tempWay);
-                            } else if (value.matches("primary|primary_link")){
-                                MyWay tempWay = buildMyWay(w);
-                                tempWay.setType(WayType.ROAD);
-                                tempWay.setRoadType(RoadType.PRIMARY);
-                                mapRoads.add(tempWay);
-                            } else if (value.matches("secondary|secondary_link")){
-                                MyWay tempWay = buildMyWay(w);
-                                tempWay.setType(WayType.ROAD);
-                                tempWay.setRoadType(RoadType.SECONDARY);
-                                mapRoads.add(tempWay);
-                            } else if (value.matches("tertiary|unclassified|residential|service|tertiary_link|road")){
-                                MyWay tempWay = buildMyWay(w);
-                                tempWay.setType(WayType.ROAD);
-                                tempWay.setRoadType(RoadType.ROAD);
-                                mapRoads.add(tempWay);
+                if(test){
+                    for (Way w : ways){
+                        counter++;
+                        System.out.println(counter);
+                        for (long n : w.getRefsList()){
+                            allWayNodes.add(n);
+                        }
+                    }
+                } else {
+                    //                System.out.println("Parsing ways.");
+                    for (Way w : ways) {
+//                    counter++;
+//                    System.out.println(counter);
+                        for(long n : w.getRefsList()){
+//                        if(dictionary.containsKey(n)){
+                            String key;
+                            String value;
+                            for (int i=0 ; i<w.getKeysCount() ; i++) {
+                                key = getStringById(w.getKeys(i));
+                                value = getStringById(w.getVals(i));
+                                if(key.equals("highway")){
+                                    if(value.matches("motorway|motorway_link")){
+                                        MyWay tempWay = buildMyWay(w);
+                                        tempWay.setType(WayType.ROAD);
+                                        tempWay.setRoadType(RoadType.MOTORWAY);
+                                        mapRoads.add(tempWay);
+                                    } else if (value.matches("trunk|trunk_link")){
+                                        MyWay tempWay = buildMyWay(w);
+                                        tempWay.setType(WayType.ROAD);
+                                        tempWay.setRoadType(RoadType.TRUNK);
+                                        mapRoads.add(tempWay);
+                                    } else if (value.matches("primary|primary_link")){
+                                        MyWay tempWay = buildMyWay(w);
+                                        tempWay.setType(WayType.ROAD);
+                                        tempWay.setRoadType(RoadType.PRIMARY);
+                                        mapRoads.add(tempWay);
+                                    } else if (value.matches("secondary|secondary_link")){
+                                        MyWay tempWay = buildMyWay(w);
+                                        tempWay.setType(WayType.ROAD);
+                                        tempWay.setRoadType(RoadType.SECONDARY);
+                                        mapRoads.add(tempWay);
+                                    } else if (value.matches("tertiary|unclassified|residential|service|tertiary_link|road")){
+                                        MyWay tempWay = buildMyWay(w);
+                                        tempWay.setType(WayType.ROAD);
+                                        tempWay.setRoadType(RoadType.ROAD);
+                                        mapRoads.add(tempWay);
+                                    }
+                                }
+                                if(key.equals("railway")){
+                                    MyWay tempWay = buildMyWay(w);
+                                    tempWay.setType(WayType.RAILWAY);
+                                    mapRails.add(tempWay);
+                                }
+                                if((key.equals("natural") && value.equals("grass"))
+                                        || (key.equals("leisure") && value.equals("common"))
+                                        || (key.equals("leisure") && value.equals("park"))
+                                        || (key.equals("leisure") && value.equals("golf_course"))
+                                        || value.equals("meadow")
+                                        || value.equals("recreation_ground")
+                                        || value.equals("conservation")
+                                        || value.equals("park")){
+                                    MyWay tempWay = buildMyWay(w);
+                                    tempWay.setType(WayType.GREEN);
+                                    mapGreens.add(tempWay);
+                                }
+                                if(key.equals("waterway") && (value.matches("river|stream|canal"))){
+                                    MyWay tempWay = buildMyWay(w);
+                                    tempWay.setType(WayType.WATERWAY);
+                                    mapWaterWays.add(tempWay);
+                                }
+                                if((key.equals("natural") && value.equals("water"))
+                                        || value.matches("reservoir|basin")){
+                                    MyWay tempWay = buildMyWay(w);
+                                    tempWay.setType(WayType.WATERBODY);
+                                    mapWaterBodies.add(tempWay);
+                                }
+                                if((key.equals("natural") && value.equals("wood"))
+                                        || (key.equals("landuse") && value.equals("forest"))){
+                                    MyWay tempWay = buildMyWay(w);
+                                    tempWay.setType(WayType.TREE);
+                                    mapForests.add(tempWay);
+                                }
+                                if(key.equals("cycleway") || value.equals("cycleway") ||
+                                        (key.equals("route") && value.equals("bicycle"))){
+                                    MyWay tempWay = buildMyWay(w);
+                                    tempWay.setType(WayType.CYCLE);
+                                    mapCycles.add(tempWay);
+                                }
                             }
                         }
-//                        if(key.equals("railway")){
-//                            MyWay tempWay = buildMyWay(w);
-//                            tempWay.setType(WayType.RAILWAY);
-//                            mapRails.add(tempWay);
-//                        }
-//                        if((key.equals("natural") && value.equals("grass"))
-//                                || (key.equals("leisure") && value.equals("common"))
-//                                || (key.equals("leisure") && value.equals("park"))
-//                                || (key.equals("leisure") && value.equals("golf_course"))
-//                                || value.equals("meadow")
-//                                || value.equals("recreation_ground")
-//                                || value.equals("conservation")
-//                                || value.equals("park")){
-//                            MyWay tempWay = buildMyWay(w);
-//                            tempWay.setType(WayType.GREEN);
-//                            mapGreens.add(tempWay);
-//                        }
-//                        if(key.equals("waterway") && (value.matches("river|stream|canal"))){
-//                            MyWay tempWay = buildMyWay(w);
-//                            tempWay.setType(WayType.WATERWAY);
-//                            mapWaterWays.add(tempWay);
-//                        }
-//                        if((key.equals("natural") && value.equals("water"))
-//                                || value.matches("reservoir|basin")){
-//                            MyWay tempWay = buildMyWay(w);
-//                            tempWay.setType(WayType.WATERBODY);
-//                            mapWaterBodies.add(tempWay);
-//                        }
-//                        if((key.equals("natural") && value.equals("wood"))
-//                                || (key.equals("landuse") && value.equals("forest"))){
-//                            MyWay tempWay = buildMyWay(w);
-//                            tempWay.setType(WayType.TREE);
-//                            mapForests.add(tempWay);
-//                        }
-//                        if(key.equals("cycleway") || value.equals("cycleway") ||
-//                                (key.equals("route") && value.equals("bicycle"))){
-//                            MyWay tempWay = buildMyWay(w);
-//                            tempWay.setType(WayType.CYCLE);
-//                            mapCycles.add(tempWay);
-//                        }
                     }
                 }
             }
@@ -789,20 +854,23 @@ public class MyMap {
             for (Long ref : w.getRefsList()) {
                 lastRef += ref;
                 tempWay.addWayNode(lastRef);
-                if (allWayNodes.get(lastRef) == null) { //used to be != ... hmmmm
-                    long[] wayset = new long[10];
-                    wayset[0] = id;
-                    allWayNodes.put(lastRef, wayset);
-                } else {
-                    long[] wayset = allWayNodes.get(lastRef);
-                    for(int x = 0; x < wayset.length; x++){
-                        if(wayset[x] == Long.parseLong("0")){
-                            wayset[x] = id;
-                            break;
-                        }
-                    }
-                    allWayNodes.put(lastRef, wayset);
+                if(!allWayNodes.contains(lastRef)){
+                    allWayNodes.add(lastRef);
                 }
+//                if (allWayNodes.get(lastRef) == null) { //used to be != ... hmmmm
+//                    long[] wayset = new long[10];
+//                    wayset[0] = id;
+//                    allWayNodes.put(lastRef, wayset);
+//                } else {
+//                    long[] wayset = allWayNodes.get(lastRef);
+//                    for(int x = 0; x < wayset.length; x++){
+//                        if(wayset[x] == Long.parseLong("0")){
+//                            wayset[x] = id;
+//                            break;
+//                        }
+//                    }
+//                    allWayNodes.put(lastRef, wayset);
+//                }
             }
             return tempWay;
         }
@@ -834,26 +902,25 @@ public class MyMap {
     private ArrayList<MyWay> splitWay(MyWay way){
         ArrayList<MyWay> returnWays = new ArrayList<>();
         returnWays.add(way);
-        for(int i = 1; i < (way.getWayNodes().size() - 1); i++){
-            if(allWayNodes.get(way.getWayNodes()).length > 1){
-                MyWay firstWay = new MyWay (way.getWayNodes().subList(0, i + 1));
-                firstWay.setRoadType(way.getRoadType());
-                firstWay.setType(way.getType());
-                MyWay restWay = new MyWay (way.getWayNodes().subList(i, way.getWayNodes().size()));
-                restWay.setRoadType(way.getRoadType());
-                restWay.setType(way.getType());
-                ArrayList<MyWay> restWays = splitWay(restWay);
-                restWays.add(firstWay);
-                returnWays = restWays;
-                break;
-            }
-        }
+//        for(int i = 1; i < (way.getWayNodes().size() - 1); i++){
+//            if(allWayNodes.get(way.getWayNodes()).length > 1){
+//                MyWay firstWay = new MyWay (way.getWayNodes().subList(0, i + 1));
+//                firstWay.setRoadType(way.getRoadType());
+//                firstWay.setType(way.getType());
+//                MyWay restWay = new MyWay (way.getWayNodes().subList(i, way.getWayNodes().size()));
+//                restWay.setRoadType(way.getRoadType());
+//                restWay.setType(way.getType());
+//                ArrayList<MyWay> restWays = splitWay(restWay);
+//                restWays.add(firstWay);
+//                returnWays = restWays;
+//                break;
+//            }
+//        }
         return returnWays;
     }
 
     private static boolean between(double lat, double lon){
 //        System.out.println(xLow + " " + lon + " " + xHigh);
-//        System.out.println(j);
 
 //        boolean in = true;
         if(xLow < xHigh) {
@@ -890,4 +957,17 @@ public class MyMap {
         }
         System.out.println();
     }
+
+    private void serialize(Object obj, String name) throws FileNotFoundException, IOException {
+        long startTime = System.nanoTime();
+        FileOutputStream fileOut = new FileOutputStream("name" + ".ser");
+        ObjectOutputStream writeHashMap = new ObjectOutputStream(fileOut);
+        writeHashMap.writeObject(obj);
+        writeHashMap.close();
+        fileOut.close();
+        long endTime = System.nanoTime();
+        System.out.println("Save nodes time: " + (((float) endTime - (float)startTime) / 1000000000));
+    }
+
+
 }
