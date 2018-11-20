@@ -15,22 +15,41 @@ import java.io.*;
 import java.lang.reflect.Array;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
+
+import org.mapdb.BTreeMap;
+import org.mapdb.DB;
+import org.mapdb.DBMaker;
+import org.mapdb.Serializer;
 
 public class MyGraph {
     //    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
     private static Map<Long, MyNode> dictionary; //maps a node id to a MyNode object containing more details
     private static ArrayList<MyWay> mapRoads; //a list of all connections between nodes. Later becomes all graph edges.
-    private static HashMap<Long, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a list of ways each one is part of
+    private static ConcurrentMap<Long, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a list of ways each one is part of
     private static boolean parsingNodes;
 //    private static HashSet<Long> junctions;
     private static Map<Long, Set<Pair<Long, Double>>> graph;
 
+    private long startTime;
+    private long endTime;
+
 
     public MyGraph(File file) throws IOException {
+
+        DB db = DBMaker
+                .fileDB("files//graph.db")
+                .fileMmapEnable()
+                .make();
+
+
+        allWayNodes = db
+                .treeMap("map", Serializer.LONG, Serializer.INTEGER)
+                .createOrOpen();
+
         dictionary = new HashMap<>(); //NOTE - STORING NODE ID TWICE!!!
         mapRoads = new ArrayList<>();
         ArrayList<MyWay> edges;
-        allWayNodes = new HashMap<>();
 //        junctions = new HashSet<>();
         parsingNodes = false;
         InputStream input = new FileInputStream(file);
@@ -44,17 +63,20 @@ public class MyGraph {
         System.out.println("Map roads post-split:     " + edges.size());
         System.out.println("Number of way nodes:      " + allWayNodes.size());
 
-//        parsingNodes = true;
-//        InputStream input2 = new FileInputStream(file);
-//        BlockReaderAdapter brad2 = new OSMBinaryParser();
-//        new BlockInputStream(input2, brad2).process();
-//
+        timerStart();
+        parsingNodes = true;
+        InputStream input2 = new FileInputStream(file);
+        BlockReaderAdapter brad2 = new OSMBinaryParser();
+        new BlockInputStream(input2, brad2).process();
+        timerEnd("Getting nodes");
+
+        timerStart();
         for(MyWay way : edges){ //determine the length of every edge
             double length = 0;
             long lastNode = way.getWayNodes().get(0);
             for(long node : way.getWayNodes()){
-//                length = length + haversineDistance(lastNode, node);
-                length = 0;
+                length = length + haversineDistance(lastNode, node);
+//                length = 0;
                 lastNode = node;
             }
             if (length < 0){
@@ -62,6 +84,7 @@ public class MyGraph {
             }
             way.setLength(length);
         }
+        timerEnd("Measuring edges");
 
         graph = new HashMap<>();
 
@@ -72,6 +95,7 @@ public class MyGraph {
 //            }
 //        } //this bit is actually redundant
 
+        timerStart();
         System.out.println("Adding connections");
         for(MyWay way : edges){ //iterate through every edge and add neighbours to graph vertices accordingly
 //            System.out.println(way.getWayId());
@@ -89,8 +113,13 @@ public class MyGraph {
                 graph.get(lstVert).add(new Pair(wayNodes.get(0), way.getLength()));
             }
         }
+        timerEnd("Creating graph");
 
         System.out.println(graph.size());
+
+        dictionary = null;
+        mapRoads = null;
+        edges = null;
 
     }
 
@@ -231,35 +260,6 @@ public class MyGraph {
                                 mapRoads.add(tempWay);
                             }
                         }
-//                        if(key.equals("railway")){
-//                            tempWay.setType(WayType.RAILWAY);
-//                            mapRails.add(tempWay);
-//                        }
-//                        if((key.equals("natural") && value.equals("grass"))
-//                                || (key.equals("leisure") && value.equals("common"))
-//                                || (key.equals("leisure") && value.equals("park"))
-//                                || (key.equals("leisure") && value.equals("golf_course"))
-//                                || value.equals("meadow")
-//                                || value.equals("recreation_ground")
-//                                || value.equals("conservation")
-//                                || value.equals("park")){
-//                            tempWay.setType(WayType.GREEN);
-//                            mapGreens.add(tempWay);
-//                        }
-//                        if((key.equals("natural")) && (value.matches("river|stream|canal"))){
-//                            tempWay.setType(WayType.WATERWAY);
-//                            mapWaterWays.add(tempWay);
-//                        }
-//                        if((key.equals("natural") && value.equals("water"))
-//                                || value.matches("reservoir|basin")){
-//                            tempWay.setType(WayType.WATERBODY);
-//                            mapWaterBodies.add(tempWay);
-//                        }
-//                        if((key.equals("natural") && value.equals("wood"))
-//                                || (key.equals("landuse") && value.equals("forest"))){
-//                            tempWay.setType(WayType.TREE);
-//                            mapForests.add(tempWay);
-//                        }
 //                    if(key.equals("cycleway") || value.equals("cycleway") ||
 //                            (key.equals("route") && value.equals("bicycle"))){
 //                        tempWay.setType(WayType.CYCLE);
@@ -278,7 +278,7 @@ public class MyGraph {
             for (Long ref : w.getRefsList()) {
                 lastRef+= ref;
                 tempWay.addWayNode(lastRef);
-                int wayCount;
+                Integer wayCount;
                 if(allWayNodes.get(lastRef) != null){
                     wayCount = allWayNodes.get(lastRef);
                 } else {
@@ -368,5 +368,14 @@ public class MyGraph {
             refs.add(node.getNodeId());
         }
         return refs;
+    }
+
+    private void timerStart(){
+        startTime = System.nanoTime();
+    }
+
+    private void timerEnd(String string){
+        endTime = System.nanoTime();
+        System.out.println(string + " time: " + (((float) endTime - (float)startTime) / 1000000000));
     }
 }
