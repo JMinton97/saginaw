@@ -1,6 +1,5 @@
 package project.map;
 
-import com.sun.tools.javac.util.Pair;
 import crosby.binary.*;
 import crosby.binary.Osmformat.*;
 import crosby.binary.file.*;
@@ -17,19 +16,19 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 
-import org.mapdb.BTreeMap;
-import org.mapdb.DB;
-import org.mapdb.DBMaker;
-import org.mapdb.Serializer;
+import javafx.util.Pair;
+import org.mapdb.*;
+import org.nustaq.serialization.FSTObjectInput;
+import org.nustaq.serialization.FSTObjectOutput;
 
 public class MyGraph {
     //    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
-    private static Map<Long, MyNode> dictionary; //maps a node id to a MyNode object containing more details
+    public static BTreeMap<Long, double[]> dictionary; //maps a node id to a MyNode object containing more details
     private static ArrayList<MyWay> mapRoads; //a list of all connections between nodes. Later becomes all graph edges.
     private static ConcurrentMap<Long, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a list of ways each one is part of
     private static boolean parsingNodes;
 //    private static HashSet<Long> junctions;
-    private static Map<Long, Set<Pair<Long, Double>>> graph;
+    private static Map<Long, Set<double[]>> graph;
 
     private long startTime;
     private long endTime;
@@ -38,8 +37,10 @@ public class MyGraph {
     public MyGraph(File file) throws IOException {
 
         DB db = DBMaker
-                .fileDB("files//graph.db")
+                .fileDB("files//wayNodes.db")
                 .fileMmapEnable()
+                .checksumHeaderBypass()
+                .closeOnJvmShutdown()
                 .make();
 
 
@@ -47,34 +48,59 @@ public class MyGraph {
                 .treeMap("map", Serializer.LONG, Serializer.INTEGER)
                 .createOrOpen();
 
-        dictionary = new HashMap<>(); //NOTE - STORING NODE ID TWICE!!!
-        mapRoads = new ArrayList<>();
-        ArrayList<MyWay> edges;
-//        junctions = new HashSet<>();
+        DB db2 = DBMaker
+                .fileDB("files//dictionary.db")
+                .fileMmapEnable()
+                .checksumHeaderBypass()
+                .closeOnJvmShutdown()
+                .make();
+
+        dictionary = db2.treeMap("map", Serializer.LONG, Serializer.DOUBLE_ARRAY).createOrOpen();
+
+
+
         parsingNodes = false;
-        InputStream input = new FileInputStream(file);
-        BlockReaderAdapter brad = new OSMBinaryParser();
-        long startTime = System.nanoTime();
-        new BlockInputStream(input, brad).process();
-        long endTime = System.nanoTime();
-        System.out.println((endTime - startTime) / 1000000000);
-        System.out.println("Map roads pre-split:      " + mapRoads.size());
-        edges = splitWays(mapRoads, true);
-        System.out.println("Map roads post-split:     " + edges.size());
-        System.out.println("Number of way nodes:      " + allWayNodes.size());
+        mapRoads = new ArrayList<>();
+
+
+        if(allWayNodes.isEmpty()){
+            timerStart();
+            InputStream input = new FileInputStream(file);
+            BlockReaderAdapter brad = new OSMBinaryParser();
+            long startTime = System.nanoTime();
+            new BlockInputStream(input, brad).process();
+            long endTime = System.nanoTime();
+            timerEnd("Getting ways");
+        } else {
+            System.out.println("allWayNodes found; skipping read");
+        }
 
         timerStart();
+        ArrayList<MyWay> edges;
+        System.out.println("Map roads pre-split:      " + mapRoads.size());
+        edges = splitWays(mapRoads, true);
+        mapRoads = null;
+        System.out.println("Map roads post-split:     " + edges.size());
+        timerEnd("Splitting ways");
+
         parsingNodes = true;
-        InputStream input2 = new FileInputStream(file);
-        BlockReaderAdapter brad2 = new OSMBinaryParser();
-        new BlockInputStream(input2, brad2).process();
-        timerEnd("Getting nodes");
+
+        if(dictionary.isEmpty()){
+            timerStart();
+            InputStream input2 = new FileInputStream(file);
+            BlockReaderAdapter brad2 = new OSMBinaryParser();
+            new BlockInputStream(input2, brad2).process();
+            timerEnd("Getting nodes");
+        } else {
+            System.out.println("dictionary found; skipping read");
+        }
 
         timerStart();
         for(MyWay way : edges){ //determine the length of every edge
             double length = 0;
-            long lastNode = way.getWayNodes().get(0);
-            for(long node : way.getWayNodes()){
+            List<Long> nodes = way.getWayNodes();
+            long lastNode = nodes.get(0);
+            for(long node : nodes){
                 length = length + haversineDistance(lastNode, node);
 //                length = 0;
                 lastNode = node;
@@ -86,49 +112,65 @@ public class MyGraph {
         }
         timerEnd("Measuring edges");
 
-        graph = new HashMap<>();
 
-//        System.out.println("Adding vertices");
-//        for(Long node : allWayNodes.keySet()){ //adding each vertex to the graph
-//            if(allWayNodes.get(node) > 1){
-//                graph.put(node, new HashSet<Pair<Long, Double>>());
-//            }
-//        } //this bit is actually redundant
-
-        timerStart();
-        System.out.println("Adding connections");
-        for(MyWay way : edges){ //iterate through every edge and add neighbours to graph vertices accordingly
-//            System.out.println(way.getWayId());
-            List<Long> wayNodes = way.getWayNodes();
-            if(wayNodes.size() > 1){
-                long fstVert = wayNodes.get(0);
-                long lstVert = wayNodes.get(wayNodes.size() - 1); //could be .get(1) if we've stripped the ways
-                if(!graph.containsKey(fstVert)){
-                    graph.put(fstVert, new HashSet<Pair<Long, Double>>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
-                }
-                if(!graph.containsKey(lstVert)){
-                    graph.put(lstVert, new HashSet<Pair<Long, Double>>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
-                }
-                graph.get(fstVert).add(new Pair(wayNodes.get(1), way.getLength()));
-                graph.get(lstVert).add(new Pair(wayNodes.get(0), way.getLength()));
+        File graphDir = new File("files//graph.ser");
+        if(graphDir.exists()){
+            System.out.println("Found graph.");
+            timerStart();
+            FileInputStream fileIn = new FileInputStream(graphDir);
+            FSTObjectInput objectIn = new FSTObjectInput(fileIn);
+            try {
+                graph = (HashMap) objectIn.readObject();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
             }
+            timerEnd("Read graph");
+        } else {
+            System.out.println("No graph found, creating now.");
+            graph = new HashMap<>();
+
+            timerStart();
+            System.out.println("Adding connections");
+            for(MyWay way : edges){ //iterate through every edge and add neighbours to graph vertices accordingly
+//            System.out.println(way.getWayId());
+                List<Long> wayNodes = way.getWayNodes();
+                if(wayNodes.size() > 1){
+                    long fstVert = wayNodes.get(0);
+                    long lstVert = wayNodes.get(wayNodes.size() - 1); //could be .get(1) if we've stripped the ways
+                    if(!graph.containsKey(fstVert)){
+                        graph.put(fstVert, new HashSet<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
+                    }
+                    if(!graph.containsKey(lstVert)){
+                        graph.put(lstVert, new HashSet<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
+                    }
+                    graph.get(fstVert).add(new double[]{(double) wayNodes.get(1), way.getLength()});
+                    graph.get(lstVert).add(new double[]{(double) wayNodes.get(0), way.getLength()});
+                }
+            }
+            timerEnd("Creating graph");
+
+            timerStart();
+            FileOutputStream fileOut = new FileOutputStream(graphDir);
+            FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
+            objectOut.writeObject(graph);
+            objectOut.close();
+            timerEnd("Writing graph");
         }
-        timerEnd("Creating graph");
 
-        System.out.println(graph.size());
 
-        dictionary = null;
-        mapRoads = null;
-        edges = null;
+//        System.out.println(graph.size());
+
+//        dictionary = null;
+//        edges = null;
 
     }
 
     public void print(){ //print graph contents
         for(long vert : graph.keySet()){
-            Set<Pair<Long, Double>> neighbours = graph.get(vert);
+            Set<double[]> neighbours = graph.get(vert);
             ArrayList<Long> neighbourNodes = new ArrayList<>();
-            for(Pair<Long, Double> neighbour : neighbours){
-                neighbourNodes.add(neighbour.fst);
+            for(double[] neighbour : neighbours){
+                neighbourNodes.add((long) neighbour[0]);
             }
 //            System.out.println("Node: " + vert + " Neighbours: " + neighbourNodes.toString());
         }
@@ -137,13 +179,13 @@ public class MyGraph {
     }
 
     private double haversineDistance(long a, long b){
-        MyNode nodeA = dictionary.get(a);
-        MyNode nodeB = dictionary.get(b);
+        double[] nodeA = dictionary.get(a);
+        double[] nodeB = dictionary.get(b);
         double rad = 6371000; //radius of earth in metres
-        double aLatRadians = Math.toRadians(nodeA.getLati());
-        double bLatRadians = Math.toRadians(nodeB.getLati());
-        double deltaLatRadians = Math.toRadians(nodeB.getLati() - nodeA.getLati());
-        double deltaLongRadians = Math.toRadians(nodeB.getLongi() - nodeA.getLongi());
+        double aLatRadians = Math.toRadians(nodeA[0]); //0 = latitude, 1 = longitude
+        double bLatRadians = Math.toRadians(nodeB[0]);
+        double deltaLatRadians = Math.toRadians(nodeB[0] - nodeA[0]);
+        double deltaLongRadians = Math.toRadians(nodeB[1] - nodeA[1]);
 
         double x = Math.sin(deltaLatRadians/2) * Math.sin(deltaLatRadians/2) +
                 Math.cos(aLatRadians) * Math.cos(bLatRadians) *
@@ -200,10 +242,14 @@ public class MyGraph {
                     if(allWayNodes.containsKey(lastId)){
 //                System.out.printf("Dense node, ID %d @ %.6f,%.6f\n",
 //                        lastId,parseLat(lastLat),parseLon(lastLon));
-                        MyNode tempDense = new MyNode();
-                        tempDense.setLati(parseLat(lastLat));
-                        tempDense.setLongi(parseLon(lastLon));
-                        tempDense.setNodeId(lastId);
+                        double[] tempDense = new double[3];
+//                        MyNode tempDense = new MyNode();
+//                        tempDense.setLati(parseLat(lastLat));
+//                        tempDense.setLongi(parseLon(lastLon));
+//                        tempDense.setNodeId(lastId);
+                        tempDense[0] = parseLat(lastLat);
+                        tempDense[1] = parseLat(lastLat);
+                        tempDense[2] = lastId;
                         dictionary.put(lastId, tempDense);
 //                        counter++;
 //                        System.out.println(counter);
@@ -346,21 +392,21 @@ public class MyGraph {
         return returnWays;
     }
 
-    public Map<Long, Set<Pair<Long, Double>>> getGraph() {
+    public Map<Long, Set<double[]>> getGraph() {
         return graph;
     }
 
-    public Set<Pair<Long, Double>> adj(Long v){
+    public Set<double[]> adj(Long v){
         return graph.get(v);
     }
 
-    public ArrayList<MyNode> refsToNodes(ArrayList<Long> refs){
-        ArrayList<MyNode> nodes = new ArrayList<>();
-        for(Long ref : refs){
-            nodes.add(dictionary.get(ref));
-        }
-        return nodes;
-    }
+//    public ArrayList<MyNode> refsToNodes(ArrayList<Long> refs){
+//        ArrayList<MyNode> nodes = new ArrayList<>();
+//        for(Long ref : refs){
+//            nodes.add(dictionary.get(ref));
+//        }
+//        return nodes;
+//    }
 
     public ArrayList<Long> nodesToRefs(ArrayList<MyNode> nodes){
         ArrayList<Long> refs = new ArrayList<>();
@@ -377,5 +423,9 @@ public class MyGraph {
     private void timerEnd(String string){
         endTime = System.nanoTime();
         System.out.println(string + " time: " + (((float) endTime - (float)startTime) / 1000000000));
+    }
+
+    public BTreeMap<Long, double[]> getDictionary(){
+        return dictionary;
     }
 }

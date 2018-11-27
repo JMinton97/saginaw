@@ -1,10 +1,14 @@
 package project.map;
 
-import com.sun.tools.javac.util.Pair;
+import javafx.util.Pair;
+import org.mapdb.BTreeMap;
 
+import java.lang.reflect.Array;
 import java.util.*;
+import java.util.concurrent.ConcurrentMap;
 
 public class BiDijkstra {
+    long startTime, endTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, arelaxTimeStart, arelaxTimeEnd, atotalRelaxTime, containsTimeStart, containsTimeEnd, totalContainsTime;
     HashMap<Long, Double> uDistTo;
     HashMap<Long, Long> uEdgeTo;
     HashMap<Long, Double> vDistTo;
@@ -14,23 +18,27 @@ public class BiDijkstra {
     private HashSet<Long> uRelaxed;
     private HashSet<Long> vRelaxed;
     Long overlapNode;
+    private double maxDist; //how far from the nodes we have explored - have we covered minimum distance yet?
+    public double bestSeen;
+    public int explored;
 
-    public BiDijkstra(MyGraph graph, Long startNode, Long endNode){
-        uDistTo = new HashMap<>();
-        uEdgeTo = new HashMap<>();
+    public BiDijkstra(MyGraph graph, Long startNode, Long endNode, BTreeMap<Long, double[]> dictionary){
+        uDistTo = new HashMap<>(graph.getGraph().size());
+        uEdgeTo = new HashMap<>(graph.getGraph().size());
 
-        vDistTo = new HashMap<>();
-        vEdgeTo = new HashMap<>();
+        vDistTo = new HashMap<>(graph.getGraph().size());
+        vEdgeTo = new HashMap<>(graph.getGraph().size());
 
+//        timerStart();
+//        for(Long vert : graph.getGraph().keySet()){
+//            uDistTo.put(vert, Double.MAX_VALUE);
+//        }
+//        for(Long vert : graph.getGraph().keySet()){
+//            vDistTo.put(vert, Double.MAX_VALUE);
+//        }
+//        timerEnd("Filling maps");
 
-        for(Long vert : graph.getGraph().keySet()){
-            uDistTo.put(vert, Double.MAX_VALUE);
-        }
         uDistTo.put(startNode, 0.0);
-
-        for(Long vert : graph.getGraph().keySet()){
-            vDistTo.put(vert, Double.MAX_VALUE);
-        }
         vDistTo.put(endNode, 0.0);
 
         uPq = new PriorityQueue<>(new DistanceComparatorU());
@@ -42,80 +50,96 @@ public class BiDijkstra {
         uRelaxed = new HashSet<>();
         vRelaxed = new HashSet<>();
 
+        bestSeen = Double.MAX_VALUE;
+        ArrayList<Long> bestPath = new ArrayList<>();
+
+        double minDist = haversineDistance(startNode, endNode, dictionary);
+
+        double competitor;
+
+        maxDist = 0;
+
+        totalRelaxTime = 0;
+
         long startTime = System.nanoTime();
         OUTER: while(!(uPq.isEmpty()) && !(vPq.isEmpty())){ //check
             long v1 = uPq.poll();
-            for (Pair<Long, Double> e : graph.adj(v1)){
-                if(vRelaxed.contains(v1)){
-                    System.out.println("truth");
-                    overlapNode = v1;
-                    break OUTER;
-                }
+            for (double[] e : graph.adj(v1)){
                 relax(v1, e, true);
-                if(v1 == endNode){
-                    break;
-                }
+                    if (vRelaxed.contains((long) e[0])) {
+                        competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((long) e[0]));
+                        if (bestSeen > competitor) {
+                            bestSeen = competitor;
+                        }
+                    }
+                    if (vRelaxed.contains(v1)) {
+                        System.out.println("truth");
+                        overlapNode = v1;
+                        break OUTER;
+                    }
+//                    if (v1 == endNode) {
+//                        break;
+//                    }
             }
             long v2 = vPq.poll();
-            for (Pair<Long, Double> e : graph.adj(v2)){
-                if(uRelaxed.contains(v2)){
-                    System.out.println("truth");
-                    overlapNode = v2;
-                    break OUTER;
-                }
+            for (double[] e : graph.adj(v2)) {
                 relax(v2, e, false);
-                if(v2 == startNode){
-                    break;
-                }
+                    if (uRelaxed.contains((long) e[0])) {
+                        competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((long) e[0]));
+                        if (bestSeen > competitor) {
+                            bestSeen = competitor;
+                        }
+                    }
+                    if (uRelaxed.contains(v2)) {
+                        System.out.println("truth");
+                        overlapNode = v2;
+                        break OUTER;
+                    }
+//                    if (v2 == startNode) {
+//                        break;
+//                    }
             }
         }
         long endTime = System.nanoTime();
         System.out.println("BiDijkstra time: " + (((float) endTime - (float)startTime) / 1000000000));
     }
 
-    private void relax(Long v, Pair<Long, Double> edge, boolean u){
-        long w = edge.fst;
-        double weight = edge.snd;
+    private void relax(Long x, double[] edge, boolean u){
+        arelaxTimeStart = System.nanoTime();
+        explored++;
+        long w = (long) edge[0];
+        double weight = edge[1];
         if(u){
-            uRelaxed.add(v);
-            double distToV = uDistTo.get(v);
-            if (uDistTo.get(w) > (distToV + weight)){
-                uDistTo.put(w, distToV + weight);
-                uEdgeTo.put(w, v); //should be 'nodeBefore'
-                if(uPq.contains(w)){
-                    uPq.remove(w);
-                }
+            uRelaxed.add(x);
+            double distToX = uDistTo.getOrDefault(x, Double.MAX_VALUE);
+            if (uDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
+                uDistTo.put(w, distToX + weight);
+                uEdgeTo.put(w, x); //should be 'nodeBefore'
                 uPq.add(w); //inefficient?
             }
         } else {
-            vRelaxed.add(v);
-            double distToV = vDistTo.get(v);
-            if (vDistTo.get(w) > (distToV + weight)){
-                vDistTo.put(w, distToV + weight);
-                vEdgeTo.put(w, v); //should be 'nodeBefore'
-                if(vPq.contains(w)){
-                    vPq.remove(w);
-                }
+            vRelaxed.add(x);
+            double distToX = vDistTo.getOrDefault(x, Double.MAX_VALUE);
+            if (vDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
+                vDistTo.put(w, distToX + weight);
+                vEdgeTo.put(w, x); //should be 'nodeBefore'
                 vPq.add(w); //inefficient?
             }
         }
-
+        arelaxTimeEnd = System.nanoTime();
+        atotalRelaxTime += (arelaxTimeEnd - arelaxTimeStart);
     }
 
     public Double getDist() {
         return uDistTo.get(overlapNode) + vDistTo.get(overlapNode);
     }
-//
-//    public HashMap<Long, Long> getEdgeTo() {
-//        return edgeTo;
-//    }
 
     public class DistanceComparatorU implements Comparator<Long>{
         public int compare(Long x, Long y){
-            if(uDistTo.get(x) < uDistTo.get(y)){
+            if(uDistTo.getOrDefault(x, Double.MAX_VALUE) < uDistTo.getOrDefault(y, Double.MAX_VALUE)){
                 return -1;
             }
-            if(uDistTo.get(x) > uDistTo.get(y)){
+            if(uDistTo.getOrDefault(x, Double.MAX_VALUE) > uDistTo.getOrDefault(y, Double.MAX_VALUE)){
                 return 1;
             }
             else return 0;
@@ -123,15 +147,41 @@ public class BiDijkstra {
     }
     public class DistanceComparatorV implements Comparator<Long>{
         public int compare(Long x, Long y){
-            if(vDistTo.get(x) < vDistTo.get(y)){
+            if(vDistTo.getOrDefault(x, Double.MAX_VALUE) < vDistTo.getOrDefault(y, Double.MAX_VALUE)){
                 return -1;
             }
-            if(vDistTo.get(x) > vDistTo.get(y)){
+            if(vDistTo.getOrDefault(x, Double.MAX_VALUE) > vDistTo.getOrDefault(y, Double.MAX_VALUE)){
                 return 1;
             }
             else return 0;
         }
     }
+
+    private double haversineDistance(long a, long b, BTreeMap<Long, double[]> dictionary){
+        double[] nodeA = dictionary.get(a);
+        double[] nodeB = dictionary.get(b);
+        double rad = 6371000; //radius of earth in metres
+        double aLatRadians = Math.toRadians(nodeA[0]); //0 = latitude, 1 = longitude
+        double bLatRadians = Math.toRadians(nodeB[0]);
+        double deltaLatRadians = Math.toRadians(nodeB[0] - nodeA[0]);
+        double deltaLongRadians = Math.toRadians(nodeB[1] - nodeA[1]);
+
+        double x = Math.sin(deltaLatRadians/2) * Math.sin(deltaLatRadians/2) +
+                Math.cos(aLatRadians) * Math.cos(bLatRadians) *
+                        Math.sin(deltaLongRadians/2) * Math.sin(deltaLongRadians/2);
+        double y = 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+        return rad * y;
+    }
+
+    private void timerStart(){
+        startTime = System.nanoTime();
+    }
+
+    private void timerEnd(String string){
+        endTime = System.nanoTime();
+        System.out.println(string + " time: " + (((float) endTime - (float)startTime) / 1000000000));
+    }
+
 }
 
 

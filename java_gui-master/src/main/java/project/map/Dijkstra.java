@@ -1,6 +1,7 @@
 package project.map;
 
-import com.sun.tools.javac.util.Pair;
+
+import javafx.util.Pair;
 
 import java.util.*;
 
@@ -27,7 +28,7 @@ public class Dijkstra {
         while(!pq.isEmpty()){
 //            System.out.println("Dijkstra!");
             long v = pq.poll();
-            for (Pair<Long, Double> e : graph.adj(v)){
+            for (double[] e : graph.adj(v)){
                 relax(v, e);
             }
         }
@@ -52,7 +53,7 @@ public class Dijkstra {
         while(!pq.isEmpty()){
 //            System.out.println("Dijkstra!");
             long v = pq.poll();
-            for (Pair<Long, Double> e : graph.adj(v)){
+            for (double[] e : graph.adj(v)){
                 relax(v, e);
                 if(v == endNode){
                     break;
@@ -63,9 +64,9 @@ public class Dijkstra {
         System.out.println("Dijkstra time: " + (((float) endTime - (float)startTime) / 1000000000));
     }
 
-    private void relax(Long v, Pair<Long, Double> edge){
-        long w = edge.fst;
-        double weight = edge.snd;
+    private void relax(Long v, double[] edge){
+        long w = (long) edge[0];
+        double weight = edge[1];
         double distToV = distTo.get(v);
         if (distTo.get(w) > (distToV + weight)){
             distTo.put(w, distToV + weight);
