@@ -43,7 +43,7 @@ public class MyWay {
         this.wayId = wayId;
     }
 
-    public long wayId;
+    private long wayId;
 
     public String print() {
         StringBuilder sb = new StringBuilder().append(String.valueOf(wayId));

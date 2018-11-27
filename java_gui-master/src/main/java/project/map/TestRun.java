@@ -12,7 +12,7 @@ public class TestRun {
     public static void main(String[] args) {
         long startTime, endTime;
         String mapDir = System.getProperty("user.dir").concat("/res/");
-        File f = new File(mapDir.concat("England-latest.osm.pbf"));
+        File f = new File(mapDir.concat("Stratford.osm.pbf"));
         MyGraph graph;
         Long src, dst;
 
@@ -35,8 +35,8 @@ public class TestRun {
 //            src = Long.parseLong("1349207723"); //wales
 //            dst = Long.parseLong("707151082");
 
-//            src = Long.parseLong("312711672"); //
-//            dst = Long.parseLong("2940631595");
+            src = Long.parseLong("312711672"); //
+            dst = Long.parseLong("2940631595");
 
 //            src = Long.parseLong("27144564"); //london
 //            dst = Long.parseLong("59838278");
@@ -45,12 +45,12 @@ public class TestRun {
 //            src = Long.parseLong("1107401572"); //brum
 //            dst = Long.parseLong("1635424953");
 
-            src = Long.parseLong("548050322"); //england
-            dst = Long.parseLong("513499");
-
-
-            src = Long.parseLong("548050322"); //exeter to spalding
-            dst = Long.parseLong("550385409");
+//            src = Long.parseLong("548050322"); //england
+//            dst = Long.parseLong("513499");
+//
+//
+//            src = Long.parseLong("548050322"); //exeter to spalding
+//            dst = Long.parseLong("550385409");
 
 //            src = Long.parseLong("548050322"); //brum
 //            dst = Long.parseLong("280150290");
