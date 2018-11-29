@@ -21,6 +21,7 @@ public class BiDijkstra {
     private double maxDist; //how far from the nodes we have explored - have we covered minimum distance yet?
     public double bestSeen;
     public int explored;
+    private long startNode, endNode;
 
     public BiDijkstra(MyGraph graph, Long startNode, Long endNode, BTreeMap<Long, double[]> dictionary){
         uDistTo = new HashMap<>(graph.getGraph().size());
@@ -38,6 +39,9 @@ public class BiDijkstra {
 //        }
 //        timerEnd("Filling maps");
 
+        this.startNode = startNode;
+        this.endNode = endNode;
+
         uDistTo.put(startNode, 0.0);
         vDistTo.put(endNode, 0.0);
 
@@ -51,9 +55,10 @@ public class BiDijkstra {
         vRelaxed = new HashSet<>();
 
         bestSeen = Double.MAX_VALUE;
-        ArrayList<Long> bestPath = new ArrayList<>();
+        long bestPathNode = 0;
 
         double minDist = haversineDistance(startNode, endNode, dictionary);
+        double uFurthest, vFurthest = 0;
 
         double competitor;
 
@@ -63,41 +68,68 @@ public class BiDijkstra {
 
         long startTime = System.nanoTime();
         OUTER: while(!(uPq.isEmpty()) && !(vPq.isEmpty())){ //check
+            containsTimeStart = System.nanoTime();
             long v1 = uPq.poll();
+            containsTimeEnd = System.nanoTime();
+            totalContainsTime += (containsTimeEnd - containsTimeStart);
+            uFurthest = uDistTo.get(v1);
+//            System.out.println(v1);
             for (double[] e : graph.adj(v1)){
                 relax(v1, e, true);
+//                System.out.println("...   ");
+                if(uFurthest + vFurthest >= minDist){
+//                    System.out.println("   ...");
                     if (vRelaxed.contains((long) e[0])) {
                         competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((long) e[0]));
                         if (bestSeen > competitor) {
                             bestSeen = competitor;
+                            bestPathNode = v1;
                         }
                     }
                     if (vRelaxed.contains(v1)) {
                         System.out.println("truth");
-                        overlapNode = v1;
+                        if((uDistTo.get(v1) + vDistTo.get(v1)) < bestSeen){
+                            overlapNode = v1;
+                        } else {
+                            overlapNode = bestPathNode;
+                        }
                         break OUTER;
                     }
 //                    if (v1 == endNode) {
 //                        break;
 //                    }
+                }
             }
+            containsTimeStart = System.nanoTime();
             long v2 = vPq.poll();
+            containsTimeEnd = System.nanoTime();
+            totalContainsTime += (containsTimeEnd - containsTimeStart);
+            vFurthest = vDistTo.get(v2);
             for (double[] e : graph.adj(v2)) {
                 relax(v2, e, false);
+//                System.out.println("...   ");
+                if(uFurthest + vFurthest >= minDist){
+//                    System.out.println("   ...");
                     if (uRelaxed.contains((long) e[0])) {
                         competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((long) e[0]));
                         if (bestSeen > competitor) {
                             bestSeen = competitor;
+                            bestPathNode = v2;
                         }
                     }
-                    if (uRelaxed.contains(v2)) {
+                    if (uRelaxed.contains(v2)) { //FINAL TERMINATION
                         System.out.println("truth");
-                        overlapNode = v2;
+                        if((uDistTo.get(v2) + vDistTo.get(v2)) < bestSeen){
+                            overlapNode = v2;
+                        } else {
+                            overlapNode = bestPathNode;
+                        }
                         break OUTER;
                     }
 //                    if (v2 == startNode) {
 //                        break;
 //                    }
+                }
             }
         }
         long endTime = System.nanoTime();
@@ -171,6 +203,22 @@ public class BiDijkstra {
                         Math.sin(deltaLongRadians/2) * Math.sin(deltaLongRadians/2);
         double y = 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
         return rad * y;
+    }
+
+    public ArrayList<Long> getRoute(){
+        ArrayList<Long> route = new ArrayList<>();
+        long node = overlapNode;
+        while(node != startNode){
+            node = uEdgeTo.get(node);
+            route.add(node);
+        }
+        Collections.reverse(route);
+        node = overlapNode;
+        while(node != endNode){
+            node = vEdgeTo.get(node);
+            route.add(node);
+        }
+        return route;
     }
 
     private void timerStart(){

@@ -87,7 +87,8 @@ public class MyGraph {
         System.out.println("Map roads pre-split:      " + mapRoads.size());
         edges = splitWays(mapRoads, true);
         mapRoads = null;
-        System.out.println("Map roads post-split:     " + edges.size());
+        int noOfEdges = edges.size();
+        System.out.println("Map roads post-split:     " + noOfEdges);
         timerEnd("Splitting ways");
 
         parsingNodes = true;
@@ -121,11 +122,14 @@ public class MyGraph {
             timerEnd("Read graph");
         } else {
             System.out.println("No graph found, creating now.");
-            graph = new HashMap<>();
+            graph = new HashMap<>(noOfEdges);
 
             timerStart();
             System.out.println("Adding connections");
+            int counter = 0;
             for(long[] wayNodes : edges){ //iterate through every edge and add neighbours to graph vertices accordingly
+                counter++;
+                System.out.println(((double) counter / (double) noOfEdges) * 100);
 //            System.out.println(way.getWayId());
                 if(wayNodes.length > 1){
                     long fstVert = wayNodes[0];
@@ -136,8 +140,10 @@ public class MyGraph {
                     if(!graph.containsKey(lstVert)){
                         graph.put(lstVert, new HashSet<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
                     }
-                    graph.get(fstVert).add(new double[]{(double) wayNodes[1], lengthOfEdge(wayNodes)});
-                    graph.get(lstVert).add(new double[]{(double) wayNodes[0], lengthOfEdge(wayNodes)});
+                    double length = lengthOfEdge(wayNodes);
+//                    double length = 0;
+                    graph.get(fstVert).add(new double[]{(double) wayNodes[wayNodes.length - 1], length});
+                    graph.get(lstVert).add(new double[]{(double) wayNodes[0], length});
                 }
             }
             timerEnd("Creating graph");
@@ -173,17 +179,16 @@ public class MyGraph {
 
     private double lengthOfEdge(long[] edge){
         double length = 0;
-        long lastNode = edge[0];
+        double[] nodeA = dictionary.get(edge[0]);
         for(long node : edge){
-            length = length + haversineDistance(lastNode, node);
-            lastNode = node;
+            double[] nodeB = dictionary.get(node);
+            length = length + haversineDistance(nodeA, nodeB);
+            nodeA = nodeB;
         }
         return length;
     }
 
-    private double haversineDistance(long a, long b){
-        double[] nodeA = dictionary.get(a);
-        double[] nodeB = dictionary.get(b);
+    private double haversineDistance(double[] nodeA, double[] nodeB){
         double rad = 6371000; //radius of earth in metres
         double aLatRadians = Math.toRadians(nodeA[0]); //0 = latitude, 1 = longitude
         double bLatRadians = Math.toRadians(nodeB[0]);
@@ -358,11 +363,6 @@ public class MyGraph {
     }
 
     private Set<long[]> splitWays(Set<long[]> ways, boolean strip){
-        ArrayList<long[]> newWays = new ArrayList<>();
-        for(long[] w : ways){
-            ArrayList<long[]> splitWays = splitWay(w, strip);
-            newWays.addAll(splitWays);
-        }
         DB db3 = DBMaker
                 .fileDB("files//edges.db")
                 .fileMmapEnable()
@@ -371,8 +371,19 @@ public class MyGraph {
                 .make();
 
         Set<long[]> edges = db3.treeSet("set", Serializer.LONG_ARRAY).createOrOpen();
-        edges.addAll(newWays);
 
+        if(edges.isEmpty()){
+            ArrayList<long[]> newWays = new ArrayList<>();
+            for(long[] w : ways){
+                ArrayList<long[]> splitWays = splitWay(w, strip);
+                newWays.addAll(splitWays);
+            }
+
+            edges.addAll(newWays);
+            newWays = null;
+        } else {
+            System.out.println("edges found; skipping split");
+        }
         return edges;
     }
 
@@ -396,11 +407,11 @@ public class MyGraph {
                 break;
             }
         }
-        if(strip){
-            for(long[] w : returnWays){
-                w = stripWay(w);
-            }
-        }
+//        if(strip){
+//            for(long[] w : returnWays){
+//                w = stripWay(w);
+//            }
+//        }
         return returnWays;
     }
 
