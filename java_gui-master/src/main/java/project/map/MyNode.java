@@ -53,4 +53,12 @@ public class MyNode implements java.io.Serializable {
         return lati;
     }
 
+    public MyNode(double longi, double lati){
+        this.lati = lati;
+        this.longi = longi;
+    }
+
+    public MyNode(){}
+
+
 }

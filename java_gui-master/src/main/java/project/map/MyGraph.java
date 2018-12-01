@@ -423,13 +423,13 @@ public class MyGraph {
         return graph.get(v);
     }
 
-//    public ArrayList<MyNode> refsToNodes(ArrayList<Long> refs){
-//        ArrayList<MyNode> nodes = new ArrayList<>();
-//        for(Long ref : refs){
-//            nodes.add(dictionary.get(ref));
-//        }
-//        return nodes;
-//    }
+    public ArrayList<MyNode> refsToNodes(ArrayList<Long> refs){
+        ArrayList<MyNode> nodes = new ArrayList<>();
+        for(Long ref : refs){
+            nodes.add(new MyNode(dictionary.get(ref)[1], dictionary.get(ref)[0]));
+        }
+        return nodes;
+    }
 
     public ArrayList<Long> nodesToRefs(ArrayList<MyNode> nodes){
         ArrayList<Long> refs = new ArrayList<>();

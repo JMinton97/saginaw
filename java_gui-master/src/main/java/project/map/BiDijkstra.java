@@ -8,22 +8,23 @@ import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 
 public class BiDijkstra {
-    long startTime, endTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, arelaxTimeStart, arelaxTimeEnd, atotalRelaxTime, containsTimeStart, containsTimeEnd, totalContainsTime;
+    long startTime, endTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, arelaxTimeStart, arelaxTimeEnd, atotalRelaxTime, containsTimeStart, containsTimeEnd, totalContainsTime, pollTimeStart, pollTimeEnd, totalPollTime, relaxPutTimeStart, relaxPutTimeEnd, totalRelaxPutTime;
     HashMap<Long, Double> uDistTo;
     HashMap<Long, Long> uEdgeTo;
     HashMap<Long, Double> vDistTo;
     HashMap<Long, Long> vEdgeTo;
-    PriorityQueue<Long> uPq;
-    PriorityQueue<Long> vPq;
+    PriorityQueue<DijkstraEntry> uPq;
+    PriorityQueue<DijkstraEntry> vPq;
     private HashSet<Long> uRelaxed;
     private HashSet<Long> vRelaxed;
-    Long overlapNode;
+    public Long overlapNode;
     private double maxDist; //how far from the nodes we have explored - have we covered minimum distance yet?
     public double bestSeen;
     public int explored;
     private long startNode, endNode;
 
     public BiDijkstra(MyGraph graph, Long startNode, Long endNode, BTreeMap<Long, double[]> dictionary){
+        System.out.println("SIZE " + graph.getGraph().size());
         uDistTo = new HashMap<>(graph.getGraph().size());
         uEdgeTo = new HashMap<>(graph.getGraph().size());
 
@@ -45,11 +46,11 @@ public class BiDijkstra {
         uDistTo.put(startNode, 0.0);
         vDistTo.put(endNode, 0.0);
 
-        uPq = new PriorityQueue<>(new DistanceComparatorU());
-        vPq = new PriorityQueue<>(new DistanceComparatorV());
+        uPq = new PriorityQueue<>(new DistanceComparator());
+        vPq = new PriorityQueue<>(new DistanceComparator());
 
-        uPq.add(startNode);
-        vPq.add(endNode);
+        uPq.add(new DijkstraEntry(startNode, 0.0));
+        vPq.add(new DijkstraEntry(endNode, 0.0));
 
         uRelaxed = new HashSet<>();
         vRelaxed = new HashSet<>();
@@ -64,20 +65,18 @@ public class BiDijkstra {
 
         maxDist = 0;
 
-        totalRelaxTime = 0;
-
         long startTime = System.nanoTime();
         OUTER: while(!(uPq.isEmpty()) && !(vPq.isEmpty())){ //check
-            containsTimeStart = System.nanoTime();
-            long v1 = uPq.poll();
-            containsTimeEnd = System.nanoTime();
-            totalContainsTime += (containsTimeEnd - containsTimeStart);
-            uFurthest = uDistTo.get(v1);
+            pollTimeStart = System.nanoTime();
+            long v1 = uPq.poll().getNode();
+            pollTimeEnd = System.nanoTime();
+            totalPollTime += (pollTimeEnd - pollTimeStart);
+//            uFurthest = uDistTo.get(v1);
 //            System.out.println(v1);
             for (double[] e : graph.adj(v1)){
                 relax(v1, e, true);
 //                System.out.println("...   ");
-                if(uFurthest + vFurthest >= minDist){
+//                if(uFurthest + vFurthest >= minDist){
 //                    System.out.println("   ...");
                     if (vRelaxed.contains((long) e[0])) {
                         competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((long) e[0]));
@@ -98,25 +97,30 @@ public class BiDijkstra {
 //                    if (v1 == endNode) {
 //                        break;
 //                    }
-                }
+//                }
             }
-            containsTimeStart = System.nanoTime();
-            long v2 = vPq.poll();
-            containsTimeEnd = System.nanoTime();
-            totalContainsTime += (containsTimeEnd - containsTimeStart);
-            vFurthest = vDistTo.get(v2);
+            pollTimeStart = System.nanoTime();
+            long v2 = vPq.poll().getNode();
+            pollTimeEnd = System.nanoTime();
+            totalPollTime += (pollTimeEnd - pollTimeStart);
+//            vFurthest = vDistTo.get(v2);
             for (double[] e : graph.adj(v2)) {
                 relax(v2, e, false);
 //                System.out.println("...   ");
-                if(uFurthest + vFurthest >= minDist){
+//                if(uFurthest + vFurthest >= minDist){
 //                    System.out.println("   ...");
+                    containsTimeStart = System.nanoTime();
                     if (uRelaxed.contains((long) e[0])) {
+
                         competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((long) e[0]));
                         if (bestSeen > competitor) {
                             bestSeen = competitor;
                             bestPathNode = v2;
                         }
                     }
+                    containsTimeEnd = System.nanoTime();
+                    totalContainsTime += (containsTimeEnd - containsTimeStart);
+                    containsTimeStart = System.nanoTime();
                     if (uRelaxed.contains(v2)) { //FINAL TERMINATION
                         System.out.println("truth");
                         if((uDistTo.get(v2) + vDistTo.get(v2)) < bestSeen){
@@ -126,10 +130,12 @@ public class BiDijkstra {
                         }
                         break OUTER;
                     }
+                    containsTimeEnd = System.nanoTime();
+                    totalContainsTime += (containsTimeEnd - containsTimeStart);
 //                    if (v2 == startNode) {
 //                        break;
 //                    }
-                }
+//                }
             }
         }
         long endTime = System.nanoTime();
@@ -137,7 +143,7 @@ public class BiDijkstra {
     }
 
     private void relax(Long x, double[] edge, boolean u){
-        arelaxTimeStart = System.nanoTime();
+        relaxTimeStart = System.nanoTime();
         explored++;
         long w = (long) edge[0];
         double weight = edge[1];
@@ -145,44 +151,45 @@ public class BiDijkstra {
             uRelaxed.add(x);
             double distToX = uDistTo.getOrDefault(x, Double.MAX_VALUE);
             if (uDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
+                relaxPutTimeStart = System.nanoTime();
                 uDistTo.put(w, distToX + weight);
                 uEdgeTo.put(w, x); //should be 'nodeBefore'
-                uPq.add(w); //inefficient?
+                relaxPutTimeEnd = System.nanoTime();
+                totalRelaxPutTime += (relaxPutTimeEnd - relaxPutTimeStart);
+                arelaxTimeStart = System.nanoTime();
+                uPq.add(new DijkstraEntry(w, distToX + weight)); //inefficient?
+                arelaxTimeEnd = System.nanoTime();
+                atotalRelaxTime += (arelaxTimeEnd - arelaxTimeStart);
             }
         } else {
             vRelaxed.add(x);
             double distToX = vDistTo.getOrDefault(x, Double.MAX_VALUE);
             if (vDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
+                relaxPutTimeStart = System.nanoTime();
                 vDistTo.put(w, distToX + weight);
                 vEdgeTo.put(w, x); //should be 'nodeBefore'
-                vPq.add(w); //inefficient?
+                relaxPutTimeEnd = System.nanoTime();
+                totalRelaxPutTime += (relaxPutTimeEnd - relaxPutTimeStart);
+                arelaxTimeStart = System.nanoTime();
+                vPq.add(new DijkstraEntry(w, distToX + weight)); //inefficient?
+                arelaxTimeEnd = System.nanoTime();
+                atotalRelaxTime += (arelaxTimeEnd - arelaxTimeStart);
             }
         }
-        arelaxTimeEnd = System.nanoTime();
-        atotalRelaxTime += (arelaxTimeEnd - arelaxTimeStart);
+        relaxTimeEnd = System.nanoTime();
+        totalRelaxTime += (relaxTimeEnd - relaxTimeStart);
     }
 
     public Double getDist() {
         return uDistTo.get(overlapNode) + vDistTo.get(overlapNode);
     }
 
-    public class DistanceComparatorU implements Comparator<Long>{
-        public int compare(Long x, Long y){
-            if(uDistTo.getOrDefault(x, Double.MAX_VALUE) < uDistTo.getOrDefault(y, Double.MAX_VALUE)){
+    public class DistanceComparator implements Comparator<DijkstraEntry>{
+        public int compare(DijkstraEntry x, DijkstraEntry y){
+            if(x.getDistance() < y.getDistance()){
                 return -1;
             }
-            if(uDistTo.getOrDefault(x, Double.MAX_VALUE) > uDistTo.getOrDefault(y, Double.MAX_VALUE)){
-                return 1;
-            }
-            else return 0;
-        }
-    }
-    public class DistanceComparatorV implements Comparator<Long>{
-        public int compare(Long x, Long y){
-            if(vDistTo.getOrDefault(x, Double.MAX_VALUE) < vDistTo.getOrDefault(y, Double.MAX_VALUE)){
-                return -1;
-            }
-            if(vDistTo.getOrDefault(x, Double.MAX_VALUE) > vDistTo.getOrDefault(y, Double.MAX_VALUE)){
+            if(x.getDistance() > y.getDistance()){
                 return 1;
             }
             else return 0;
@@ -208,6 +215,7 @@ public class BiDijkstra {
     public ArrayList<Long> getRoute(){
         ArrayList<Long> route = new ArrayList<>();
         long node = overlapNode;
+        route.add(overlapNode);
         while(node != startNode){
             node = uEdgeTo.get(node);
             route.add(node);

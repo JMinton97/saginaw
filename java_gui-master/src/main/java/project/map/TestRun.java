@@ -22,9 +22,7 @@ public class TestRun {
             fe.mkdirs();
             fe.createNewFile();
 
-
-
-//            MyMap map = new MyMap(f, 7.0);
+            MyMap map = new MyMap(f, 15000, true);
 
              startTime = System.nanoTime();
             graph = new MyGraph(f);
@@ -32,8 +30,13 @@ public class TestRun {
             System.out.println("Making graph time: " + (((float) endTime - (float)startTime) / 1000000000));
 
 
-//            src = Long.parseLong("1349207723"); //wales
-//            dst = Long.parseLong("707151082");
+            src = Long.parseLong("1349207723"); //wales
+            dst = Long.parseLong("707151082");
+
+            src = Long.parseLong("154401978"); //wales middle
+            dst = Long.parseLong("411081397");
+
+
 
 //            src = Long.parseLong("312711672"); //
 //            dst = Long.parseLong("2940631595");
@@ -52,67 +55,75 @@ public class TestRun {
 //            src = Long.parseLong("548050322"); //exeter to spalding
 //            dst = Long.parseLong("550385409");
 
-            src = Long.parseLong("548050322"); //brum
-            dst = Long.parseLong("280150290");
+//            src = Long.parseLong("548050322"); //brum
+//            dst = Long.parseLong("280150290");
 
+//            src = Long.parseLong("1014654504"); //north to south
+//            dst = Long.parseLong("1620423227");
 
-//            startTime = System.nanoTime();
-//            Dijkstra dijk = new Dijkstra(graph, src, dst);
-//            endTime = System.nanoTime();
-//            System.out.println("Dijkstra full time: " + (((float) endTime - (float)startTime) / 1000000000));
-//            System.out.println("Distance: " + dijk.getDistTo().get(dst) / 1000);
-//
-//            next = dst;
-////            route.add(next);
-//            while(next != null){
-////                System.out.println(next);
-//                route.add(next);
-//                next = dijk.getEdgeTo().get(next);
-//            }
-//            System.out.println("Route is " + route.size());
+            startTime = System.nanoTime();
+            Dijkstra dijk = new Dijkstra(graph, src, dst);
+            endTime = System.nanoTime();
+            System.out.println("Poll time: " + ((float) dijk.totalPollTime / 1000000000));
+            System.out.println("Add time: " + ((float) dijk.totalAddTime / 1000000000));
+            System.out.println("Put time: " + ((float) dijk.totalPutTime / 1000000000));
+            System.out.println("Relax time: " + ((float) dijk.totalRelaxTime / 1000000000));
+            System.out.println("Dijkstra full time: " + (((float) endTime - (float)startTime) / 1000000000));
+            System.out.println("Distance: " + dijk.getDistTo().get(dst));
+            System.out.println("Explored: " + dijk.explored);
+
+            System.out.println("----------------------");
+
+//            BiDijkstra biDijk = new BiDijkstra(graph, src, dst, graph.getDictionary());
+
 //            for(int x = 0; x < 10; x++){
                 System.out.println();
                 startTime = System.nanoTime();
                 BiDijkstra biDijk = new BiDijkstra(graph, src, dst, graph.getDictionary());
                 endTime = System.nanoTime();
                 System.out.println("Bi-dijkstra full time: " + (((float) endTime - (float)startTime) / 1000000000));
+                System.out.println("Poll time:    " + ((float) biDijk.totalPollTime / 1000000000));
+//                System.out.println("Priority queue time:    " + ((float) biDijk.totalContainsTime / 1000000000));
+                System.out.println("Total relax time: " + ((float) biDijk.totalRelaxTime / 1000000000));
+                System.out.println("Contains time: " + ((float) biDijk.totalContainsTime / 1000000000));
+                System.out.println("Relax-queue-add time: " + ((float) biDijk.atotalRelaxTime / 1000000000));
+                System.out.println("Relax-put time: " + ((float) biDijk.totalRelaxPutTime / 1000000000));
                 System.out.println("Distance: " + biDijk.getDist());
                 System.out.println("Distance: " + biDijk.bestSeen);
+            System.out.println("Explored: " + biDijk.explored);
 //            }
 
-//            route = new ArrayList<>();
-//            next = biDijk.overlapNode;
-//            while(next != null){
-////                System.out.println(next);
-//                route.add(next);
-//                next = biDijk.uEdgeTo.get(next);
-//            }
-//            next = biDijk.overlapNode;
-//            while(next != null){
-////                System.out.println(next);
-//                route.add(next);
-//                next = biDijk.vEdgeTo.get(next);
-//            }
 //            System.out.println("Overlap route is  " + biDijk.getDist() / 1000);
 //            System.out.println("Absolute route is " + biDijk.bestSeen / 1000);
 //            System.out.println("Explored " + biDijk.explored);
-//
-//            System.out.println("Putting/add time: " + ((float) biDijk.totalRelaxTime / 1000000000));
-            System.out.println("Contains time:    " + ((float) biDijk.totalContainsTime / 1000000000));
-            System.out.println("Total relax time: " + ((float) biDijk.atotalRelaxTime / 1000000000));
+
 
             ArrayList<Long> route = biDijk.getRoute();
+            ArrayList<Long> droute = dijk.getRoute();
             System.out.println(route.get(0));
-            System.out.println(route.get(((route.size() - 1) / 2) - 1));
-            System.out.println(route.get(((route.size() - 1) / 2)));
-            System.out.println(route.get(((route.size() - 1) / 2) + 1));
+            System.out.println(dijk.getRoute().get(0));
+            System.out.println();
             System.out.println(route.get(route.size() - 1));
+            System.out.println(dijk.getRoute().get(dijk.getRoute().size() - 1));
+
+//            for(int j = 0; j < droute.size(); j++){
+//                if(!route.get(j).equals(droute.get(j))){
+//                    System.out.println("Error at " + j);
+//                    System.out.println(route.get(j));                         //ERROR CHECKING
+//                    System.out.println(droute.get(j));
+//                }
+//            }
+//            System.out.println();
+
+            System.out.println(route == droute);
+            System.out.println(biDijk.getRoute().size());
+            System.out.println(dijk.getRoute().size());
 
 
-//             startTime = System.nanoTime();
-//            ArrayList<MyNode> newNodes = DouglasPeucker.simplify(graph.refsToNodes(route), 0.0001);
-//             endTime = System.nanoTime();
-//            System.out.println("Douglas time: " + (((float) endTime - (float)startTime) / 1000000000));
+             startTime = System.nanoTime();
+            ArrayList<MyNode> newNodes = DouglasPeucker.simplify(graph.refsToNodes(route), 0.0001);
+             endTime = System.nanoTime();
+            System.out.println("Douglas time: " + (((float) endTime - (float)startTime) / 1000000000));
 //
 //            MyMap map = new MyMap(f);
 //            map.drawMap(0);

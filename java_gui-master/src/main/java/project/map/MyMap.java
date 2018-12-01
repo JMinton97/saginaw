@@ -5,6 +5,7 @@ import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import crosby.binary.*;
 import crosby.binary.Osmformat.*;
 import crosby.binary.file.*;
+import net.coobird.thumbnailator.Thumbnails;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 //import crosby.binary.test.MyNode;
@@ -36,8 +37,8 @@ public class MyMap {
     private static ArrayList<MyWay> mapWaterBodies;
     private static ArrayList<MyWay> mapWaterWays;
     private static ArrayList<MyWay> mapCycles;
-    private static ArrayList<Long> tileWays;
     private static ArrayList<ArrayList<ConcurrentMap>> tileNodes;
+    private static ArrayList<ArrayList<ConcurrentMap>> tileWays;
     private static ConcurrentMap<Long, long[]> allWayNodes, allWayNodes2;
     private static HashMap<Long, long[]> putWayNodes;
     private static double northMost, westMost, southMost, eastMost;
@@ -126,10 +127,13 @@ public class MyMap {
         spaceModifierX = spaceModifierY * 0.75;
     }
 
-    public MyMap(File file, double scale) throws IOException{
+    public MyMap(File file, int maxEdge, boolean alreadyFiled) throws IOException{
+
+        this.maxEdge = maxEdge; //max edge length of an image
+
         counter = 0;
         this.file = file;
-        scale = 40000; //40000 pixels per degree!
+        int scale = 40000; //40000 pixels per degree!
 
         dictionary = new HashMap<>();
         mapRoads = new ArrayList<>();
@@ -140,21 +144,23 @@ public class MyMap {
         mapWaterWays = new ArrayList<>();
         mapCycles = new ArrayList<>();
 
-        northMost = 53.5; //56;
-        westMost = -5.5; //-6;          //WALES
-        southMost = 51.3; //49.5;
-        eastMost = -2.5; //2;
+//        northMost = 53.5; //56;
+//        westMost = -5.5; //-6;          //WALES
+//        southMost = 51.3; //49.5;
+//        eastMost = -2.5; //2;
 
-//        northMost = 56;
-//        westMost = -6;
-//        southMost = 49.5;   //IT"S COMING HOME
-//        eastMost = 2;
+        northMost = 56;
+        westMost = -6;
+        southMost = 49.5;   //IT"S COMING HOME
+        eastMost = 2;
 ////
         long[] longs = new long[1];
 
         DB db = DBMaker
                 .fileDB("files//file2.db")
                 .fileMmapEnable()
+                .checksumHeaderBypass()
+                .closeOnJvmShutdown()
                 .make();
 
 
@@ -166,22 +172,22 @@ public class MyMap {
 
 //        System.out.println(allWayNodes.get(Long.parseLong("357234218"))[0]);
 
-        parsingNodes = false;
-        putWayNodes = new HashMap<>();
-        InputStream input4 = new FileInputStream(file);
-        BlockReaderAdapter brad4 = new TestBinaryParser();
-        BlockInputStream wayReader4 = new BlockInputStream(input4, brad4);
-        long startTime = System.nanoTime();
-        wayReader4.process(); //first we find all the ways we want
-        long endTime = System.nanoTime();
-        System.out.println("Initial time: " + (((float) endTime - (float)startTime) / 1000000000));
-//
-
-        wayReader4.close();
+        if(!alreadyFiled){
+            parsingNodes = false;
+            putWayNodes = new HashMap<>();
+            InputStream input4 = new FileInputStream(file);
+            BlockReaderAdapter brad4 = new TestBinaryParser();
+            BlockInputStream wayReader4 = new BlockInputStream(input4, brad4);
+            long startTime = System.nanoTime();
+            wayReader4.process(); //first we find all the ways we want
+            long endTime = System.nanoTime();
+            System.out.println("Initial time: " + (((float) endTime - (float)startTime) / 1000000000));
+            wayReader4.close();
+        }
 
         db.commit();
 
-        System.out.println("This many nodes in the region: " + allWayNodes.size()); //enable size counter?
+//        System.out.println("This many nodes in the region: " + allWayNodes.size()); //enable size counter?
 
         counter = 0;
 
@@ -202,7 +208,7 @@ public class MyMap {
 
         System.out.println("Total map width in px: " + scale * width);
 
-        maxEdge = 15000; //max edge length of an image
+
         interval = width / ((scale * width) / maxEdge);
         spaceModifierX = maxEdge / interval;
 //        System.out.println("Interval " + interval);
@@ -220,13 +226,13 @@ public class MyMap {
             bounds[y][0][1] = westMost;
         }
 
-        tileNodes = new ArrayList<>();
-
         for(int x = 0; x < (int) Math.ceil((scale * width) / maxEdge); x++){
             for(int y = 0; y < (int) Math.ceil((scale * height) / maxEdge); y++){
                 tileDBs[x][y] = DBMaker
-                        .fileDB("files//".concat(String.valueOf(x).concat("-").concat(String.valueOf(y))))
+                        .fileDB("files//".concat(String.valueOf(x).concat("-").concat(String.valueOf(y)).concat(".db")))
                         .fileMmapEnable()
+                        .checksumHeaderBypass()
+                        .closeOnJvmShutdown()
                         .make();
             }
         }
@@ -236,8 +242,10 @@ public class MyMap {
         for(int i = 0; i < (int) Math.ceil((scale * width) / maxEdge); i++) {
             System.out.println(i);
             tileNodes.add(new ArrayList<>());
+            tileWays.add(new ArrayList<>());
             for(int k = 0; k < (int) Math.ceil((scale * height) / maxEdge); k++) {
-                tileNodes.get(i).add(tileDBs[i][k].hashMap(String.valueOf(i).concat("-").concat(String.valueOf(k))).createOrOpen());
+                tileNodes.get(i).add(tileDBs[i][k].hashMap(String.valueOf(i).concat("-").concat(String.valueOf(k)).concat(".db")).createOrOpen());
+//                tileWays.get(i).add(tileDBs[i][k].hashMap(String.valueOf(i).concat("-").concat(String.valueOf(k)).concat(".db")).createOrOpen());
             }
         }
 
@@ -270,20 +278,24 @@ public class MyMap {
         }
         drawArray();
 
-        timerStart();
-        parsingNodes = true;
-        tile = true;
-        InputStream input = new FileInputStream(file);
-        BlockReaderAdapter brad = new TestBinaryParser();
-        BlockInputStream wayReader = new BlockInputStream(input, brad);
-        wayReader.process(); //then collect the nodes
-        wayReader.close();
-        timerEnd("Reading nodes");
+        if(!alreadyFiled){
+            timerStart();
+            parsingNodes = true;
+            tile = true;
+            InputStream input = new FileInputStream(file);
+            BlockReaderAdapter brad = new TestBinaryParser();
+            BlockInputStream wayReader = new BlockInputStream(input, brad);
+            wayReader.process(); //then collect the nodes
+            wayReader.close();
+            timerEnd("Reading nodes");
+        }
 
-
-        for(int x = 0; x < bounds.length; x++) {
-            for (int y = 0; y < bounds[0].length; y++) {
-                if (x != 0 && y != 0) {
+        if(alreadyFiled) {
+            combineTiles(tiles);
+        } else {
+            for(int x = 0; x < bounds.length; x++) {
+                for (int y = 0; y < bounds[0].length; y++) {
+                    if (x != 0 && y != 0) {
 //                    xLow = bounds[x-1][y][1];
 //                    xHigh = bounds[x][y][1];
 //                    yLow = bounds[x][y-1][0];
@@ -293,19 +305,21 @@ public class MyMap {
 //                     endTime = System.nanoTime();
 //                    System.out.println("Read time: " + (((float) endTime - (float)startTime) / 1000000000));
 
-                    startTime = System.nanoTime();
-                    tiles[x - 1][y - 1] = drawTile(x, y, maxEdge);
-                    endTime = System.nanoTime();
-                    System.out.println("Draw time: " + (((float) endTime - (float)startTime) / 1000000000));
+                        startTime = System.nanoTime();
+                        tiles[x - 1][y - 1] = drawTile(x, y, maxEdge);
+                        endTime = System.nanoTime();
+                        System.out.println("Draw time: " + (((float) endTime - (float)startTime) / 1000000000));
 
-                    startTime = System.nanoTime();
-                    saveMap(tiles[x - 1][y - 1], x, y);
-                    endTime = System.nanoTime();
-                    System.out.println("Save time: " + (((float) endTime - (float)startTime) / 1000000000));
-                    tiles[x - 1][y - 1] = null;
-                    System.out.println();
+                        startTime = System.nanoTime();
+                        saveMap(tiles[x - 1][y - 1], x, y);
+                        endTime = System.nanoTime();
+                        System.out.println("Save time: " + (((float) endTime - (float)startTime) / 1000000000));
+                        tiles[x - 1][y - 1] = null;
+                        System.out.println();
+                    }
                 }
             }
+            combineTiles(tiles);
         }
     }
 
@@ -404,6 +418,8 @@ public class MyMap {
                 drawWay(w, mapGraphics, false, axis, tileNodes.get(x - 1).get(y - 1));
 //            }
         }
+
+        mapGraphics.dispose();
 
         return tile;
     }
@@ -608,12 +624,78 @@ public class MyMap {
 
     public void saveMap(BufferedImage map, int x, int y){
         try {
-
             String filename = "draw/tile-".concat(String.valueOf(y)).concat("-").concat(String.valueOf(x)).concat(".png");
             File outputfile = new File(filename);
             ImageIO.write(map, "png", outputfile);
+
+//            BufferedImage scaledImage = new BufferedImage(maxEdge / 2, maxEdge / 2, 1);
+//            Graphics g = scaledImage.createGraphics();
+//            g.drawImage(map, 0, 0, x / 2, y / 2, null);
+//            g.dispose();
+
+            for(int z = 2; z < 64; z = z * 2){
+                map = Thumbnails.of(map)
+                        .size(maxEdge/z, maxEdge/z)
+                        .asBufferedImage();
+
+                filename = "draw/tile-".concat(String.valueOf(y)).concat("-").concat(String.valueOf(x)).concat("_").concat(Integer.toString(z)).concat(".png");
+                outputfile = new File(filename);
+                ImageIO.write(map, "png", outputfile);
+            }
+
         } catch (IOException e) {
             // handle exception
+        }
+    }
+
+    public void combineTiles(BufferedImage[][] tiles) {
+        String filename;
+        File inputfile, outputfile;
+        try{
+            for(int z = 2; z < 2048; z = z * 2){
+//                if(Math.max(tiles.length, tiles[0].length))
+                System.out.println("z" + z);
+                //need to wrap this bit in a loop over blocks - done below?
+                for(int jumpY = 1; jumpY <= tiles.length + 1; jumpY = jumpY + z){
+                    System.out.println(tiles[0].length);
+                    for(int jumpX = 1; jumpX <= tiles[0].length + 1; jumpX = jumpX + z){
+                        System.out.println("jumpX = " + jumpX);
+                        System.out.println("jumpY = " + jumpY);
+                        BufferedImage[][] images = new BufferedImage[z][z];
+                        for(int x = jumpX; x < z + jumpX; x++) {
+                            for (int y = jumpY; y < z + jumpY; y++) {
+                                System.out.println("x " + x + "y " + y);
+                                filename = "draw/tile-".concat(String.valueOf(y)).concat("-").concat(String.valueOf(x)).concat("_").concat(Integer.toString(z)).concat(".png");
+                                inputfile = new File(filename);
+                                if(inputfile.exists()){
+                                    System.out.println((x - jumpX) + " " + (y - jumpY));
+                                    System.out.println("reading draw/tile-".concat(String.valueOf(y)).concat("-").concat(String.valueOf(x)).concat("_").concat(Integer.toString(z)).concat(".png"));
+                                    images[x - jumpX][y - jumpY] = ImageIO.read(inputfile);
+                                } else {
+                                    System.out.println("Doesn't exist.");
+                                    images[x - jumpX][y - jumpY] = new BufferedImage((maxEdge / z), (maxEdge/z), 1);
+                                }
+
+                            }
+                        }
+                        BufferedImage out = new BufferedImage(maxEdge, maxEdge, 1);
+                        Graphics g = out.createGraphics();
+                        int increment = maxEdge / z;
+                        for(int x = 1; x <= z; x++) {
+                            for (int y = 1; y <= z; y++) {
+//                                System.out.println((x * increment) - increment);
+                                g.drawImage(images[x - 1][y - 1], (x * increment) - increment,  (y * increment) - increment,null);
+                            }
+                        }
+                        filename = "draw/".concat(Integer.toString(z)).concat("/tile-L".concat(Integer.toString(z)).concat("_").concat(Integer.toString(jumpY)).concat("-").concat(Integer.toString(jumpX)).concat(".png"));
+                        outputfile = new File(filename);
+                        ImageIO.write(out, "png", outputfile);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(0);
         }
     }
 
@@ -735,6 +817,7 @@ public class MyMap {
 //                            System.out.println(x + ", " + y);
 
                             tileNodes.get(x).get(y).put(lastId, tempDense); //use pump?
+                            //tileWays.get.... .put(dictionary.get(lastId)
 
 
 //                            dictionary.put(lastId, tempDense);
