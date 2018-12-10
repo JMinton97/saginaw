@@ -1,5 +1,6 @@
 package project.map;
 
+import gnu.trove.map.hash.THashMap;
 import javafx.util.Pair;
 import org.mapdb.BTreeMap;
 
@@ -9,10 +10,10 @@ import java.util.concurrent.ConcurrentMap;
 
 public class BiDijkstra {
     long startTime, endTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, arelaxTimeStart, arelaxTimeEnd, atotalRelaxTime, containsTimeStart, containsTimeEnd, totalContainsTime, pollTimeStart, pollTimeEnd, totalPollTime, relaxPutTimeStart, relaxPutTimeEnd, totalRelaxPutTime;
-    HashMap<Long, Double> uDistTo;
-    HashMap<Long, Long> uEdgeTo;
-    HashMap<Long, Double> vDistTo;
-    HashMap<Long, Long> vEdgeTo;
+    THashMap<Long, Double> uDistTo;
+    THashMap<Long, Long> uEdgeTo;
+    THashMap<Long, Double> vDistTo;
+    THashMap<Long, Long> vEdgeTo;
     PriorityQueue<DijkstraEntry> uPq;
     PriorityQueue<DijkstraEntry> vPq;
     private HashSet<Long> uRelaxed;
@@ -25,11 +26,11 @@ public class BiDijkstra {
 
     public BiDijkstra(MyGraph graph, Long startNode, Long endNode, BTreeMap<Long, double[]> dictionary){
         System.out.println("SIZE " + graph.getGraph().size());
-        uDistTo = new HashMap<>(graph.getGraph().size());
-        uEdgeTo = new HashMap<>(graph.getGraph().size());
+        uDistTo = new THashMap<>(graph.getGraph().size());
+        uEdgeTo = new THashMap<>(graph.getGraph().size());
 
-        vDistTo = new HashMap<>(graph.getGraph().size());
-        vEdgeTo = new HashMap<>(graph.getGraph().size());
+        vDistTo = new THashMap<>(graph.getGraph().size());
+        vEdgeTo = new THashMap<>(graph.getGraph().size());
 
 //        timerStart();
 //        for(Long vert : graph.getGraph().keySet()){
@@ -236,6 +237,17 @@ public class BiDijkstra {
     private void timerEnd(String string){
         endTime = System.nanoTime();
         System.out.println(string + " time: " + (((float) endTime - (float)startTime) / 1000000000));
+    }
+
+    public void clear(){
+        uDistTo.clear();
+        uEdgeTo.clear();
+        vDistTo.clear();
+        vEdgeTo.clear();
+        vPq.clear();
+        uPq.clear();
+        vRelaxed.clear();
+        uRelaxed.clear();
     }
 
 }

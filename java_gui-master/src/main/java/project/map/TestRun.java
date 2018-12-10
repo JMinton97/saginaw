@@ -12,7 +12,7 @@ public class TestRun {
     public static void main(String[] args) {
         long startTime, endTime;
         String mapDir = System.getProperty("user.dir").concat("/res/");
-        File f = new File(mapDir.concat("England-latest.osm.pbf"));
+        File f = new File(mapDir.concat("england.osm.pbf"));
         MyGraph graph;
         Long src, dst;
 
@@ -22,21 +22,22 @@ public class TestRun {
             fe.mkdirs();
             fe.createNewFile();
 
-            MyMap map = new MyMap(f, 15000, true);
 
-             startTime = System.nanoTime();
+//            startTime = System.nanoTime();
+//            MyMap map = new MyMap(f, 15000, false);
+//            endTime = System.nanoTime();
+//            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
+
+            startTime = System.nanoTime();
             graph = new MyGraph(f);
-             endTime = System.nanoTime();
+            endTime = System.nanoTime();
             System.out.println("Making graph time: " + (((float) endTime - (float)startTime) / 1000000000));
-
 
             src = Long.parseLong("1349207723"); //wales
             dst = Long.parseLong("707151082");
 
             src = Long.parseLong("154401978"); //wales middle
             dst = Long.parseLong("411081397");
-
-
 
 //            src = Long.parseLong("312711672"); //
 //            dst = Long.parseLong("2940631595");
@@ -45,8 +46,8 @@ public class TestRun {
 //            dst = Long.parseLong("59838278");
 
 
-//            src = Long.parseLong("1107401572"); //brum
-//            dst = Long.parseLong("1635424953");
+            src = Long.parseLong("1107401572"); //brum
+            dst = Long.parseLong("1635424953");
 
 //            src = Long.parseLong("548050322"); //england
 //            dst = Long.parseLong("513499");
@@ -58,53 +59,73 @@ public class TestRun {
 //            src = Long.parseLong("548050322"); //brum
 //            dst = Long.parseLong("280150290");
 
+            src = Long.parseLong("370459811"); //wolverton to sheffield
+            dst = Long.parseLong("1014466202");
+
 //            src = Long.parseLong("1014654504"); //north to south
 //            dst = Long.parseLong("1620423227");
+
+//            src = Long.parseLong("1802487895"); //france
+//            dst = Long.parseLong("1338882013");
+
+//
+//            System.out.println("Distance: " + astar.getDistTo().get(dst));
+//            System.out.println("Explored: " + astar.explored);
+//
+//            System.out.println();
+
+            AStar astar = new AStar(graph);
+            startTime = System.nanoTime();
+            astar.search(src, dst);
+            endTime = System.nanoTime();
+            System.out.println("A Star full time: " + (((float) endTime - (float)startTime) / 1000000000));
+            System.out.println("Distance: " + astar.getDistTo().get(dst));
+            System.out.println("Explored: " + astar.explored);
+            astar.clear();
+            astar = null;
+            System.out.println("----------------------");
+
 
             startTime = System.nanoTime();
             Dijkstra dijk = new Dijkstra(graph, src, dst);
             endTime = System.nanoTime();
-            System.out.println("Poll time: " + ((float) dijk.totalPollTime / 1000000000));
-            System.out.println("Add time: " + ((float) dijk.totalAddTime / 1000000000));
-            System.out.println("Put time: " + ((float) dijk.totalPutTime / 1000000000));
-            System.out.println("Relax time: " + ((float) dijk.totalRelaxTime / 1000000000));
+//            System.out.println("Poll time: " + ((float) dijk.totalPollTime / 1000000000));
+//            System.out.println("Add time: " + ((float) dijk.totalAddTime / 1000000000));
+//            System.out.println("Put time: " + ((float) dijk.totalPutTime / 1000000000));
+//            System.out.println("Relax time: " + ((float) dijk.totalRelaxTime / 1000000000));
             System.out.println("Dijkstra full time: " + (((float) endTime - (float)startTime) / 1000000000));
             System.out.println("Distance: " + dijk.getDistTo().get(dst));
             System.out.println("Explored: " + dijk.explored);
-
+            ArrayList<Long> droute = dijk.getRoute();
+            dijk.clear();
+            dijk = null;
             System.out.println("----------------------");
 
-//            BiDijkstra biDijk = new BiDijkstra(graph, src, dst, graph.getDictionary());
 
-//            for(int x = 0; x < 10; x++){
-                System.out.println();
-                startTime = System.nanoTime();
-                BiDijkstra biDijk = new BiDijkstra(graph, src, dst, graph.getDictionary());
-                endTime = System.nanoTime();
-                System.out.println("Bi-dijkstra full time: " + (((float) endTime - (float)startTime) / 1000000000));
-                System.out.println("Poll time:    " + ((float) biDijk.totalPollTime / 1000000000));
-//                System.out.println("Priority queue time:    " + ((float) biDijk.totalContainsTime / 1000000000));
-                System.out.println("Total relax time: " + ((float) biDijk.totalRelaxTime / 1000000000));
-                System.out.println("Contains time: " + ((float) biDijk.totalContainsTime / 1000000000));
-                System.out.println("Relax-queue-add time: " + ((float) biDijk.atotalRelaxTime / 1000000000));
-                System.out.println("Relax-put time: " + ((float) biDijk.totalRelaxPutTime / 1000000000));
-                System.out.println("Distance: " + biDijk.getDist());
-                System.out.println("Distance: " + biDijk.bestSeen);
+            System.out.println();
+            startTime = System.nanoTime();
+            BiDijkstra biDijk = new BiDijkstra(graph, src, dst, graph.getDictionary());
+            endTime = System.nanoTime();
+            System.out.println("Bi-dijkstra full time: " + (((float) endTime - (float)startTime) / 1000000000));
+//            System.out.println("Poll time:    " + ((float) biDijk.totalPollTime / 1000000000));
+////                System.out.println("Priority queue time:    " + ((float) biDijk.totalContainsTime / 1000000000));
+//            System.out.println("Total relax time: " + ((float) biDijk.totalRelaxTime / 1000000000));
+//            System.out.println("Contains time: " + ((float) biDijk.totalContainsTime / 1000000000));
+//            System.out.println("Relax-queue-add time: " + ((float) biDijk.atotalRelaxTime / 1000000000));
+//            System.out.println("Relax-put time: " + ((float) biDijk.totalRelaxPutTime / 1000000000));
+            System.out.println("Distance: " + biDijk.getDist());
             System.out.println("Explored: " + biDijk.explored);
-//            }
+            ArrayList<Long> route = biDijk.getRoute();
+            biDijk.clear();
+            biDijk = null;
+            System.out.println("----------------------");
+
 
 //            System.out.println("Overlap route is  " + biDijk.getDist() / 1000);
 //            System.out.println("Absolute route is " + biDijk.bestSeen / 1000);
 //            System.out.println("Explored " + biDijk.explored);
 
 
-            ArrayList<Long> route = biDijk.getRoute();
-            ArrayList<Long> droute = dijk.getRoute();
-            System.out.println(route.get(0));
-            System.out.println(dijk.getRoute().get(0));
-            System.out.println();
-            System.out.println(route.get(route.size() - 1));
-            System.out.println(dijk.getRoute().get(dijk.getRoute().size() - 1));
 
 //            for(int j = 0; j < droute.size(); j++){
 //                if(!route.get(j).equals(droute.get(j))){
@@ -116,8 +137,8 @@ public class TestRun {
 //            System.out.println();
 
             System.out.println(route == droute);
-            System.out.println(biDijk.getRoute().size());
-            System.out.println(dijk.getRoute().size());
+            System.out.println(route.size());
+            System.out.println(droute.size());
 
 
              startTime = System.nanoTime();

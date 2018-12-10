@@ -8,7 +8,7 @@ public class DouglasPeucker {
         long startTime = System.nanoTime();
         PathHull[] leftAndRight = build(nodes, 0, nodes.size() - 1);
         long endTime = System.nanoTime();
-        System.out.println("Build time: " + (endTime - startTime) / 1000);
+//        System.out.println("Build time: " + (endTime - startTime) / 1000);
         ArrayList<MyNode> newNodes = new ArrayList<>();
         newNodes.add(nodes.get(0));
         newNodes.addAll(DPHull(nodes, 0, nodes.size() - 1, leftAndRight, tolerance));

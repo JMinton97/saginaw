@@ -69,6 +69,9 @@ public class MyGraph {
 
         parsingNodes = false;
 
+        Set<long[]> edges = new HashSet<>();
+
+        int noOfEdges = 0;
 
         if(allWayNodes.isEmpty()){
             timerStart();
@@ -78,18 +81,17 @@ public class MyGraph {
             new BlockInputStream(input, brad).process();
             long endTime = System.nanoTime();
             timerEnd("Getting ways");
+
+            timerStart();
+            System.out.println("Map roads pre-split:      " + mapRoads.size());
+            edges = splitWays(mapRoads, true);
+            mapRoads = null;
+            noOfEdges = edges.size();
+            System.out.println("Map roads post-split:     " + noOfEdges);
+            timerEnd("Splitting ways");
         } else {
             System.out.println("allWayNodes found; skipping read");
         }
-
-        timerStart();
-        Set<long[]> edges;
-        System.out.println("Map roads pre-split:      " + mapRoads.size());
-        edges = splitWays(mapRoads, true);
-        mapRoads = null;
-        int noOfEdges = edges.size();
-        System.out.println("Map roads post-split:     " + noOfEdges);
-        timerEnd("Splitting ways");
 
         parsingNodes = true;
 
@@ -102,11 +104,6 @@ public class MyGraph {
         } else {
             System.out.println("dictionary found; skipping read");
         }
-
-//        timerStart();
-//
-//        timerEnd("Measuring edges");
-
 
         File graphDir = new File("files//graph.ser");
         if(graphDir.exists()){
@@ -122,31 +119,8 @@ public class MyGraph {
             timerEnd("Read graph");
         } else {
             System.out.println("No graph found, creating now.");
-            graph = new HashMap<>(noOfEdges);
 
-            timerStart();
-            System.out.println("Adding connections");
-            int counter = 0;
-            for(long[] wayNodes : edges){ //iterate through every edge and add neighbours to graph vertices accordingly
-                counter++;
-                System.out.println(((double) counter / (double) noOfEdges) * 100);
-//            System.out.println(way.getWayId());
-                if(wayNodes.length > 1){
-                    long fstVert = wayNodes[0];
-                    long lstVert = wayNodes[wayNodes.length - 1]; //could be .get(1) if we've stripped the ways
-                    if(!graph.containsKey(fstVert)){
-                        graph.put(fstVert, new HashSet<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
-                    }
-                    if(!graph.containsKey(lstVert)){
-                        graph.put(lstVert, new HashSet<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
-                    }
-                    double length = lengthOfEdge(wayNodes);
-//                    double length = 0;
-                    graph.get(fstVert).add(new double[]{(double) wayNodes[wayNodes.length - 1], length});
-                    graph.get(lstVert).add(new double[]{(double) wayNodes[0], length});
-                }
-            }
-            timerEnd("Creating graph");
+            Map graph = MakeDijkstraGraph(edges, noOfEdges);
 
             timerStart();
             FileOutputStream fileOut = new FileOutputStream(graphDir);
@@ -162,6 +136,35 @@ public class MyGraph {
 //        dictionary = null;
 //        edges = null;
 
+    }
+
+    private Map MakeDijkstraGraph(Set<long []> edges, int noOfEdges){
+        graph = new HashMap<>(noOfEdges);
+
+        timerStart();
+        System.out.println("Adding connections");
+        int counter = 0;
+        for(long[] wayNodes : edges){ //iterate through every edge and add neighbours to graph vertices accordingly
+            counter++;
+//                System.out.println(((double) counter / (double) noOfEdges) * 100);
+//            System.out.println(way.getWayId());
+            if(wayNodes.length > 1){
+                long fstVert = wayNodes[0];
+                long lstVert = wayNodes[wayNodes.length - 1]; //could be .get(1) if we've stripped the ways
+                if(!graph.containsKey(fstVert)){
+                    graph.put(fstVert, new HashSet<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
+                }
+                if(!graph.containsKey(lstVert)){
+                    graph.put(lstVert, new HashSet<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
+                }
+                double length = lengthOfEdge(wayNodes);
+//                    double length = 0;
+                graph.get(fstVert).add(new double[]{(double) wayNodes[wayNodes.length - 1], length});
+                graph.get(lstVert).add(new double[]{(double) wayNodes[0], length});
+            }
+        }
+        timerEnd("Creating graph");
+        return graph;
     }
 
     public void print(){ //print graph contents
@@ -256,7 +259,7 @@ public class MyGraph {
 //                        tempDense.setLongi(parseLon(lastLon));
 //                        tempDense.setNodeId(lastId);
                         tempDense[0] = parseLat(lastLat);
-                        tempDense[1] = parseLat(lastLat);
+                        tempDense[1] = parseLon(lastLon);
                         tempDense[2] = lastId;
                         dictionary.put(lastId, tempDense);
 //                        counter++;

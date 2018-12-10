@@ -25,6 +25,14 @@ public class MyWay {
         return wayNodes;
     }
 
+    public long[] getWayNodesArray() {
+        long[] asArray = new long[wayNodes.size()];
+        for(int i = 0; i < asArray.length; i++){
+            asArray[i] = wayNodes.get(i);
+        }
+        return asArray;
+    }
+
     public void setWayNodes(ArrayList<Long> wayNodes) {
         this.wayNodes = wayNodes;
     }

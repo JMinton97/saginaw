@@ -1,21 +1,22 @@
 package project.map;
 
 
+import gnu.trove.map.hash.THashMap;
 import javafx.util.Pair;
 
 import java.util.*;
 
 public class Dijkstra {
     long pollTimeStart, pollTimeEnd, totalPollTime, addTimeStart, addTimeEnd, totalAddTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, putTimeStart, putTimeEnd, totalPutTime;
-    HashMap<Long, Double> distTo;
-    HashMap<Long, Long> edgeTo;
+    THashMap<Long, Double> distTo;
+    THashMap<Long, Long> edgeTo;
     PriorityQueue<DijkstraEntry> pq;
     long startNode, endNode;
     public int explored;
 
     public Dijkstra(project.map.MyGraph graph, Long startNode){
-        distTo = new HashMap<>();
-        edgeTo = new HashMap<>();
+        distTo = new THashMap<>();
+        edgeTo = new THashMap<>();
         pq = new PriorityQueue();
 
         for(Long vert : graph.getGraph().keySet()){
@@ -29,7 +30,6 @@ public class Dijkstra {
         pq.add(new DijkstraEntry(startNode, 0.0));
 
         while(!pq.isEmpty()){
-//            System.out.println("Dijkstra!");
             long v = pq.poll().getNode();
             for (double[] e : graph.adj(v)){
                 relax(v, e);
@@ -38,8 +38,8 @@ public class Dijkstra {
     }
 
     public Dijkstra(project.map.MyGraph graph, Long startNode, Long endNode){
-        distTo = new HashMap<>();
-        edgeTo = new HashMap<>();
+        distTo = new THashMap<>();
+        edgeTo = new THashMap<>();
         pq = new PriorityQueue();
 
         this.startNode = startNode;
@@ -57,7 +57,6 @@ public class Dijkstra {
 
         long startTime = System.nanoTime();
         while(!pq.isEmpty()){
-//            System.out.println("Dijkstra!");
             pollTimeStart = System.nanoTime();
             long v = pq.poll().getNode();
             pollTimeEnd = System.nanoTime();
@@ -86,7 +85,7 @@ public class Dijkstra {
             putTimeEnd = System.nanoTime();
             totalPutTime += (putTimeEnd - putTimeStart);
             addTimeStart = System.nanoTime();
-            pq.add(new DijkstraEntry(w, distTo.get(w))); //inefficient?
+            pq.add(new DijkstraEntry(w, distToV + weight)); //inefficient?
             addTimeEnd = System.nanoTime();
             totalAddTime += (addTimeEnd - addTimeStart);
         }
@@ -94,12 +93,8 @@ public class Dijkstra {
         totalRelaxTime += (relaxTimeEnd - relaxTimeStart);
     }
 
-    public HashMap<Long, Double> getDistTo() {
+    public THashMap<Long, Double> getDistTo() {
         return distTo;
-    }
-
-    public HashMap<Long, Long> getEdgeTo() {
-        return edgeTo;
     }
 
     public class DistanceComparator implements Comparator<DijkstraEntry>{
@@ -117,16 +112,23 @@ public class Dijkstra {
     public ArrayList<Long> getRoute(){
         ArrayList<Long> route = new ArrayList<>();
         long node = endNode;
-//        System.out.println("adding " + node);
         route.add(node);
         while(node != startNode){
             node = edgeTo.get(node);
             route.add(node);
         }
         Collections.reverse(route);
-//        System.out.println("first " + route.get(0));
-//        System.out.println("last " + route.get(route.size() - 1));
         return route;
+    }
+
+    public double getDistance(long x){
+        return distTo.get(x);
+    }
+
+    public void clear(){
+        distTo.clear();
+        edgeTo.clear();
+        pq.clear();
     }
 }
 
