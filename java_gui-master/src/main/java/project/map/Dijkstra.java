@@ -56,7 +56,7 @@ public class Dijkstra {
         pq.add(new DijkstraEntry(startNode, 0.0));
 
         long startTime = System.nanoTime();
-        while(!pq.isEmpty()){
+        OUTER: while(!pq.isEmpty()){
             pollTimeStart = System.nanoTime();
             long v = pq.poll().getNode();
             pollTimeEnd = System.nanoTime();
@@ -64,7 +64,8 @@ public class Dijkstra {
             for (double[] e : graph.adj(v)){
                 relax(v, e);
                 if(v == endNode){
-                    break;
+                    System.out.println("Dijkstra terminate.");
+                    break OUTER;
                 }
             }
         }

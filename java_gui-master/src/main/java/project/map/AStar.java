@@ -5,6 +5,10 @@ import gnu.trove.map.hash.THashMap;
 import javafx.util.Pair;
 import org.mapdb.BTreeMap;
 import gnu.trove.map.hash.TLongDoubleHashMap;
+import org.nustaq.serialization.FSTObjectInput;
+import org.nustaq.serialization.FSTObjectOutput;
+
+import java.io.*;
 import java.util.*;
 
 public class AStar {
@@ -19,33 +23,14 @@ public class AStar {
     THashMap<Long, double[]> distancesTo;
     THashMap<Long, double[]> distancesFrom;
 
-//    public AStar(project.map.MyGraph graph, Long startNode){
-//        distTo = new HashMap<>();
-//        edgeTo = new HashMap<>();
-//        pq = new PriorityQueue();
-//
-//        for(Long vert : graph.getGraph().keySet()){
-//            distTo.put(vert, Double.MAX_VALUE);
-//        }
-//        distTo.put(startNode, 0.0);
-//
-//        Comparator<DijkstraEntry> comparator = new DistanceComparator();
-//        pq = new PriorityQueue<DijkstraEntry>(comparator);
-//
-//        pq.add(new DijkstraEntry(startNode, 0.0));
-//
-//        while(!pq.isEmpty()){
-//            long v = pq.poll().getNode();
-//            for (double[] e : graph.adj(v)){
-//                relax(v, e,);
-//            }
-//        }
-//    }
-
     public AStar(MyGraph graph){
         this.myGraph = graph;
         landmarks = new ArrayList<>();
-        Precomputation();
+        try {
+            Precomputation();
+        } catch(IOException ie) {
+            ie.printStackTrace();
+        }
     }
 
     public ArrayList<Long> search(long start, long end){
@@ -69,15 +54,17 @@ public class AStar {
         System.out.println("and here");
 
         long startTime = System.nanoTime();
-        while(!pq.isEmpty()){
+        OUTER: while(!pq.isEmpty()){
             pollTimeStart = System.nanoTime();
             long v = pq.poll().getNode();
+//            System.out.println("next is " + v);
             pollTimeEnd = System.nanoTime();
             totalPollTime += (pollTimeEnd - pollTimeStart);
             for (double[] e : myGraph.adj(v)){
                 relax(v, e, end);
-                if(v == endNode){
-                    break;
+                if(v == end){
+                    System.out.println("AStar terminate.");
+                    break OUTER;
                 }
             }
         }
@@ -109,31 +96,55 @@ public class AStar {
         totalRelaxTime += (relaxTimeEnd - relaxTimeStart);
     }
 
-    public void Precomputation(){
+    public void Precomputation() throws IOException {
         Map<Long, Set<double[]>> graph = myGraph.getGraph();
         BTreeMap<Long, double[]> dictionary = myGraph.getDictionary();
         distancesTo = new THashMap<>(); //need to compute
         distancesFrom = new THashMap<>();
         GenerateLandmarks();
         DijkstraLandmarks dj;
-                                                            //fix this bit - don't store entire Dijkstra's computation.
-        dj = new DijkstraLandmarks(this.myGraph, landmarks);
-        distancesFrom = dj.getDistTo();
-        dj.clear();
-        dj = new DijkstraLandmarks(this.myGraph, landmarks);                             // <-- need reverse graph here
-        distancesTo = dj.getDistTo();
-        dj.clear();
 
-//        HashMap<Long, double[]> nodeWeights = new HashMap<Long, double[]>();
-//        for(Long node : graph.keySet()){
-//            double[] distances = new double[landmarks.size()];
-//            for(int x = 0; x < landmarks.size(); x++){
-//                distances[x] =
-//                System.out.print(distances[x] + " ");
-//            }
-//            nodeWeights.put(node, distances);
-//            System.out.println();
-//        }
+        File dfDir = new File("files//astar//distancesFrom.ser");
+        if(dfDir.exists()){
+            FileInputStream fileIn = new FileInputStream(dfDir);
+            FSTObjectInput objectIn = new FSTObjectInput(fileIn);
+            try {
+                distancesFrom = (THashMap) objectIn.readObject();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+            fileIn.close();
+            objectIn.close();
+        } else {
+            dj = new DijkstraLandmarks(this.myGraph, landmarks);
+            distancesFrom = dj.getDistTo();
+            FileOutputStream fileOut = new FileOutputStream(dfDir);
+            FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
+            objectOut.writeObject(graph);
+            objectOut.close();
+            dj.clear();
+        }
+
+        File dtDir = new File("files//astar//distancesTo.ser");
+        if(dtDir.exists()){
+            FileInputStream fileIn = new FileInputStream(dtDir);
+            FSTObjectInput objectIn = new FSTObjectInput(fileIn);
+            try {
+                distancesTo = (THashMap) objectIn.readObject();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+            fileIn.close();
+            objectIn.close();
+        } else {
+            dj = new DijkstraLandmarks(this.myGraph, landmarks);                             // <-- need reverse graph here
+            distancesTo = dj.getDistTo();
+            FileOutputStream fileOut = new FileOutputStream(dtDir);
+            FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
+            objectOut.writeObject(graph);
+            objectOut.close();
+            dj.clear();
+        }
     }
 
     public void GenerateLandmarks(){

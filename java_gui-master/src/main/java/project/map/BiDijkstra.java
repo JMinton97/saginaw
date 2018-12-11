@@ -72,13 +72,8 @@ public class BiDijkstra {
             long v1 = uPq.poll().getNode();
             pollTimeEnd = System.nanoTime();
             totalPollTime += (pollTimeEnd - pollTimeStart);
-//            uFurthest = uDistTo.get(v1);
-//            System.out.println(v1);
             for (double[] e : graph.adj(v1)){
                 relax(v1, e, true);
-//                System.out.println("...   ");
-//                if(uFurthest + vFurthest >= minDist){
-//                    System.out.println("   ...");
                     if (vRelaxed.contains((long) e[0])) {
                         competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((long) e[0]));
                         if (bestSeen > competitor) {
@@ -95,24 +90,15 @@ public class BiDijkstra {
                         }
                         break OUTER;
                     }
-//                    if (v1 == endNode) {
-//                        break;
-//                    }
-//                }
             }
             pollTimeStart = System.nanoTime();
             long v2 = vPq.poll().getNode();
             pollTimeEnd = System.nanoTime();
             totalPollTime += (pollTimeEnd - pollTimeStart);
-//            vFurthest = vDistTo.get(v2);
             for (double[] e : graph.adj(v2)) {
                 relax(v2, e, false);
-//                System.out.println("...   ");
-//                if(uFurthest + vFurthest >= minDist){
-//                    System.out.println("   ...");
                     containsTimeStart = System.nanoTime();
                     if (uRelaxed.contains((long) e[0])) {
-
                         competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((long) e[0]));
                         if (bestSeen > competitor) {
                             bestSeen = competitor;
@@ -133,10 +119,6 @@ public class BiDijkstra {
                     }
                     containsTimeEnd = System.nanoTime();
                     totalContainsTime += (containsTimeEnd - containsTimeStart);
-//                    if (v2 == startNode) {
-//                        break;
-//                    }
-//                }
             }
         }
         long endTime = System.nanoTime();

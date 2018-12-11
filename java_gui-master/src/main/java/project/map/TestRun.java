@@ -53,14 +53,14 @@ public class TestRun {
 //            dst = Long.parseLong("513499");
 //
 //
-//            src = Long.parseLong("548050322"); //exeter to spalding
-//            dst = Long.parseLong("550385409");
+            src = Long.parseLong("548050322"); //exeter to spalding
+            dst = Long.parseLong("550385409");
 
 //            src = Long.parseLong("548050322"); //brum
 //            dst = Long.parseLong("280150290");
 
-            src = Long.parseLong("370459811"); //wolverton to sheffield
-            dst = Long.parseLong("1014466202");
+//            src = Long.parseLong("370459811"); //wolverton to sheffield
+//            dst = Long.parseLong("1014466202");
 
 //            src = Long.parseLong("1014654504"); //north to south
 //            dst = Long.parseLong("1620423227");
