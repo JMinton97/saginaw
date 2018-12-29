@@ -2,7 +2,10 @@ package project.map;
 
 
 import gnu.trove.map.hash.THashMap;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import javafx.util.Pair;
+import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
+
 
 import java.util.*;
 
@@ -10,19 +13,27 @@ public class Dijkstra {
     long pollTimeStart, pollTimeEnd, totalPollTime, addTimeStart, addTimeEnd, totalAddTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, putTimeStart, putTimeEnd, totalPutTime;
     THashMap<Long, Double> distTo;
     THashMap<Long, Long> edgeTo;
+
+    Long2DoubleOpenHashMap distTo2;
+    Long2LongOpenHashMap edgeTo2;
+
     PriorityQueue<DijkstraEntry> pq;
     long startNode, endNode;
     public int explored;
 
-    public Dijkstra(project.map.MyGraph graph, Long startNode){
+    public Dijkstra(project.map.MyGraph graph, long startNode){
         distTo = new THashMap<>();
         edgeTo = new THashMap<>();
+
+        distTo2 = new Long2DoubleOpenHashMap();
+        edgeTo2 = new Long2LongOpenHashMap();
+
         pq = new PriorityQueue();
 
-        for(Long vert : graph.getGraph().keySet()){
-            distTo.put(vert, Double.MAX_VALUE);
+        for(long vert : graph.getGraph().keySet()){
+            distTo2.put(vert, Double.MAX_VALUE);
         }
-        distTo.put(startNode, 0.0);
+        distTo2.put(startNode, 0.0);
 
         Comparator<DijkstraEntry> comparator = new DistanceComparator();
         pq = new PriorityQueue<DijkstraEntry>(comparator);
@@ -37,18 +48,22 @@ public class Dijkstra {
         }
     }
 
-    public Dijkstra(project.map.MyGraph graph, Long startNode, Long endNode){
+    public Dijkstra(project.map.MyGraph graph, long startNode, long endNode){
         distTo = new THashMap<>();
         edgeTo = new THashMap<>();
+
+        distTo2 = new Long2DoubleOpenHashMap();
+        edgeTo2 = new Long2LongOpenHashMap();
+
         pq = new PriorityQueue();
 
         this.startNode = startNode;
         this.endNode = endNode;
 
-        for(Long vert : graph.getGraph().keySet()){
-            distTo.put(vert, Double.MAX_VALUE);
+        for(long vert : graph.getGraph().keySet()){
+            distTo2.put(vert, Double.MAX_VALUE);
         }
-        distTo.put(startNode, 0.0);
+        distTo2.put(startNode, 0.0);
 
         Comparator<DijkstraEntry> comparator = new DistanceComparator();
         pq = new PriorityQueue<>(comparator);
@@ -73,16 +88,16 @@ public class Dijkstra {
         System.out.println("Dijkstra time: " + (((float) endTime - (float)startTime) / 1000000000));
     }
 
-    private void relax(Long v, double[] edge){
+    private void relax(long v, double[] edge){
         explored++;
         relaxTimeStart = System.nanoTime();
         long w = (long) edge[0];
         double weight = edge[1];
-        double distToV = distTo.get(v);
-        if (distTo.get(w) > (distToV + weight)){
+        double distToV = distTo2.get(v);
+        if (distTo2.get(w) > (distToV + weight)){
             putTimeStart = System.nanoTime();
-            distTo.put(w, distToV + weight);
-            edgeTo.put(w, v); //should be 'nodeBefore'
+            distTo2.put(w, distToV + weight);
+            edgeTo2.put(w, v); //should be 'nodeBefore'
             putTimeEnd = System.nanoTime();
             totalPutTime += (putTimeEnd - putTimeStart);
             addTimeStart = System.nanoTime();
@@ -94,8 +109,8 @@ public class Dijkstra {
         totalRelaxTime += (relaxTimeEnd - relaxTimeStart);
     }
 
-    public THashMap<Long, Double> getDistTo() {
-        return distTo;
+    public Long2DoubleOpenHashMap getDistTo() {
+        return distTo2;
     }
 
     public class DistanceComparator implements Comparator<DijkstraEntry>{
@@ -115,7 +130,7 @@ public class Dijkstra {
         long node = endNode;
         route.add(node);
         while(node != startNode){
-            node = edgeTo.get(node);
+            node = edgeTo2.get(node);
             route.add(node);
         }
         Collections.reverse(route);
@@ -123,12 +138,12 @@ public class Dijkstra {
     }
 
     public double getDistance(long x){
-        return distTo.get(x);
+        return distTo2.get(x);
     }
 
     public void clear(){
-        distTo.clear();
-        edgeTo.clear();
+        distTo2.clear();
+        edgeTo2.clear();
         pq.clear();
     }
 }

@@ -130,14 +130,14 @@ public class Model
 	public void loadMap(File file)
 			throws IOException
 	{
-		this.map = null;
-		this.map = new MyGraph(file); //note - loading file twice
-//		int numImages = newImageFile.getNumImages();
-//		if (numImages == 0)
-//			throw new IOException("Image file contains no images");
-//		map.drawMap(0);
-//		BufferedImage bi = map.getMap();
-//		setImage(bi);
+//		this.map = null;
+//		this.map = new MyGraph(file); //note - loading file twice
+	//		int numImages = newImageFile.getNumImages();
+	//		if (numImages == 0)
+	//			throw new IOException("Image file contains no images");
+	//		map.drawMap(0);
+	//		BufferedImage bi = map.getMap();
+	//		setImage(bi);
 	}
 
 }

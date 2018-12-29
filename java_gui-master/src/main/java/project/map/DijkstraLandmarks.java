@@ -2,24 +2,39 @@ package project.map;
 
 
 import gnu.trove.map.hash.THashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
+import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2LongArrayMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import javafx.util.Pair;
 import sun.misc.GC;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 public class DijkstraLandmarks {
     long pollTimeStart, pollTimeEnd, totalPollTime, addTimeStart, addTimeEnd, totalAddTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, putTimeStart, putTimeEnd, totalPutTime;
-    THashMap<Long, double[]> distTo;
-    THashMap<Long, long[]> edgeTo;
+    Long2ObjectOpenHashMap distTo;
+    Long2ObjectOpenHashMap edgeTo;
+
+
+//    THashMap<Long, double[]> distTo;
+//    THashMap<Long, long[]> edgeTo;
     PriorityQueue<DijkstraEntry> pq;
     long startNode, endNode;
     public int explored;
     ArrayList<Long> landmarks;
 
     public DijkstraLandmarks(project.map.MyGraph graph, ArrayList<Long> startNodes){
-        distTo = new THashMap<>();
-        edgeTo = new THashMap<>();
+
+        distTo = new Long2ObjectOpenHashMap<double[]>();
+        edgeTo = new Long2ObjectOpenHashMap<long[]>();
         pq = new PriorityQueue();
+
+        double[] test = new double[4];
+
+        distTo.put(7, test);
 
         landmarks = startNodes;
 
@@ -28,12 +43,15 @@ public class DijkstraLandmarks {
             initDistance[x] = Double.MAX_VALUE;
         }
 
-        for(Long vert : graph.getGraph().keySet()){
+        for(long vert : graph.getGraph().keySet()){
             distTo.put(vert, initDistance.clone());
         }
 
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+
         for(int x = 0; x < startNodes.size(); x++){
-//            System.out.println(Arrays.toString(distTo.get(startNodes.get(x))));
+            Calendar cal = Calendar.getInstance();
+            System.out.println(x + " of " + startNodes.size() + " " + sdf.format(cal.getTime()));
             DijkstraAlgorithm(graph, startNodes.get(x), x);
         }
 
@@ -43,7 +61,7 @@ public class DijkstraLandmarks {
 //        System.out.println();
 //        System.out.println("Start " + startNode + " Index " + index);
 
-        double[] distToStart = distTo.get(startNode);
+        double[] distToStart = (double[]) distTo.get(startNode);
 //        System.out.println(Arrays.toString(distToStart));
         distToStart[index] = 0.0;
 //        System.out.println(Arrays.toString(distToStart));
@@ -76,8 +94,8 @@ public class DijkstraLandmarks {
         explored++;
         long w = (long) edge[0];
         double weight = edge[1];
-        double distToV = distTo.get(v)[index];
-        double[] distToW = distTo.get(w);
+        double distToV = ((double[]) (distTo.get(v)))[index];
+        double[] distToW = (double[]) distTo.get(w);
         if (distToW[index] > (distToV + weight)){
             putTimeStart = System.nanoTime();
             distToW[index] = distToV + weight;
@@ -91,7 +109,7 @@ public class DijkstraLandmarks {
         }
     }
 
-    public THashMap<Long, double[]> getDistTo() {
+    public Long2ObjectOpenHashMap<double[]> getDistTo() {
         return distTo;
     }
 
@@ -108,7 +126,7 @@ public class DijkstraLandmarks {
     }
 
     public double getDistance(long x, int index){
-        return distTo.get(x)[index];
+        return ((double[]) distTo.get(x))[index];
     }
 
     public void clear(){

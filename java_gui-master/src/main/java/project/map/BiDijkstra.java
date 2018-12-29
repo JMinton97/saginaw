@@ -59,7 +59,7 @@ public class BiDijkstra {
         bestSeen = Double.MAX_VALUE;
         long bestPathNode = 0;
 
-        double minDist = haversineDistance(startNode, endNode, dictionary);
+//        double minDist = haversineDistance(startNode, endNode, dictionary);
         double uFurthest, vFurthest = 0;
 
         double competitor;

@@ -7,21 +7,22 @@ import org.mapdb.BTreeMap;
 import gnu.trove.map.hash.TLongDoubleHashMap;
 import org.nustaq.serialization.FSTObjectInput;
 import org.nustaq.serialization.FSTObjectOutput;
+import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
 
 import java.io.*;
 import java.util.*;
 
 public class AStar {
-    long pollTimeStart, pollTimeEnd, totalPollTime, addTimeStart, addTimeEnd, totalAddTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, putTimeStart, putTimeEnd, totalPutTime;
-    THashMap<Long, Double> distTo;
-    THashMap<Long, Long> edgeTo;
-    PriorityQueue<DijkstraEntry> pq;
-    long startNode, endNode;
+    private long pollTimeStart, pollTimeEnd, totalPollTime, addTimeStart, addTimeEnd, totalAddTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, putTimeStart, putTimeEnd, totalPutTime;
+    private THashMap<Long, Double> distTo;
+    private THashMap<Long, Long> edgeTo;
+    private PriorityQueue<DijkstraEntry> pq;
+    private long startNode, endNode;
     public int explored;
-    MyGraph myGraph;
-    ArrayList<Long> landmarks;
-    THashMap<Long, double[]> distancesTo;
-    THashMap<Long, double[]> distancesFrom;
+    private MyGraph myGraph;
+    private ArrayList<Long> landmarks;
+    private HashMap<Long, double[]> distancesTo;
+    private HashMap<Long, double[]> distancesFrom;
 
     public AStar(MyGraph graph){
         this.myGraph = graph;
@@ -35,8 +36,8 @@ public class AStar {
 
     public ArrayList<Long> search(long start, long end){
         System.out.println("search");
-        distTo = new THashMap<Long, Double>();
-        edgeTo = new THashMap<Long, Long>();
+        distTo = new THashMap<Long, Double>(myGraph.getGraph().size());
+        edgeTo = new THashMap<Long, Long>(myGraph.getGraph().size());
         pq = new PriorityQueue();
 
 //        HashMap<Long, Double> nodeWeights = MakeNodeWeights(graph.getGraph());
@@ -50,8 +51,6 @@ public class AStar {
         pq = new PriorityQueue<>(comparator);
 
         pq.add(new DijkstraEntry(start, 0.0));
-
-        System.out.println("and here");
 
         long startTime = System.nanoTime();
         OUTER: while(!pq.isEmpty()){
@@ -88,7 +87,7 @@ public class AStar {
             totalPutTime += (putTimeEnd - putTimeStart);
             addTimeStart = System.nanoTime();
 //            System.out.println("distTo " + distTo.get(w) + " lower bound " + lowerBound(w, t));
-            pq.add(new DijkstraEntry(w, distTo.get(w) + lowerBound(w, t))); //inefficient?
+            pq.add(new DijkstraEntry(w, distToV + weight + lowerBound(w, t))); //inefficient?
             addTimeEnd = System.nanoTime();
             totalAddTime += (addTimeEnd - addTimeStart);
         }
@@ -99,17 +98,18 @@ public class AStar {
     public void Precomputation() throws IOException {
         Map<Long, Set<double[]>> graph = myGraph.getGraph();
         BTreeMap<Long, double[]> dictionary = myGraph.getDictionary();
-        distancesTo = new THashMap<>(); //need to compute
-        distancesFrom = new THashMap<>();
+        distancesTo = new HashMap<Long, double[]>(); //need to compute
+        distancesFrom = new HashMap<Long, double[]>();
         GenerateLandmarks();
         DijkstraLandmarks dj;
 
         File dfDir = new File("files//astar//distancesFrom.ser");
         if(dfDir.exists()){
+            System.out.println("Found distancesFrom.");
             FileInputStream fileIn = new FileInputStream(dfDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
-                distancesFrom = (THashMap) objectIn.readObject();
+                distancesFrom = (HashMap<Long, double[]>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -120,17 +120,18 @@ public class AStar {
             distancesFrom = dj.getDistTo();
             FileOutputStream fileOut = new FileOutputStream(dfDir);
             FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
-            objectOut.writeObject(graph);
+            objectOut.writeObject(distancesFrom);
             objectOut.close();
             dj.clear();
         }
 
         File dtDir = new File("files//astar//distancesTo.ser");
         if(dtDir.exists()){
+            System.out.println("Found distancesTo.");
             FileInputStream fileIn = new FileInputStream(dtDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
-                distancesTo = (THashMap) objectIn.readObject();
+                distancesTo = (HashMap<Long, double[]>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -141,7 +142,7 @@ public class AStar {
             distancesTo = dj.getDistTo();
             FileOutputStream fileOut = new FileOutputStream(dtDir);
             FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
-            objectOut.writeObject(graph);
+            objectOut.writeObject(distancesTo);
             objectOut.close();
             dj.clear();
         }
@@ -153,23 +154,22 @@ public class AStar {
         Random random = new Random();
         List<Long> nodes = new ArrayList<>(graph.keySet());
 
-        for(int x = 0; x < 10; x++){
+        for(int x = 0; x < 4; x++){
             landmarks.add(nodes.get(random.nextInt(size)));
         }
 
-        landmarks.clear();
-
-        landmarks.add(Long.parseLong("27103812"));
-        landmarks.add(Long.parseLong("299818750"));
-        landmarks.add(Long.parseLong("312674444"));
-        landmarks.add(Long.parseLong("273662"));
-        landmarks.add(Long.parseLong("14644591"));
-        landmarks.add(Long.parseLong("27210725"));
-        landmarks.add(Long.parseLong("817576914"));
-        landmarks.add(Long.parseLong("262840382"));
-        landmarks.add(Long.parseLong("344881575"));
-        landmarks.add(Long.parseLong("1795462073"));
-
+//        landmarks.clear();
+//
+//        landmarks.add(Long.parseLong("27103812"));
+//        landmarks.add(Long.parseLong("299818750"));
+//        landmarks.add(Long.parseLong("312674444"));
+//        landmarks.add(Long.parseLong("273662"));
+//        landmarks.add(Long.parseLong("14644591"));
+//        landmarks.add(Long.parseLong("27210725"));
+//        landmarks.add(Long.parseLong("817576914"));
+//        landmarks.add(Long.parseLong("262840382"));
+//        landmarks.add(Long.parseLong("344881575"));
+//        landmarks.add(Long.parseLong("1795462073"));
     }
 
     public double lowerBound(long u, long v){
@@ -179,7 +179,6 @@ public class AStar {
         dFU = distancesFrom.get(u);
         dTV = distancesTo.get(v);
         dFV = distancesFrom.get(v);
-//        System.out.println(dFV[0]);
 
         for(int l = 0; l < landmarks.size(); l++){
             max = Math.max(max, Math.max(dTU[l] - dTV[l], dFV[l] - dFU[l]));
@@ -187,8 +186,8 @@ public class AStar {
         return max;
     }
 
-    public THashMap<Long, Double> getDistTo() {
-        return distTo;
+    public double getDistTo(long node) {
+        return distTo.get(node);
     }
 
     public class DistanceComparator implements Comparator<DijkstraEntry>{
@@ -222,6 +221,7 @@ public class AStar {
         landmarks.clear();
         distancesTo.clear();
         distancesFrom.clear();
+        myGraph = null;
     }
 
 }

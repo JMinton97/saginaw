@@ -33,79 +33,20 @@ public class MyGraph {
     private long startTime;
     private long endTime;
 
+    private String filePrefix;
+
+    Set<long[]> edges = new HashSet<>();
+    int noOfEdges;
 
 
-    public MyGraph(File file) throws IOException {
 
-        DB db = DBMaker
-                .fileDB("files//wayNodes.db")
-                .fileMmapEnable()
-                .checksumHeaderBypass()
-                .closeOnJvmShutdown()
-                .make();
+    public MyGraph(File file, String region) throws IOException {
 
+        makeDictionary(file);
 
-        allWayNodes = db
-                .treeMap("map", Serializer.LONG, Serializer.INTEGER)
-                .createOrOpen();
+        filePrefix = "file//".concat(region + "//");
 
-        DB db2 = DBMaker
-                .fileDB("files//dictionary.db")
-                .fileMmapEnable()
-                .checksumHeaderBypass()
-                .closeOnJvmShutdown()
-                .make();
-
-        dictionary = db2.treeMap("map", Serializer.LONG, Serializer.DOUBLE_ARRAY).createOrOpen();
-
-        DB db3 = DBMaker
-                .fileDB("files//mapRoads.db")
-                .fileMmapEnable()
-                .checksumHeaderBypass()
-                .closeOnJvmShutdown()
-                .make();
-
-        mapRoads = db3.treeSet("map", Serializer.LONG_ARRAY).createOrOpen();
-
-        parsingNodes = false;
-
-        Set<long[]> edges = new HashSet<>();
-
-        int noOfEdges = 0;
-
-        if(allWayNodes.isEmpty()){
-            timerStart();
-            InputStream input = new FileInputStream(file);
-            BlockReaderAdapter brad = new OSMBinaryParser();
-            long startTime = System.nanoTime();
-            new BlockInputStream(input, brad).process();
-            long endTime = System.nanoTime();
-            timerEnd("Getting ways");
-
-            timerStart();
-            System.out.println("Map roads pre-split:      " + mapRoads.size());
-            edges = splitWays(mapRoads, true);
-            mapRoads = null;
-            noOfEdges = edges.size();
-            System.out.println("Map roads post-split:     " + noOfEdges);
-            timerEnd("Splitting ways");
-        } else {
-            System.out.println("allWayNodes found; skipping read");
-        }
-
-        parsingNodes = true;
-
-        if(dictionary.isEmpty()){
-            timerStart();
-            InputStream input2 = new FileInputStream(file);
-            BlockReaderAdapter brad2 = new OSMBinaryParser();
-            new BlockInputStream(input2, brad2).process();
-            timerEnd("Getting nodes");
-        } else {
-            System.out.println("dictionary found; skipping read");
-        }
-
-        File graphDir = new File("files//graph.ser");
+        File graphDir = new File(filePrefix.concat("graph.ser"));
         if(graphDir.exists()){
             System.out.println("Found graph.");
             timerStart();
@@ -120,7 +61,7 @@ public class MyGraph {
         } else {
             System.out.println("No graph found, creating now.");
 
-            Map graph = MakeDijkstraGraph(edges, noOfEdges);
+            Map graph = makeDijkstraGraph(edges, noOfEdges);
 
             timerStart();
             FileOutputStream fileOut = new FileOutputStream(graphDir);
@@ -129,16 +70,80 @@ public class MyGraph {
             objectOut.close();
             timerEnd("Writing graph");
         }
-
-
-//        System.out.println(graph.size());
-
-//        dictionary = null;
-//        edges = null;
-
     }
 
-    private Map MakeDijkstraGraph(Set<long []> edges, int noOfEdges){
+    private void makeDictionary(File file) throws IOException{
+        DB db2 = DBMaker
+                .fileDB(filePrefix.concat("dictionary.db"))
+                .fileMmapEnable()
+                .checksumHeaderBypass()
+                .closeOnJvmShutdown()
+                .make();
+
+        dictionary = db2.treeMap("map", Serializer.LONG, Serializer.DOUBLE_ARRAY).createOrOpen();
+
+        if(dictionary.isEmpty()){
+            System.out.println("Generating dictionary.");
+            DB db = DBMaker
+                    .fileDB(filePrefix.concat("wayNodes.db"))
+                    .fileMmapEnable()
+                    .checksumHeaderBypass()
+                    .closeOnJvmShutdown()
+                    .make();
+
+
+            allWayNodes = db
+                    .treeMap("map", Serializer.LONG, Serializer.INTEGER)
+                    .createOrOpen();
+
+            DB db3 = DBMaker
+                    .fileDB(filePrefix.concat("mapRoads.db"))
+                    .fileMmapEnable()
+                    .checksumHeaderBypass()
+                    .closeOnJvmShutdown()
+                    .make();
+
+            mapRoads = db3.treeSet("map", Serializer.LONG_ARRAY).createOrOpen();
+
+            parsingNodes = false;
+
+            edges = new HashSet<>();
+
+            noOfEdges = 0;
+
+            if(allWayNodes.isEmpty()){
+                timerStart();
+                InputStream input = new FileInputStream(file);
+                BlockReaderAdapter brad = new OSMBinaryParser();
+                long startTime = System.nanoTime();
+                new BlockInputStream(input, brad).process();
+                long endTime = System.nanoTime();
+                timerEnd("Getting ways");
+
+                timerStart();
+                System.out.println("Map roads pre-split:      " + mapRoads.size());
+                edges = splitWays(mapRoads, true);
+                mapRoads = null;
+                noOfEdges = edges.size();
+                System.out.println("Map roads post-split:     " + noOfEdges);
+                timerEnd("Splitting ways");
+            } else {
+                System.out.println("allWayNodes found; skipping read");
+            }
+
+            parsingNodes = true;
+
+            timerStart();
+            InputStream input2 = new FileInputStream(file);
+            BlockReaderAdapter brad2 = new OSMBinaryParser();
+            new BlockInputStream(input2, brad2).process();
+            timerEnd("Getting nodes");
+        } else {
+            System.out.println("Dictionary found; skipping creation.");
+        }
+    }
+
+    private Map makeDijkstraGraph(Set<long []> edges, int noOfEdges){
         graph = new HashMap<>(noOfEdges);
 
         timerStart();
