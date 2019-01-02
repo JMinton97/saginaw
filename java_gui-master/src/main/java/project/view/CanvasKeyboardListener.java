@@ -15,18 +15,19 @@ public class CanvasKeyboardListener implements KeyListener {
 
     @Override
     public void keyTyped(KeyEvent e) {
+
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
         if(e.getKeyCode() == (KeyEvent.VK_W)){
-            controller.moveMap(0, 10);
+            controller.moveMap(0, 100);
         } else if(e.getKeyCode() == (KeyEvent.VK_S)){
-            controller.moveMap(0, -10);
+            controller.moveMap(0, -100);
         } else if(e.getKeyCode() == (KeyEvent.VK_A)){
-            controller.moveMap(-10, 0);
+            controller.moveMap(-100, 0);
         } else if(e.getKeyCode() == (KeyEvent.VK_D)){
-            controller.moveMap(10, 0);
+            controller.moveMap(100, 0);
         } else if(e.getKeyCode() == (KeyEvent.VK_Z)){
             controller.zoomOut();
         } else if(e.getKeyCode() == (KeyEvent.VK_C)){

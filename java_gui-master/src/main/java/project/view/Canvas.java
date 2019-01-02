@@ -35,7 +35,7 @@ class Canvas extends JPanel
 
 	private BufferedImage image;
 
-	private BufferedImage[][] tileGrid;
+	private Tile[][] tileGrid;
 
 	private Point2D centre;
 	private Point2D origin;
@@ -78,7 +78,15 @@ class Canvas extends JPanel
 		origin = model.getOrigin();
 		oX = origin.getX() / model.getScale();
 		oY = origin.getY() / model.getScale();
-		tileGrid = new BufferedImage[20][20];
+		tileGrid = new Tile[20][20];
+		for(int x = 0; x < tileGrid[0].length; x++){
+			for(int y = 0; y < tileGrid[0].length; y++){
+				tileGrid[x][y] = new Tile(x, y, 1, model.getRegion());
+				Double tileX = origin.getX() + (0.125 * x);
+				Double tileY = origin.getY() - (0.125 * y);
+				tileGrid[x][y].setTopLeft(new Point2D.Double(tileX, tileY));
+			}
+		}
 	}
 
 	/**
@@ -140,34 +148,65 @@ class Canvas extends JPanel
 	}
 
 	public void update() {
+
+		//use a grid of Tile objects - iterate through on each update, loading in any needed or 'nearly' needed, removing those not needed.
+
+		Graphics g = this.getGraphics();
+
+		g.fillRect(0, 0, 500, 500);
+
 		centre = model.getCentre();
 		scale = model.getScale();
 		Point2D topLeft = new Point2D.Double((centre.getX() - (250 / scale)), (centre.getY() - (250 / scale)));
-		int x = (int) Math.abs(Math.round(((topLeft.getX() - origin.getX()) * scale) / 500));
-		int y = (int) Math.abs(Math.round(((topLeft.getY() - origin.getY()) * scale) / 500));
-		System.out.println(topLeft.getX() + ", " + x + "  |  " + topLeft.getY() + ", " + y);
+		Point2D bottomRight = new Point2D.Double((centre.getX() + (250 / scale)), (centre.getY() + (250 / scale)));
 
-		if(tileGrid[x][y] == null){
-			try{
-				tileGrid[x][y] = ImageIO.read(new File("draw/" + model.getRegion() + "/" + 1 + "/" + x + "-" + y));
-			}catch(IOException e){
+		Tile t;
+		Point2D.Double p, o;
 
+//		System.out.println("ayyy");
+
+		for(int x = 0; x < tileGrid[0].length; x++){
+			for(int y = 0; y < tileGrid[0].length; y++){
+				if(tileGrid[x][y].overlaps(topLeft, bottomRight)){
+					System.out.println("yup");
+					t = tileGrid[x][y];
+					p = geoToCanvas(t.getTopLeft());
+					o = geoToCanvas(topLeft);
+//					System.out.println(p);
+					g.drawImage(t.getImage(), (int) (p.getX() - o.getX()), (int) (p.getY() - o.getY()), 500, 500, null);
+				}
 			}
 		}
 
-		Graphics g = this.getGraphics();
-		g.fillRect(0, 0, 500, 500);
+//		System.out.println("ahh");
 
-		double imageOrigX = origin.getX() + (500 * (x + 1));
-		double imageOrigY = origin.getY() + (500 * (y + 1));
-		double paneOrigX = (topLeft.getX() - origin.getX()) * scale;
-		double paneOrigY = (origin.getY() - topLeft.getY()) * scale;
+////		System.out.println(topLeft.getX() + ", " + x + "  |  " + topLeft.getY() + ", " + y);
+//
+//
+//
+//
 
-//		System.out.println(imageOrigX + " " + imageOrigY);
-		g.drawImage(tileGrid[x][y], (int) (paneOrigX - imageOrigX), (int) (paneOrigY - imageOrigY), 500, 500, null);
+//
+//		double imageOrigX = origin.getX() + (500 * (x + 1));
+//		double imageOrigY = origin.getY() + (500 * (y + 1));
+//		double paneOrigX = (topLeft.getX() - origin.getX()) * scale;
+//		double paneOrigY = (origin.getY() - topLeft.getY()) * scale;
+//
+////		System.out.println(imageOrigX + " " + imageOrigY);
+//		g.drawImage(tileGrid[x][y], (int) (paneOrigX - imageOrigX), (int) (paneOrigY - imageOrigY), 500, 500, null);
+//
+//		System.out.println((paneOrigX - imageOrigX) + "    " + (paneOrigY - imageOrigY));
 
-		System.out.println((paneOrigX - imageOrigX) + "    " + (paneOrigY - imageOrigY));
+	}
 
+	public Point2D.Double geoToCanvas(Point2D geoCoord){
+		Double x = origin.getX() + Math.abs(geoCoord.getX() - origin.getX()) * 4000;
+		Double y = origin.getY() + Math.abs(geoCoord.getY() - origin.getY()) * 4000;
+		return new Point2D.Double(x, y);
+	}
+
+	public Point2D.Double canvasToGeo(Point2D canvasCoord){
+		return new Point2D.Double(-1, -1);
 	}
 
 
