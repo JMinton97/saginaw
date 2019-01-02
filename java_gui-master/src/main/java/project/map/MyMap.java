@@ -50,6 +50,8 @@ public class MyMap {
     private static File file;
     public static double[][][] bounds;
 
+    private String region;
+
 
     public MyMap(File file) throws IOException {
 //        int level;
@@ -115,13 +117,15 @@ public class MyMap {
 //        spaceModifierX = spaceModifierY * 0.75;
     }
 
-    public MyMap(File file, int maxEdge, boolean alreadyFiled) throws IOException{
+    public MyMap(File file, String region, int maxEdge, boolean alreadyFiled) throws IOException{
 
         this.maxEdge = maxEdge; //max edge length of an image
 
+        this.region = region;
+
         counter = 0;
         this.file = file;
-        int scale = 40000; //40000 pixels per degree!
+        int scale = 4000; //pixels per degree!
 
         dictionary = new HashMap<>();
 //        mapRoads = new ArrayList<>();                //IMPORTANT - memoryDB option in quickstart?
@@ -657,7 +661,8 @@ public class MyMap {
 
     public void saveMap(BufferedImage map, int x, int y, PngEncoder encoder){
         try {
-            String filename = "draw/1/tile-".concat(String.valueOf(y)).concat("-").concat(String.valueOf(x)).concat(".png");
+            new File("draw/" + region + "/1").mkdirs();
+            String filename = "draw/" + region + "/1/" + x + "-" + y;
             FileOutputStream fout = new FileOutputStream(filename);
 //            ImageIO.write(map, "png", outputfile);
             encoder.encode(map, fout);
@@ -668,11 +673,13 @@ public class MyMap {
 //            g.dispose();
 
             for(int z = 2; z < 64; z = z * 2){
+                new File("draw/" + region + "/" + z + "s/").mkdirs();
                 map = Thumbnails.of(map)
                         .size(maxEdge/z, maxEdge/z)
                         .asBufferedImage();
 
-                filename = "draw/stitches/tile-".concat(String.valueOf(y)).concat("-").concat(String.valueOf(x)).concat("_").concat(Integer.toString(z)).concat(".png");
+//                filename = "draw/stitches/tile-".concat(String.valueOf(y)).concat("-").concat(String.valueOf(x)).concat("_").concat(Integer.toString(z)).concat(".png");
+                filename = "draw/" + region + "/" + z + "s/" + x + "-" + y;
                 fout = new FileOutputStream(filename);
 //                ImageIO.write(map, "png", outputfile);
                 encoder.encode(map, fout);
@@ -688,6 +695,7 @@ public class MyMap {
         File inputfile, outputfile;
         try{
             for(int z = 2; z < 128; z = z * 2){
+                new File("draw/" + region + "/" + z + "/").mkdirs();
 //                if(Math.max(tiles.length, tiles[0].length))
                 System.out.println("z" + z);
                 //need to wrap this bit in a loop over blocks - done below?
@@ -698,7 +706,7 @@ public class MyMap {
                         for(int x = jumpX; x < z + jumpX; x++) {
                             for (int y = jumpY; y < z + jumpY; y++) {
                                 System.out.println("x " + x + "y " + y);
-                                filename = "draw/stitches/tile-".concat(String.valueOf(y)).concat("-").concat(String.valueOf(x)).concat("_").concat(Integer.toString(z)).concat(".png");
+                                filename = "draw/" + region + "/" + z + "s/" + x + "-" + y;
                                 inputfile = new File(filename);
                                 if(inputfile.exists()){
 //                                    System.out.println((x - jumpX) + " " + (y - jumpY));
@@ -719,7 +727,11 @@ public class MyMap {
                                 g.drawImage(images[x - 1][y - 1], (x * increment) - increment,  (y * increment) - increment,null);
                             }
                         }
-                        filename = "draw/".concat(Integer.toString(z)).concat("/tile-L".concat(Integer.toString(z)).concat("_").concat(Integer.toString(jumpY)).concat("-").concat(Integer.toString(jumpX)).concat(".png"));
+                        filename = "draw/" + region + "/" + z + "/" + jumpX + "-" + jumpY;
+
+
+
+//                        filename = "draw/".concat().concat(Integer.toString(z)).concat("/tile-L".concat(Integer.toString(z)).concat("_").concat(Integer.toString(jumpY)).concat("-").concat(Integer.toString(jumpX)).concat(".png"));
                         outputfile = new File(filename);
                         ImageIO.write(out, "png", outputfile);
                     }

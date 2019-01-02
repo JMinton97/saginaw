@@ -3,6 +3,7 @@ package project.view;
 import project.controller.Controller;
 import project.model.Model;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 
 import java.awt.Color;
@@ -10,7 +11,10 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -27,6 +31,17 @@ class Canvas extends JPanel
 	private View				view;
 
 	private CanvasMouseListener	mouseListener;
+	private CanvasKeyboardListener keyListener;
+
+	private BufferedImage image;
+
+	private BufferedImage[][] tileGrid;
+
+	private Point2D centre;
+	private Point2D origin;
+	private Point2D topLeft;
+	private double scale;
+	private double oX, oY;
 
 	/**
 	 * The default constructor should NEVER be called. It has been made private
@@ -56,7 +71,14 @@ class Canvas extends JPanel
 		this.model = model;
 		mouseListener = new CanvasMouseListener(this.model, this.view,
 				controller);
+		keyListener = new CanvasKeyboardListener(controller);
 		addMouseListener(mouseListener);
+		addKeyListener(keyListener);
+		this.setSize(500, 500);
+		origin = model.getOrigin();
+		oX = origin.getX() / model.getScale();
+		oY = origin.getY() / model.getScale();
+		tileGrid = new BufferedImage[20][20];
 	}
 
 	/**
@@ -78,22 +100,9 @@ class Canvas extends JPanel
 
 		if (model.isActive())
 		{
-			BufferedImage image = model.getImage();
-			List<Rectangle> rects = model.getRects();
-
 			// Draw the display image on the full size canvas
-			g2.drawImage(image, 0, 0, null);
+			g2.drawImage(image, 0, 0, this.getWidth(), this.getHeight(), null);
 
-			if (!rects.isEmpty())
-			{
-				Color col = g2.getColor();
-				g2.setColor(Color.BLUE);
-				for (Rectangle rect : rects)
-				{
-					g2.draw(rect);
-				}
-				g2.setColor(col);
-			}
 			// In case there is some animation going on (e.g. mouse dragging),
 			// call this to
 			// paint the intermediate images
@@ -112,4 +121,56 @@ class Canvas extends JPanel
 	{
 		return model.getDimensions();
 	}
+
+	public void updateRegion(){
+		int z = model.getZ();
+		int x = model.getX();
+		int y = model.getY();
+//		BufferedImage bi = ImageIO.read(new File("draw/".concat(model.getRegion()).concat("/").concat(z).concat("/").concat()))
+		try {
+			System.out.println("draw/" + model.getRegion() + "/" + z + "/" + x + "-" + y + ".png");
+			long startTime = System.nanoTime();
+			image = ImageIO.read(new File("draw/" + model.getRegion() + "/" + z + "/" + x + "-" + y));
+			long endTime = System.nanoTime();
+			System.out.println("Load: " + (((float) endTime - (float)startTime) / 1000000000));
+		} catch (IOException e) {
+			e.printStackTrace();
+			return;
+		}
+	}
+
+	public void update() {
+		centre = model.getCentre();
+		scale = model.getScale();
+		Point2D topLeft = new Point2D.Double((centre.getX() - (250 / scale)), (centre.getY() - (250 / scale)));
+		int x = (int) Math.abs(Math.round(((topLeft.getX() - origin.getX()) * scale) / 500));
+		int y = (int) Math.abs(Math.round(((topLeft.getY() - origin.getY()) * scale) / 500));
+		System.out.println(topLeft.getX() + ", " + x + "  |  " + topLeft.getY() + ", " + y);
+
+		if(tileGrid[x][y] == null){
+			try{
+				tileGrid[x][y] = ImageIO.read(new File("draw/" + model.getRegion() + "/" + 1 + "/" + x + "-" + y));
+			}catch(IOException e){
+
+			}
+		}
+
+		Graphics g = this.getGraphics();
+		g.fillRect(0, 0, 500, 500);
+
+		double imageOrigX = origin.getX() + (500 * (x + 1));
+		double imageOrigY = origin.getY() + (500 * (y + 1));
+		double paneOrigX = (topLeft.getX() - origin.getX()) * scale;
+		double paneOrigY = (origin.getY() - topLeft.getY()) * scale;
+
+//		System.out.println(imageOrigX + " " + imageOrigY);
+		g.drawImage(tileGrid[x][y], (int) (paneOrigX - imageOrigX), (int) (paneOrigY - imageOrigY), 500, 500, null);
+
+		System.out.println((paneOrigX - imageOrigX) + "    " + (paneOrigY - imageOrigY));
+
+	}
+
+
+
+
 }

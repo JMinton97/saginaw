@@ -16,7 +16,6 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 public class DijkstraLandmarks {
     long pollTimeStart, pollTimeEnd, totalPollTime, addTimeStart, addTimeEnd, totalAddTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, putTimeStart, putTimeEnd, totalPutTime;
     Long2ObjectOpenHashMap distTo;
-    Long2ObjectOpenHashMap edgeTo;
 
 
 //    THashMap<Long, double[]> distTo;
@@ -29,12 +28,7 @@ public class DijkstraLandmarks {
     public DijkstraLandmarks(project.map.MyGraph graph, ArrayList<Long> startNodes){
 
         distTo = new Long2ObjectOpenHashMap<double[]>();
-        edgeTo = new Long2ObjectOpenHashMap<long[]>();
         pq = new PriorityQueue();
-
-        double[] test = new double[4];
-
-        distTo.put(7, test);
 
         landmarks = startNodes;
 
@@ -51,7 +45,7 @@ public class DijkstraLandmarks {
 
         for(int x = 0; x < startNodes.size(); x++){
             Calendar cal = Calendar.getInstance();
-            System.out.println(x + " of " + startNodes.size() + " " + sdf.format(cal.getTime()));
+            System.out.println(x + 1 + " of " + startNodes.size() + " " + sdf.format(cal.getTime()));
             DijkstraAlgorithm(graph, startNodes.get(x), x);
         }
 

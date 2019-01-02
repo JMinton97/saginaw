@@ -156,4 +156,19 @@ public class Controller
 			return 0;
 		}
 	};
+
+	public void moveMap(int x, int y){
+		model.move(x, y);
+		view.updateRegion();
+	}
+
+	public void zoomOut(){
+		model.zoomOut();
+		view.updateRegion();
+	}
+
+	public void zoomIn(){
+		model.zoomIn();
+		view.updateRegion();
+	}
 }

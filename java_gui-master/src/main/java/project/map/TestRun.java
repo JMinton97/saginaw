@@ -11,11 +11,21 @@ public class TestRun {
 
     public static void main(String[] args) throws InterruptedException{
         long startTime, endTime;
-        String region = "birmingham";
+        String region = "wales";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
+
+        File fregion = new File(System.getProperty("user.dir").concat("/files/" + region + "/"));
+        fregion.mkdirs();
+        try {
+            fregion.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
         MyGraph graph;
-        Long src, dst;
+        Long src, dst, src1, dst1, src2, dst2;
 
         try {
 
@@ -24,10 +34,12 @@ public class TestRun {
             fe.createNewFile();
 
 
-//            startTime = System.nanoTime();
-//            MyMap map = new MyMap(f, 15000, false);
-//            endTime = System.nanoTime();
-//            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
+            startTime = System.nanoTime();
+            MyMap map = new MyMap(f, region, 800, false);
+            endTime = System.nanoTime();
+            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
+
+            System.exit(0);
 
 
             startTime = System.nanoTime();
@@ -67,8 +79,14 @@ public class TestRun {
 //            src = Long.parseLong("1014654504"); //north to south
 //            dst = Long.parseLong("1620423227");
 
-//            src = Long.parseLong("1802487895"); //france
-//            dst = Long.parseLong("1338882013");
+            src = Long.parseLong("1802487895"); //france
+            dst = Long.parseLong("1338882013");
+
+            src1 = Long.parseLong("3734850968"); //france
+            dst1 = Long.parseLong("774690360");
+
+            src2 = Long.parseLong("266864590"); //france
+            dst2 = Long.parseLong("427050694");
 
 //
 //            System.out.println("Distance: " + astar.getDistTo().get(dst));
@@ -77,22 +95,34 @@ public class TestRun {
 //            System.out.println();
 
 
-//            BiAStar biastar = new BiAStar(graph);
-//            startTime = System.nanoTime();
-//            biastar.search(src, dst);
-//            endTime = System.nanoTime();
-//            System.out.println("BiAStar full time: " + (((float) endTime - (float)startTime) / 1000000000));
-//            System.out.println("Distance: " + biastar.getDist());
-//            System.out.println("Explored: " + biastar.explored);
-//            startTime = System.nanoTime();
-//            biastar.search(src, dst);
-//            endTime = System.nanoTime();
-//            System.out.println("BiAStar full time: " + (((float) endTime - (float)startTime) / 1000000000));
-//            System.out.println("Distance: " + biastar.getDist());
-//            System.out.println("Explored: " + biastar.explored);
-//            biastar.clear();
-//            biastar = null;
-//            System.out.println("----------------------");
+            BiAStar biastar = new BiAStar(graph);
+            startTime = System.nanoTime();
+            biastar.search(src, dst);
+            endTime = System.nanoTime();
+            System.out.println("BiAStar 1 full time: " + (((float) endTime - (float)startTime) / 1000000000));
+            System.out.println("Distance: " + biastar.getDist());
+            System.out.println("Explored: " + biastar.explored);
+
+            startTime = System.nanoTime();
+            biastar.search(src1, dst1);
+            endTime = System.nanoTime();
+            System.out.println("BiAStar 2 full time: " + (((float) endTime - (float)startTime) / 1000000000));
+            System.out.println("Distance: " + biastar.getDist());
+            System.out.println("Explored: " + biastar.explored);
+
+            startTime = System.nanoTime();
+            biastar.search(src2, dst2);
+            endTime = System.nanoTime();
+            System.out.println("BiAStar 3 full time: " + (((float) endTime - (float)startTime) / 1000000000));
+            System.out.println("Distance: " + biastar.getDist());
+            System.out.println("Explored: " + biastar.explored);
+
+
+
+
+            biastar.clear();
+            biastar = null;
+            System.out.println("----------------------");
 //
 //            AStar astar = new AStar(graph);
 //            startTime = System.nanoTime();
@@ -122,23 +152,23 @@ public class TestRun {
             System.out.println("----------------------");
 
 
-//            System.out.println();
-//            startTime = System.nanoTime();
-//            BiDijkstra biDijk = new BiDijkstra(graph, src, dst, graph.getDictionary());
-//            endTime = System.nanoTime();
-//            System.out.println("Bi-dijkstra full time: " + (((float) endTime - (float)startTime) / 1000000000));
-////            System.out.println("Poll time:    " + ((float) biDijk.totalPollTime / 1000000000));
-//////                System.out.println("Priority queue time:    " + ((float) biDijk.totalContainsTime / 1000000000));
-////            System.out.println("Total relax time: " + ((float) biDijk.totalRelaxTime / 1000000000));
-////            System.out.println("Contains time: " + ((float) biDijk.totalContainsTime / 1000000000));
-////            System.out.println("Relax-queue-add time: " + ((float) biDijk.atotalRelaxTime / 1000000000));
-////            System.out.println("Relax-put time: " + ((float) biDijk.totalRelaxPutTime / 1000000000));
-//            System.out.println("Distance: " + biDijk.getDist());
-//            System.out.println("Explored: " + biDijk.explored);
-//            ArrayList<Long> route = biDijk.getRoute();
-//            biDijk.clear();
-//            biDijk = null;
-//            System.out.println("----------------------");
+            System.out.println();
+            startTime = System.nanoTime();
+            BiDijkstra biDijk = new BiDijkstra(graph, src, dst, graph.getDictionary());
+            endTime = System.nanoTime();
+            System.out.println("Bi-dijkstra full time: " + (((float) endTime - (float)startTime) / 1000000000));
+//            System.out.println("Poll time:    " + ((float) biDijk.totalPollTime / 1000000000));
+////                System.out.println("Priority queue time:    " + ((float) biDijk.totalContainsTime / 1000000000));
+//            System.out.println("Total relax time: " + ((float) biDijk.totalRelaxTime / 1000000000));
+//            System.out.println("Contains time: " + ((float) biDijk.totalContainsTime / 1000000000));
+//            System.out.println("Relax-queue-add time: " + ((float) biDijk.atotalRelaxTime / 1000000000));
+//            System.out.println("Relax-put time: " + ((float) biDijk.totalRelaxPutTime / 1000000000));
+            System.out.println("Distance: " + biDijk.getDist());
+            System.out.println("Explored: " + biDijk.explored);
+            ArrayList<Long> route = biDijk.getRoute();
+            biDijk.clear();
+            biDijk = null;
+            System.out.println("----------------------");
 
 
 //            System.out.println("Overlap route is  " + biDijk.getDist() / 1000);

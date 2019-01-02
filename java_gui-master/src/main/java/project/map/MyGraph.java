@@ -12,6 +12,7 @@ import java.awt.geom.GeneralPath;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.reflect.Array;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
@@ -23,7 +24,7 @@ import org.nustaq.serialization.FSTObjectOutput;
 
 public class MyGraph {
     //    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
-    public static BTreeMap<Long, double[]> dictionary; //maps a node id to a MyNode object containing more details
+    public static BTreeMap<Long, double[]> dictionary; //maps a node id to a double array containing the coordinates of the node
     private static Set<long[]> mapRoads; //a list of all connections between nodes. Later becomes all graph edges.
     private static ConcurrentMap<Long, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a list of ways each one is part of
     private static boolean parsingNodes;
@@ -42,9 +43,9 @@ public class MyGraph {
 
     public MyGraph(File file, String region) throws IOException {
 
-        makeDictionary(file);
+        filePrefix = "files//".concat(region + "//");
 
-        filePrefix = "file//".concat(region + "//");
+        makeDictionary(file);
 
         File graphDir = new File(filePrefix.concat("graph.ser"));
         if(graphDir.exists()){
@@ -58,6 +59,10 @@ public class MyGraph {
                 e.printStackTrace();
             }
             timerEnd("Read graph");
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+            Calendar cal = Calendar.getInstance();
+            System.out.println(sdf.format(cal.getTime()));
+
         } else {
             System.out.println("No graph found, creating now.");
 

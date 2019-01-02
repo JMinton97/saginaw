@@ -2,6 +2,7 @@ package project.map;
 
 
 import gnu.trove.map.hash.THashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import javafx.util.Pair;
 import org.mapdb.BTreeMap;
 import gnu.trove.map.hash.TLongDoubleHashMap;
@@ -21,8 +22,8 @@ public class AStar {
     public int explored;
     private MyGraph myGraph;
     private ArrayList<Long> landmarks;
-    private HashMap<Long, double[]> distancesTo;
-    private HashMap<Long, double[]> distancesFrom;
+    private Long2ObjectOpenHashMap distancesTo;
+    private Long2ObjectOpenHashMap distancesFrom;
 
     public AStar(MyGraph graph){
         this.myGraph = graph;
@@ -98,8 +99,8 @@ public class AStar {
     public void Precomputation() throws IOException {
         Map<Long, Set<double[]>> graph = myGraph.getGraph();
         BTreeMap<Long, double[]> dictionary = myGraph.getDictionary();
-        distancesTo = new HashMap<Long, double[]>(); //need to compute
-        distancesFrom = new HashMap<Long, double[]>();
+        distancesTo = new Long2ObjectOpenHashMap<double[]>(); //need to compute
+        distancesFrom = new Long2ObjectOpenHashMap<double[]>();
         GenerateLandmarks();
         DijkstraLandmarks dj;
 
@@ -109,7 +110,7 @@ public class AStar {
             FileInputStream fileIn = new FileInputStream(dfDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
-                distancesFrom = (HashMap<Long, double[]>) objectIn.readObject();
+                distancesFrom = (Long2ObjectOpenHashMap) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -131,7 +132,7 @@ public class AStar {
             FileInputStream fileIn = new FileInputStream(dtDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
-                distancesTo = (HashMap<Long, double[]>) objectIn.readObject();
+                distancesTo = (Long2ObjectOpenHashMap) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -175,10 +176,10 @@ public class AStar {
     public double lowerBound(long u, long v){
         double max = 0;
         double[] dTU, dFU, dTV, dFV;
-        dTU = distancesTo.get(u);
-        dFU = distancesFrom.get(u);
-        dTV = distancesTo.get(v);
-        dFV = distancesFrom.get(v);
+        dTU = (double[]) distancesTo.get(u);
+        dFU = (double[]) distancesFrom.get(u);
+        dTV = (double[]) distancesTo.get(v);
+        dFV = (double[]) distancesFrom.get(v);
 
         for(int l = 0; l < landmarks.size(); l++){
             max = Math.max(max, Math.max(dTU[l] - dTV[l], dFV[l] - dFU[l]));

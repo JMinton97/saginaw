@@ -7,6 +7,7 @@ import project.utils.UnsupportedImageTypeException;
 
 import java.awt.Dimension;
 import java.awt.Rectangle;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -28,19 +29,55 @@ import java.util.List;
  * the user interface
  * </p>
  */
-public class Model
-{
-	private BufferedImage	image	= null;
+public class Model {
+	private BufferedImage image = null;
 	private MyGraph map = null;
-	private List<Rectangle>	rects	= new ArrayList<Rectangle>();
+	private List<Rectangle> rects = new ArrayList<Rectangle>();
+	private String region = "wales";
+	private int x, y, z;
+	private double zoom, baseScale;
+	private Point2D.Double centreCoord = new Point2D.Double(-4, 52.5);
+	private Point2D.Double origin = new Point2D.Double (-5.5, 53.5);
+	private double geomXD, geomYD;
 
-	public Model()
-	{
+	public Model() {
+		x = 1;
+		y = 1;
+		z = 1;
+		baseScale = 4000;
+		zoom = 1.0;
 	}
 
-	public BufferedImage getImage()
-	{
+	public BufferedImage getImage() {
 		return image;
+	}
+
+	public int getX() {
+		return x;
+	}
+
+	public int getY() {
+		return y;
+	}
+
+	public int getZ() {
+		return z;
+	}
+
+	public String getRegion() {
+		return region;
+	}
+
+	public Point2D getCentre() {
+		return centreCoord;
+	}
+
+	public Point2D getOrigin() {
+		return origin;
+	}
+
+	public double getScale() {
+		return baseScale * zoom;
 	}
 
 	/**
@@ -99,7 +136,7 @@ public class Model
 	 */
 	public boolean isActive()
 	{
-		return image != null;
+		return true;
 	}
 
 	/**
@@ -138,6 +175,41 @@ public class Model
 	//		map.drawMap(0);
 	//		BufferedImage bi = map.getMap();
 	//		setImage(bi);
+	}
+
+	public void move(double xD, double yD) {
+		geomXD = (xD / (baseScale * zoom)) + centreCoord.getX();
+		geomYD = (yD / (baseScale * zoom)) + centreCoord.getY();
+		centreCoord.setLocation(geomXD, geomYD);
+
+//		x = x + (xD * z);
+//		y = y + (yD * z);
+//		if(x < 1){
+//			x = 1;
+//		}
+//		if(y < 1){
+//			y = 1;
+//		}
+	}
+
+	public void zoomIn() {
+		z = z / 2;
+		if(z < 1){
+			z = 1;
+		} else {
+			x = x - (x % z) + 1;
+			y = y - (y % z) + 1;
+		}
+	}
+
+	public void zoomOut() {
+		z = z * 2;
+		if(z < 1){
+			z = 1;
+		} else {
+			x = x - (x % z) + 1;
+			y = y - (y % z) + 1;
+		}
 	}
 
 }

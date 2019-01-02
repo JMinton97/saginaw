@@ -1,6 +1,7 @@
 package project.map;
 
 import gnu.trove.map.hash.THashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import javafx.util.Pair;
 import org.mapdb.BTreeMap;
 import org.nustaq.serialization.FSTObjectInput;
@@ -11,6 +12,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 
@@ -25,33 +27,50 @@ public class BiAStar {
     long start, end;
     MyGraph myGraph;
     ArrayList<Long> landmarks;
-    HashMap<Long, double[]> distancesTo;
-    HashMap<Long, double[]> distancesFrom;
+    Long2ObjectOpenHashMap distancesTo;
+    Long2ObjectOpenHashMap distancesFrom;
     private HashSet<Long> uRelaxed;
     private HashSet<Long> vRelaxed;
     public Long overlapNode;
     private double maxDist; //how far from the nodes we have explored - have we covered minimum distance yet?
     public double bestSeen;
-    public int explored;
+    public int explored, size;
 
-    public BiAStar(MyGraph graph) {
-        this.myGraph = graph;
+    public BiAStar(MyGraph myGraph) {
+        this.myGraph = myGraph;
         landmarks = new ArrayList<>();
         try {
             Precomputation();
         } catch (IOException ie) {
             ie.printStackTrace();
         }
-    }
 
-    public ArrayList<Long> search(long start, long end){
         Map<Long, Set<double[]>> graph = myGraph.getGraph();
-        int size = graph.size();
-        System.out.println("SIZE " + size);
+
+        size = graph.size();
+
         uDistTo = new THashMap<>(size);
         uEdgeTo = new THashMap<>(size);
         vDistTo = new THashMap<>(size);
         vEdgeTo = new THashMap<>(size);
+
+    }
+
+    public ArrayList<Long> search(long start, long end){
+        explored = 0;
+
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+        Calendar cal = Calendar.getInstance();
+
+        System.out.println(sdf.format(cal.getTime()));
+        cal = Calendar.getInstance();
+        System.out.println(sdf.format(cal.getTime()));
+
+        uDistTo.clear();
+        uEdgeTo.clear();
+        vDistTo.clear();
+        vEdgeTo.clear(); //.clear() to retain size
+
 
 //        timerStart();
 //        for(Long vert : graph.getGraph().keySet()){
@@ -199,8 +218,8 @@ public class BiAStar {
 
     public void Precomputation() throws IOException {
         Map<Long, Set<double[]>> graph = myGraph.getGraph();
-        distancesTo = new HashMap<>(); //need to compute
-        distancesFrom = new HashMap<>();
+        distancesTo = new Long2ObjectOpenHashMap<double[]>(); //need to compute
+        distancesFrom = new Long2ObjectOpenHashMap<double[]>();
         GenerateLandmarks();
         DijkstraLandmarks dj;
 
@@ -210,7 +229,7 @@ public class BiAStar {
             FileInputStream fileIn = new FileInputStream(dfDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
-                distancesFrom = (HashMap<Long, double[]>) objectIn.readObject();
+                distancesFrom = (Long2ObjectOpenHashMap<double[]>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -224,6 +243,7 @@ public class BiAStar {
             objectOut.writeObject(distancesFrom);
             objectOut.close();
             dj.clear();
+            distancesFrom = null;
         }
         System.out.println("Done first bit");
 
@@ -233,7 +253,7 @@ public class BiAStar {
             FileInputStream fileIn = new FileInputStream(dtDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
-                distancesTo = (HashMap<Long, double[]>) objectIn.readObject();
+                distancesTo = (Long2ObjectOpenHashMap<double[]>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -247,6 +267,7 @@ public class BiAStar {
             objectOut.writeObject(distancesTo);
             objectOut.close();
             dj.clear();
+            distancesTo = null;
         }
     }
 
@@ -256,12 +277,12 @@ public class BiAStar {
         Random random = new Random();
         List<Long> nodes = new ArrayList<>(graph.keySet());
 
-        for(int x = 0; x < 4; x++){
+        for(int x = 0; x < 5; x++){
             landmarks.add(nodes.get(random.nextInt(size)));
             System.out.println(landmarks.get(x));
         }
 
-//        landmarks.clear();
+        landmarks.clear();
 
 //        landmarks.add(Long.parseLong("27103812"));
 //        landmarks.add(Long.parseLong("299818750"));
@@ -273,6 +294,21 @@ public class BiAStar {
 //        landmarks.add(Long.parseLong("262840382"));
 //        landmarks.add(Long.parseLong("344881575"));
 //        landmarks.add(Long.parseLong("1795462073"));
+
+        landmarks.add(Long.parseLong("1997249188"));
+        landmarks.add(Long.parseLong("420592228"));
+        landmarks.add(Long.parseLong("1203772336"));
+        landmarks.add(Long.parseLong("292093917"));
+        landmarks.add(Long.parseLong("629419387"));
+        landmarks.add(Long.parseLong("1161458782"));
+        landmarks.add(Long.parseLong("702241324"));
+        landmarks.add(Long.parseLong("31898581"));
+        landmarks.add(Long.parseLong("600118738"));
+        landmarks.add(Long.parseLong("268366322"));
+
+
+
+
     }
 
     public double lowerBound(long u, boolean forwards){
@@ -280,15 +316,15 @@ public class BiAStar {
         double maxBackward = 0;
         double[] dTU, dFU, dTV, dFV;
 
-        double[] forDTU = distancesTo.get(u);
-        double[] forDFU = distancesFrom.get(u);
-        double[] forDTV = distancesTo.get(end);
-        double[] forDFV = distancesFrom.get(end);
+        double[] forDTU = (double[]) distancesTo.get(u);
+        double[] forDFU = (double[]) distancesFrom.get(u);
+        double[] forDTV = (double[]) distancesTo.get(end);
+        double[] forDFV = (double[]) distancesFrom.get(end);
 
-        double[] backDTU = distancesTo.get(u);
-        double[] backDFU = distancesFrom.get(u);
-        double[] backDTV = distancesTo.get(start);
-        double[] backDFV = distancesFrom.get(start);
+        double[] backDTU = (double[]) distancesTo.get(u);
+        double[] backDFU = (double[]) distancesFrom.get(u);
+        double[] backDTV = (double[]) distancesTo.get(start);
+        double[] backDFV = (double[]) distancesFrom.get(start);
 
         for(int l = 0; l < landmarks.size(); l++){
             maxForward = Math.max(maxForward, Math.max(forDTU[l] - forDTV[l], forDFV[l] - forDFU[l]));
