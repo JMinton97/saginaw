@@ -23,14 +23,19 @@ public class BiDijkstra {
     public double bestSeen;
     public int explored;
     private long startNode, endNode;
+    private MyGraph graph;
+    BTreeMap<Long, double[]> dictionary;
 
-    public BiDijkstra(MyGraph graph, Long startNode, Long endNode, BTreeMap<Long, double[]> dictionary){
+    public BiDijkstra(MyGraph graph, BTreeMap<Long, double[]> dictionary) {
         System.out.println("SIZE " + graph.getGraph().size());
         uDistTo = new THashMap<>(graph.getGraph().size());
         uEdgeTo = new THashMap<>(graph.getGraph().size());
 
         vDistTo = new THashMap<>(graph.getGraph().size());
         vEdgeTo = new THashMap<>(graph.getGraph().size());
+
+        this.graph = graph;
+        this.dictionary = dictionary;
 
 //        timerStart();
 //        for(Long vert : graph.getGraph().keySet()){
@@ -40,6 +45,11 @@ public class BiDijkstra {
 //            vDistTo.put(vert, Double.MAX_VALUE);
 //        }
 //        timerEnd("Filling maps");
+
+    }
+
+    public ArrayList<Long> compute(Long startNode, Long endNode){
+
 
         this.startNode = startNode;
         this.endNode = endNode;
@@ -123,6 +133,9 @@ public class BiDijkstra {
         }
         long endTime = System.nanoTime();
         System.out.println("BiDijkstra time: " + (((float) endTime - (float)startTime) / 1000000000));
+
+        return getRoute();
+
     }
 
     private void relax(Long x, double[] edge, boolean u){

@@ -125,7 +125,7 @@ public class MyMap {
 
         counter = 0;
         this.file = file;
-        int scale = 4000; //pixels per degree!
+        int scale = 40000; //pixels per degree!
 
         dictionary = new HashMap<>();
 //        mapRoads = new ArrayList<>();                //IMPORTANT - memoryDB option in quickstart?
@@ -369,7 +369,7 @@ public class MyMap {
 
         Graphics2D mapGraphics = tile.createGraphics();
 
-        mapGraphics.setColor(new Color(255, 255, 255));
+        mapGraphics.setColor(new Color(244, 243, 236));
         mapGraphics.fillRect(0, 0, maxEdge, maxEdge);
         BasicStroke bs = new BasicStroke(1);
         mapGraphics.setStroke(bs);
@@ -384,56 +384,49 @@ public class MyMap {
             if(w.getKey()[1] == Long.parseLong("6")) {
                 drawWay(w, mapGraphics, false, axis, tileNodes.get(x - 1).get(y - 1));
             }
-        }
-//        System.out.println("drew greens");
+        } //GREENS
 
         for(Map.Entry<long[], long[]> w : (tileWay.entrySet())){
             if(w.getKey()[1] == Long.parseLong("9")) {
                 drawWay(w, mapGraphics, false, axis, tileNodes.get(x - 1).get(y - 1));
             }
-        }
-//        System.out.println("drew forests");
-
-        for(Map.Entry<long[], long[]> w : (tileWay.entrySet())){
-            if(w.getKey()[1] == Long.parseLong("8")) {
-                drawWay(w, mapGraphics, false, axis, tileNodes.get(x - 1).get(y - 1));
-            }
-        }
-//        System.out.println("drew water");
+        } //FORESTS
 
         for(Map.Entry<long[], long[]> w : (tileWay.entrySet())){
             if(w.getKey()[1] == Long.parseLong("7")) {
                 drawWay(w, mapGraphics, false, axis, tileNodes.get(x - 1).get(y - 1));
             }
-        }
-//        System.out.println("drew rivers");
+        } //RAILS
+
+        for(Map.Entry<long[], long[]> w : (tileWay.entrySet())){
+            if(w.getKey()[1] == Long.parseLong("8")) {
+                drawWay(w, mapGraphics, false, axis, tileNodes.get(x - 1).get(y - 1));
+            }
+        } //WATERBODIES
 
         for(Map.Entry<long[], long[]> w : (tileWay.entrySet())){
             if(w.getKey()[1] == Long.parseLong("5")) {
                 drawWay(w, mapGraphics, false, axis, tileNodes.get(x - 1).get(y - 1));
             }
-        }
-//        System.out.println("drew rails");
+        } //RAILWAYS
 
-        for(Map.Entry<long[], long[]> w : (tileWay.entrySet())){
-            if(w.getKey()[1] == (Long.parseLong("0")) || w.getKey()[1] == (Long.parseLong("1")) || w.getKey()[1] == (Long.parseLong("2")) || w.getKey()[1] == (Long.parseLong("3")) || w.getKey()[1] == (Long.parseLong("4"))) {
-                drawWay(w, mapGraphics, true, axis, tileNodes.get(x - 1).get(y - 1));
-            }
-        }
-//        System.out.println("drew roads under");
+//        for(Map.Entry<long[], long[]> w : (tileWay.entrySet())){
+//            if(w.getKey()[1] == (Long.parseLong("0")) || w.getKey()[1] == (Long.parseLong("1")) || w.getKey()[1] == (Long.parseLong("2")) || w.getKey()[1] == (Long.parseLong("3")) || w.getKey()[1] == (Long.parseLong("4"))) {
+//                drawWay(w, mapGraphics, true, axis, tileNodes.get(x - 1).get(y - 1));
+//            }
+//        } //ROADS UNDER
 
         for(Map.Entry<long[], long[]> w : (tileWay.entrySet())){
             if(w.getKey()[1] == (Long.parseLong("0")) || w.getKey()[1] == (Long.parseLong("1")) || w.getKey()[1] == (Long.parseLong("2")) || w.getKey()[1] == (Long.parseLong("3")) || w.getKey()[1] == (Long.parseLong("4"))) {
                 drawWay(w, mapGraphics, false, axis, tileNodes.get(x - 1).get(y - 1));
             }
-        }
-//        System.out.println("drew roads over");
+        } //ROADS OVER
 
-        for(Map.Entry<long[], long[]> w : (tileWay.entrySet())){
-            if(w.getKey()[1] == Long.parseLong("10")) {
-                drawWay(w, mapGraphics, false, axis, tileNodes.get(x - 1).get(y - 1));
-            }
-        }
+//        for(Map.Entry<long[], long[]> w : (tileWay.entrySet())){
+//            if(w.getKey()[1] == Long.parseLong("10")) {
+//                drawWay(w, mapGraphics, false, axis, tileNodes.get(x - 1).get(y - 1));
+//            }
+//        }
 
         mapGraphics.dispose();
 
@@ -565,7 +558,7 @@ public class MyMap {
                     mapGraphics.setStroke(new BasicStroke((8)));
                 } else {
                     mapGraphics.setPaint(wayColor);
-                    mapGraphics.setStroke(new BasicStroke((4)));
+                    mapGraphics.setStroke(new BasicStroke((3)));
                 }
                 drawPolyline(mapGraphics, wayNodes, bound, dictionary);
                 break;
@@ -577,33 +570,33 @@ public class MyMap {
                 break;
 
             case "7": //rivers
-                mapGraphics.setStroke(new BasicStroke(4));
+                mapGraphics.setStroke(new BasicStroke(3));
                 mapGraphics.setPaint(new Color(102, 178, 255));
                 drawPolyline(mapGraphics, wayNodes, bound, dictionary);
                 break;
 
             case "10": //cycles
-                mapGraphics.setStroke(new BasicStroke(4));
+                mapGraphics.setStroke(new BasicStroke(2));
                 mapGraphics.setPaint(Color.RED);
                 drawPolyline(mapGraphics, wayNodes, bound, dictionary);
                 break;
 
             case "6": //green
-                mapGraphics.setStroke(new BasicStroke(4));
+                mapGraphics.setStroke(new BasicStroke(2));
                 inColor = new Color(153, 255, 153);
                 outColor = new Color(102, 255, 102);
                 drawArea(mapGraphics, wayNodes, bound, inColor, outColor, dictionary);
                 break;
 
             case "9": //tree
-                mapGraphics.setStroke(new BasicStroke(4));
+                mapGraphics.setStroke(new BasicStroke(2));
                 inColor = new Color(0, 204, 102);
                 outColor = new Color(0, 153, 76);
                 drawArea(mapGraphics, wayNodes, bound, inColor, outColor, dictionary);
                 break;
 
             case "8": //waterbody
-                mapGraphics.setStroke(new BasicStroke(4));
+                mapGraphics.setStroke(new BasicStroke(2));
                 inColor = new Color(153, 204, 255);
                 outColor = new Color(102, 178, 255);
                 drawArea(mapGraphics, wayNodes, bound, inColor, outColor, dictionary);

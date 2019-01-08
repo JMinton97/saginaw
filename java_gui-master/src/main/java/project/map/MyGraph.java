@@ -9,6 +9,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.GeneralPath;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.reflect.Array;
@@ -436,10 +437,10 @@ public class MyGraph {
         return graph.get(v);
     }
 
-    public ArrayList<MyNode> refsToNodes(ArrayList<Long> refs){
-        ArrayList<MyNode> nodes = new ArrayList<>();
+    public ArrayList<Point2D.Double> refsToNodes(ArrayList<Long> refs){
+        ArrayList<Point2D.Double> nodes = new ArrayList<>();
         for(Long ref : refs){
-            nodes.add(new MyNode(dictionary.get(ref)[1], dictionary.get(ref)[0]));
+            nodes.add(new Point2D.Double(dictionary.get(ref)[1], dictionary.get(ref)[0]));
         }
         return nodes;
     }

@@ -36,23 +36,26 @@ class CanvasMouseListener implements MouseInputListener
 	{
 		if (mouseDown)
 		{
-			Color col = g.getColor();
-			g.setColor(Color.RED);
-			if (x1 <= x2)
-			{
-				if (y1 <= y2)
-					g.drawRect(x1, y1, x2 - x1, y2 - y1);
-				else
-					g.drawRect(x1, y2, x2 - x1, y1 - y2);
-			}
-			else
-			{
-				if (y1 <= y2)
-					g.drawRect(x2, y1, x1 - x2, y2 - y1);
-				else
-					g.drawRect(x2, y2, x1 - x2, y1 - y2);
-			}
-			g.setColor(col);
+//			Color col = g.getColor();
+//			g.setColor(Color.RED);
+//			if (x1 <= x2)
+//			{
+//				if (y1 <= y2)
+//					g.drawRect(x1, y1, x2 - x1, y2 - y1);
+//				else
+//					g.drawRect(x1, y2, x2 - x1, y1 - y2);
+//			}
+//			else
+//			{
+//				if (y1 <= y2)
+//					g.drawRect(x2, y1, x1 - x2, y2 - y1);
+//				else
+//					g.drawRect(x2, y2, x1 - x2, y1 - y2);
+//			}
+//			g.setColor(col);
+
+			controller.moveMap(x2 - x1, y2 - y1);
+//			view.getCanvas().repaint();
 		}
 	}
 
@@ -81,20 +84,22 @@ class CanvasMouseListener implements MouseInputListener
 		mouseDown = false;
 		x2 = e.getX();
 		y2 = e.getY();
-		if (x1 <= x2)
-		{
-			if (y1 <= y2)
-				controller.addRect(new Rectangle(x1, y1, x2 - x1, y2 - y1));
-			else
-				controller.addRect(new Rectangle(x1, y2, x2 - x1, y1 - y2));
-		}
-		else
-		{
-			if (y1 <= y2)
-				controller.addRect(new Rectangle(x2, y1, x1 - x2, y2 - y1));
-			else
-				controller.addRect(new Rectangle(x2, y2, x1 - x2, y1 - y2));
-		}
+//		if (x1 <= x2)
+//		{
+//			if (y1 <= y2)
+//				controller.addRect(new Rectangle(x1, y1, x2 - x1, y2 - y1));
+//			else
+//				controller.addRect(new Rectangle(x1, y2, x2 - x1, y1 - y2));
+//		}
+//		else
+//		{
+//			if (y1 <= y2)
+//				controller.addRect(new Rectangle(x2, y1, x1 - x2, y2 - y1));
+//			else
+//				controller.addRect(new Rectangle(x2, y2, x1 - x2, y1 - y2));
+//		}
+
+		controller.moveMap(x2 - x1, y2 - y1);
 	}
 
 	@Override
@@ -112,6 +117,9 @@ class CanvasMouseListener implements MouseInputListener
 	{
 		x2 = e.getX();
 		y2 = e.getY();
+		controller.moveMap(-(x2 - x1), y2 - y1);
+		x1 = x2;
+		y1 = y2;
 		view.getCanvas().repaint();
 	}
 

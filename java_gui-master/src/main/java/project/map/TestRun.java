@@ -11,7 +11,7 @@ public class TestRun {
 
     public static void main(String[] args) throws InterruptedException{
         long startTime, endTime;
-        String region = "wales";
+        String region = "england";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 
@@ -33,9 +33,13 @@ public class TestRun {
             fe.mkdirs();
             fe.createNewFile();
 
+            MyMap2 map2 = new MyMap2(f);
+
+            System.exit(0);
+
 
             startTime = System.nanoTime();
-            MyMap map = new MyMap(f, region, 800, false);
+            MyMap map = new MyMap(f, region, 2000, false);
             endTime = System.nanoTime();
             System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
 
@@ -152,23 +156,23 @@ public class TestRun {
             System.out.println("----------------------");
 
 
-            System.out.println();
-            startTime = System.nanoTime();
-            BiDijkstra biDijk = new BiDijkstra(graph, src, dst, graph.getDictionary());
-            endTime = System.nanoTime();
-            System.out.println("Bi-dijkstra full time: " + (((float) endTime - (float)startTime) / 1000000000));
-//            System.out.println("Poll time:    " + ((float) biDijk.totalPollTime / 1000000000));
-////                System.out.println("Priority queue time:    " + ((float) biDijk.totalContainsTime / 1000000000));
-//            System.out.println("Total relax time: " + ((float) biDijk.totalRelaxTime / 1000000000));
-//            System.out.println("Contains time: " + ((float) biDijk.totalContainsTime / 1000000000));
-//            System.out.println("Relax-queue-add time: " + ((float) biDijk.atotalRelaxTime / 1000000000));
-//            System.out.println("Relax-put time: " + ((float) biDijk.totalRelaxPutTime / 1000000000));
-            System.out.println("Distance: " + biDijk.getDist());
-            System.out.println("Explored: " + biDijk.explored);
-            ArrayList<Long> route = biDijk.getRoute();
-            biDijk.clear();
-            biDijk = null;
-            System.out.println("----------------------");
+//            System.out.println();
+//            startTime = System.nanoTime();
+////            BiDijkstra biDijk = new BiDijkstra(graph, src, dst, graph.getDictionary());
+//            endTime = System.nanoTime();
+//            System.out.println("Bi-dijkstra full time: " + (((float) endTime - (float)startTime) / 1000000000));
+////            System.out.println("Poll time:    " + ((float) biDijk.totalPollTime / 1000000000));
+//////                System.out.println("Priority queue time:    " + ((float) biDijk.totalContainsTime / 1000000000));
+////            System.out.println("Total relax time: " + ((float) biDijk.totalRelaxTime / 1000000000));
+////            System.out.println("Contains time: " + ((float) biDijk.totalContainsTime / 1000000000));
+////            System.out.println("Relax-queue-add time: " + ((float) biDijk.atotalRelaxTime / 1000000000));
+////            System.out.println("Relax-put time: " + ((float) biDijk.totalRelaxPutTime / 1000000000));
+//            System.out.println("Distance: " + biDijk.getDist());
+//            System.out.println("Explored: " + biDijk.explored);
+//            ArrayList<Long> route = biDijk.getRoute();
+//            biDijk.clear();
+//            biDijk = null;
+//            System.out.println("----------------------");
 
 
 //            System.out.println("Overlap route is  " + biDijk.getDist() / 1000);

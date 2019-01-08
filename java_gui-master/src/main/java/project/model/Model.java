@@ -1,7 +1,9 @@
 package project.model;
 
+import project.map.BiDijkstra;
 import project.map.MyGraph;
 import project.map.MyMap;
+import project.map.MyNode;
 import project.utils.ImageFile;
 import project.utils.UnsupportedImageTypeException;
 
@@ -34,18 +36,40 @@ public class Model {
 	private MyGraph map = null;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
 	private String region = "wales";
-	private int x, y, z;
+	String mapDir = System.getProperty("user.dir").concat("/res/");
+	private int x, y, level;
 	private double zoom, baseScale;
-	private Point2D.Double centreCoord = new Point2D.Double(-4, 52.5);
+	private Point2D.Double centreCoord = new Point2D.Double(-3.83, 53.32);
+//	private Point2D.Double centreCoord = new Point2D.Double(-5.425, 53.425);
 	private Point2D.Double origin = new Point2D.Double (-5.5, 53.5);
 	private double geomXD, geomYD;
+
+	private BiDijkstra bdijk;
+	private MyGraph graph;
+	private ArrayList<Point2D.Double> route;
 
 	public Model() {
 		x = 1;
 		y = 1;
-		z = 1;
-		baseScale = 4000;
+		baseScale = 40000;
 		zoom = 1.0;
+		level = 1;
+
+		File f = new File(mapDir.concat(region).concat(".osm.pbf"));
+		try {
+			graph = graph = new MyGraph(f, region);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		bdijk = new BiDijkstra(graph, graph.getDictionary());
+
+		Long src = Long.parseLong("1349207723"); //wales
+		Long dst = Long.parseLong("707151082");
+
+		bdijk.compute(src, dst);
+
+		route = graph.refsToNodes(bdijk.compute(src, dst));
+
 	}
 
 	public BufferedImage getImage() {
@@ -60,8 +84,12 @@ public class Model {
 		return y;
 	}
 
-	public int getZ() {
-		return z;
+	public double getZ() {
+		return zoom;
+	}
+
+	public int getLevel(){
+		return level;
 	}
 
 	public String getRegion() {
@@ -77,7 +105,11 @@ public class Model {
 	}
 
 	public double getScale() {
-		return baseScale * zoom;
+		return baseScale;
+	}
+
+	public ArrayList<Point2D.Double> getRoute() {
+		return route;
 	}
 
 	/**
@@ -178,8 +210,16 @@ public class Model {
 	}
 
 	public void move(double xD, double yD) {
+		xD = xD * (zoom * zoom);
+		yD = yD * (zoom * zoom);
 		geomXD = (xD / (baseScale * zoom)) + centreCoord.getX();
 		geomYD = (yD / (baseScale * zoom)) + centreCoord.getY();
+		if(geomXD < origin.getX()){
+			geomXD = origin.getX();
+		}
+		if(geomYD > origin.getY()){
+			geomYD = origin.getY();
+		}
 		centreCoord.setLocation(geomXD, geomYD);
 
 //		x = x + (xD * z);
@@ -193,22 +233,90 @@ public class Model {
 	}
 
 	public void zoomIn() {
-		z = z / 2;
-		if(z < 1){
-			z = 1;
-		} else {
-			x = x - (x % z) + 1;
-			y = y - (y % z) + 1;
+		if(zoom + 0.1 >= 0.2){
+			if(zoom + 0.1 >= 2){
+				if(zoom + 0.1 >= 4){
+					if(zoom + 0.1 >= 8){
+						if(zoom + 0.1 >= 16){
+							if(zoom + 0.1 >= 32){
+								if(zoom + 0.1 >= 64){
+									level = 6;
+									zoom -= 12.8;
+									return;
+								} else {
+									level = 6;
+									zoom -= 6.4;
+									return;
+								}
+							} else {
+								level = 5;
+								zoom -=  3.2;
+								return;
+							}
+						} else {
+							level = 4;
+							zoom -= 1.6;
+							return;
+						}
+					} else {
+						level = 3;
+						zoom -=0.8;
+						return;
+					}
+				} else {
+					level = 2;
+					zoom -=0.4;
+					return;
+				}
+			} else {
+				level = 1;
+				zoom -= 0.2;
+				return;
+			}
 		}
 	}
 
 	public void zoomOut() {
-		z = z * 2;
-		if(z < 1){
-			z = 1;
-		} else {
-			x = x - (x % z) + 1;
-			y = y - (y % z) + 1;
+		if(zoom + 0.1 >= 0.2){
+			if(zoom + 0.1 >= 2){
+				if(zoom + 0.1 >= 4){
+					if(zoom + 0.1 >= 8){
+						if(zoom + 0.1 >= 16){
+							if(zoom + 0.1 >= 32){
+								if(zoom + 0.1 >= 64){
+									level = 7;
+									zoom += 12.8;
+									return;
+								} else {
+									level = 6;
+									zoom += 6.4;
+									return;
+								}
+							} else {
+								level = 5;
+								zoom += 3.2;
+								return;
+							}
+						} else {
+							level = 4;
+							zoom += 1.6;
+							return;
+						}
+					} else {
+						level = 3;
+						zoom += 0.8;
+						return;
+					}
+				} else {
+					level = 2;
+					zoom += 0.4;
+					return;
+				}
+			} else {
+				level = 1;
+				zoom += 0.2;
+				return;
+			}
 		}
 	}
 

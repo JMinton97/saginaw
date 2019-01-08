@@ -100,7 +100,7 @@ public class View extends JFrame
 
 	public void adaptToNewImage()
 	{
-		setCanvasSize();
+//		setCanvasSize();
 	}
 
 	public void updateRegion() {

@@ -1,6 +1,7 @@
 package project.view;
 
 import project.controller.Controller;
+import project.map.MyNode;
 import project.model.Model;
 
 import javax.imageio.ImageIO;
@@ -15,6 +16,8 @@ import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -36,12 +39,19 @@ class Canvas extends JPanel
 	private BufferedImage image;
 
 	private Tile[][] tileGrid;
+	private HashMap<Integer, Tile[][]> layers;
 
 	private Point2D centre;
 	private Point2D origin;
-	private Point2D topLeft;
+	private Point2D topLeft, bottomRight;
 	private double scale;
+	private double zoom;
 	private double oX, oY;
+	private double imageEdge = 2000;
+	private double paneX = 800;
+	private double paneY = 800;
+	private int xDimension, yDimension;
+	private int level, modifier;
 
 	/**
 	 * The default constructor should NEVER be called. It has been made private
@@ -71,21 +81,31 @@ class Canvas extends JPanel
 		this.model = model;
 		mouseListener = new CanvasMouseListener(this.model, this.view,
 				controller);
-		keyListener = new CanvasKeyboardListener(controller);
+		keyListener = new CanvasKeyboardListener(view, controller);
 		addMouseListener(mouseListener);
 		addKeyListener(keyListener);
-		this.setSize(500, 500);
+		this.setSize((int) paneX, (int) paneY);
 		origin = model.getOrigin();
 		oX = origin.getX() / model.getScale();
 		oY = origin.getY() / model.getScale();
-		tileGrid = new Tile[20][20];
-		for(int x = 0; x < tileGrid[0].length; x++){
-			for(int y = 0; y < tileGrid[0].length; y++){
-				tileGrid[x][y] = new Tile(x, y, 1, model.getRegion());
-				Double tileX = origin.getX() + (0.125 * x);
-				Double tileY = origin.getY() - (0.125 * y);
-				tileGrid[x][y].setTopLeft(new Point2D.Double(tileX, tileY));
+		layers = new HashMap<Integer, Tile[][]>();
+
+		xDimension = 61;
+		yDimension = 45;
+		this.scale = model.getScale();
+		for(int l = 1; l < 512; l *= 2){
+			tileGrid = new Tile[(int) Math.ceil(xDimension / (double) l)][(int) Math.ceil(yDimension / (double) l)];
+			System.out.println(l + " is " +  (int) Math.ceil(xDimension / l) + ", " + (int) Math.ceil(yDimension / l));
+			for(int x = 0; x < tileGrid.length; x++){
+				for(int y = 0; y < tileGrid[0].length; y++){
+					tileGrid[x][y] = new Tile((l * x) + 1, (l * y) + 1, l, scale, imageEdge, model.getRegion());
+					Point2D.Double topLeft = new Point2D.Double(origin.getX() + ((imageEdge / (scale / l)) * x), origin.getY() - ((imageEdge / (scale / l)) * y));
+					Point2D.Double bottomRight = new Point2D.Double(topLeft.getX() + (imageEdge / (scale / l)), topLeft.getY() - (imageEdge / (scale / l)));
+					tileGrid[x][y].setTopLeftAndBottomRight(topLeft, bottomRight);
+				}
 			}
+			layers.put(l, tileGrid);
+			System.out.println();
 		}
 	}
 
@@ -101,6 +121,58 @@ class Canvas extends JPanel
 
 		// Using g or g2, draw on the full size "canvas":
 		Graphics2D g2 = (Graphics2D) g;
+
+//		Graphics g = this.getGraphics();
+
+//		g.fillRect(0, 0, (int) paneX, (int) paneY);
+
+		System.out.println();
+
+		centre = model.getCentre();
+		scale = model.getScale();
+		zoom = model.getZ();
+		topLeft = new Point2D.Double((centre.getX() - (((paneX / 2) * zoom) / scale)), (centre.getY() + (((paneY / 2) * zoom) / scale)));
+		bottomRight = new Point2D.Double((centre.getX() + (((paneX / 2) * zoom) / scale)), (centre.getY() - (((paneY / 2) * zoom) / scale)));
+//		System.out.println(topLeft.getX() + ", " + topLeft.getY() + "   " + bottomRight.getX() + ", " + bottomRight.getY());
+//		System.out.println("EDGE " + (topLeft.getY() - bottomRight.getY()));
+
+		Tile t;
+		Point2D.Double p, o;
+
+//		System.out.println("ayyy");
+
+		boolean flag = true;											//would it be more efficient to declare this outside the method? Ask generally!!!
+
+
+		level = model.getLevel();
+		modifier = (int) Math.pow(2, level - 1);
+
+		tileGrid = layers.get(modifier);
+		System.out.println("Level = " + level);
+
+		LOOP: for(int x = 0; x < tileGrid[0].length; x++){
+			for(int y = 0; y < tileGrid[0].length; y++){
+				if(tileGrid[x][y].overlaps(topLeft, bottomRight)){
+					System.out.println("VISIBLE");
+					flag = true;
+					t = tileGrid[x][y];
+					System.out.println(topLeft + " " + bottomRight);
+					p = geoToCanvas(t.getTopLeft());
+					o = geoToCanvas(topLeft);
+//					System.out.println(p);
+					g.drawImage(t.getImage(), (int) ((p.getX() - o.getX()) / zoom), (int) ((p.getY() - o.getY()) / zoom), (int) (imageEdge / (zoom / modifier)), (int) (imageEdge / (zoom / modifier)), null);
+					g.setColor(Color.RED);
+					g.drawRect((int) ((p.getX() - o.getX()) / zoom), (int) ((p.getY() - o.getY())/zoom), (int) (imageEdge / (zoom / modifier)), (int) (imageEdge / (zoom / modifier)));
+//					System.out.println(o.getX() + ", " + o.getY() + "    " + p.getX() + ", " + p.getY());
+				}
+			}
+		}
+
+		g.drawString(String.valueOf(zoom), 50, 50);
+
+		drawRoute(model.getRoute(), g);
+
+
 		//
 		// The ViewPort is the part of the canvas that is displayed.
 		// By scrolling the ViewPort, you move it across the full size canvas,
@@ -109,7 +181,7 @@ class Canvas extends JPanel
 		if (model.isActive())
 		{
 			// Draw the display image on the full size canvas
-			g2.drawImage(image, 0, 0, this.getWidth(), this.getHeight(), null);
+//			g2.drawImage(image, 0, 0, this.getWidth(), this.getHeight(), null);
 
 			// In case there is some animation going on (e.g. mouse dragging),
 			// call this to
@@ -131,9 +203,9 @@ class Canvas extends JPanel
 	}
 
 	public void updateRegion(){
-		int z = model.getZ();
 		int x = model.getX();
 		int y = model.getY();
+		int z = 1;
 //		BufferedImage bi = ImageIO.read(new File("draw/".concat(model.getRegion()).concat("/").concat(z).concat("/").concat()))
 		try {
 			System.out.println("draw/" + model.getRegion() + "/" + z + "/" + x + "-" + y + ".png");
@@ -148,35 +220,11 @@ class Canvas extends JPanel
 	}
 
 	public void update() {
+//		System.out.println("UPDATE!");
 
 		//use a grid of Tile objects - iterate through on each update, loading in any needed or 'nearly' needed, removing those not needed.
 
-		Graphics g = this.getGraphics();
 
-		g.fillRect(0, 0, 500, 500);
-
-		centre = model.getCentre();
-		scale = model.getScale();
-		Point2D topLeft = new Point2D.Double((centre.getX() - (250 / scale)), (centre.getY() - (250 / scale)));
-		Point2D bottomRight = new Point2D.Double((centre.getX() + (250 / scale)), (centre.getY() + (250 / scale)));
-
-		Tile t;
-		Point2D.Double p, o;
-
-//		System.out.println("ayyy");
-
-		for(int x = 0; x < tileGrid[0].length; x++){
-			for(int y = 0; y < tileGrid[0].length; y++){
-				if(tileGrid[x][y].overlaps(topLeft, bottomRight)){
-					System.out.println("yup");
-					t = tileGrid[x][y];
-					p = geoToCanvas(t.getTopLeft());
-					o = geoToCanvas(topLeft);
-//					System.out.println(p);
-					g.drawImage(t.getImage(), (int) (p.getX() - o.getX()), (int) (p.getY() - o.getY()), 500, 500, null);
-				}
-			}
-		}
 
 //		System.out.println("ahh");
 
@@ -199,9 +247,25 @@ class Canvas extends JPanel
 
 	}
 
+	public void drawRoute(ArrayList<Point2D.Double> route, Graphics g){
+		Point2D o = geoToCanvas(topLeft);
+//		System.out.println((int) Math.round(geoToCanvas(route.get(0)).getX() - o.getX()) + " " + (int) Math.round(geoToCanvas(route.get(0)).getY() - o.getY()));
+		g.setColor(Color.MAGENTA);
+		Point2D.Double u = route.get(0);
+		for (Point2D.Double v : route) {
+			Point2D uC = geoToCanvas(u);
+			Point2D vC = geoToCanvas(v);
+			g.drawLine((int) Math.round((uC.getX() - o.getX()) / zoom), (int) Math.round((uC.getY() - o.getY()) / zoom), (int) Math.round((vC.getX() - o.getX()) / zoom), (int) Math.round((vC.getY()  - o.getY()) / zoom));
+//			System.out.println((int) Math.round(uC.getX() - topLeft.getX()) + " " + (int) Math.round(uC.getY() - topLeft.getY()));
+			u = v;
+		}
+	}
+
 	public Point2D.Double geoToCanvas(Point2D geoCoord){
-		Double x = origin.getX() + Math.abs(geoCoord.getX() - origin.getX()) * 4000;
-		Double y = origin.getY() + Math.abs(geoCoord.getY() - origin.getY()) * 4000;
+//		System.out.println(scale);
+		Double x = origin.getX() + (Math.abs(geoCoord.getX() - origin.getX()) * scale);
+		Double y = origin.getY() + (Math.abs(geoCoord.getY() - origin.getY()) * scale);
+//		System.out.println("Here" + (origin.getY() + Math.abs(geoCoord.getY() - origin.getY()) * scale));
 		return new Point2D.Double(x, y);
 	}
 

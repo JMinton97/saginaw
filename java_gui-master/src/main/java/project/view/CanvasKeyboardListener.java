@@ -8,8 +8,10 @@ import java.awt.event.KeyListener;
 public class CanvasKeyboardListener implements KeyListener {
 
     Controller controller;
+    View view;
 
-    public CanvasKeyboardListener(Controller controller){
+    public CanvasKeyboardListener(View view, Controller controller){
+        this.view = view;
         this.controller = controller;
     }
 
@@ -33,6 +35,7 @@ public class CanvasKeyboardListener implements KeyListener {
         } else if(e.getKeyCode() == (KeyEvent.VK_C)){
             controller.zoomIn();
         }
+        this.view.repaint();
     }
 
     @Override

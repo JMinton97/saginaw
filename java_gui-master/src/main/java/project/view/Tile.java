@@ -14,20 +14,24 @@ public class Tile {
     private int x;
     private int y;
     private int z;
+    private double scale;
+    private double imageEdge;
     private BufferedImage image;
     private long lastAccess;
     private String region;
 
-    public Tile(int x, int y, int z, String region){
+    public Tile(int x, int y, int z, double scale, double imageEdge, String region){
         this.x = x;
         this.y = y;                                             //ADD 1 TO THESE FOR IMAGES?!?
         this.z = z;
+        this.scale = scale;
+        this.imageEdge = imageEdge;
         this.region = region;
     }
 
-    public void setTopLeft(Point2D topLeft){
+    public void setTopLeftAndBottomRight(Point2D topLeft, Point2D bottomRight){
         this.topLeft = topLeft;
-        bottomRight = new Point2D.Double(topLeft.getX() + (0.125), topLeft.getY() - (0.125));
+        this.bottomRight = bottomRight;
     }
 
     public Point2D getTopLeft(){
@@ -39,7 +43,7 @@ public class Tile {
         try{
             image = ImageIO.read(new File("draw/" + region + "/" + z + "/" + x + "-" + y));
         } catch(IOException e){
-//            System.out.println("Couldn't load " + "/" + z + "/" + x + "-" + y);
+            System.out.println("Couldn't load " + "/" + z + "/" + x + "-" + y);
         }
     }
 
@@ -63,11 +67,14 @@ public class Tile {
 //
 //        return true;
 
-        System.out.println(viewTopLeft.getX() + " < " + bottomRight.getX() + "   " + viewBottomRight.getX() + " > " + topLeft.getX() + "   " + viewTopLeft.getY() + " > " + bottomRight.getY() + "   " + viewBottomRight.getY() + " < " + topLeft.getY());
+//        System.out.println(viewTopLeft.getX() + " < " + bottomRight.getX() + "   " + viewBottomRight.getX() + " > " + topLeft.getX() + "   " + viewTopLeft.getY() + " > " + bottomRight.getY() + "   " + viewBottomRight.getY() + " < " + topLeft.getY());
 
-        return ((viewTopLeft.getX() < bottomRight.getX()) && (viewBottomRight.getX() > topLeft.getX()) &&
-                (viewTopLeft.getY() > bottomRight.getY()) && (viewBottomRight.getY() < topLeft.getY()));
+        if((viewTopLeft.getX() <= bottomRight.getX()) && (viewBottomRight.getX() >= topLeft.getX()) && //add some tolerances for .99999s
+                (viewTopLeft.getY() >= bottomRight.getY()) && (viewBottomRight.getY() <= topLeft.getY())){
+//            System.out.println("#####" + viewTopLeft.getX() + ", " + viewTopLeft.getY() + "   " + topLeft.getX() + ", " + topLeft.getY());
+            return true;
+        } else {
+            return false;
+        }
     }
-
-
 }
