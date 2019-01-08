@@ -7,11 +7,8 @@ import project.model.Model;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
+import java.awt.*;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -86,16 +83,14 @@ class Canvas extends JPanel
 		addKeyListener(keyListener);
 		this.setSize((int) paneX, (int) paneY);
 		origin = model.getOrigin();
-		oX = origin.getX() / model.getScale();
-		oY = origin.getY() / model.getScale();
 		layers = new HashMap<Integer, Tile[][]>();
 
-		xDimension = 61;
-		yDimension = 45;
-		this.scale = model.getScale();
+		xDimension = 59;
+		yDimension = 44;
+		this.scale = model.getScale().doubleValue();
 		for(int l = 1; l < 512; l *= 2){
 			tileGrid = new Tile[(int) Math.ceil(xDimension / (double) l)][(int) Math.ceil(yDimension / (double) l)];
-			System.out.println(l + " is " +  (int) Math.ceil(xDimension / l) + ", " + (int) Math.ceil(yDimension / l));
+			System.out.println(l + " is " +  (int) Math.ceil(xDimension / (double) l) + ", " + (int) Math.ceil(yDimension / (double) l));
 			for(int x = 0; x < tileGrid.length; x++){
 				for(int y = 0; y < tileGrid[0].length; y++){
 					tileGrid[x][y] = new Tile((l * x) + 1, (l * y) + 1, l, scale, imageEdge, model.getRegion());
@@ -129,8 +124,8 @@ class Canvas extends JPanel
 		System.out.println();
 
 		centre = model.getCentre();
-		scale = model.getScale();
-		zoom = model.getZ();
+		scale = model.getScale().doubleValue();
+		zoom = model.getZ().doubleValue();
 		topLeft = new Point2D.Double((centre.getX() - (((paneX / 2) * zoom) / scale)), (centre.getY() + (((paneY / 2) * zoom) / scale)));
 		bottomRight = new Point2D.Double((centre.getX() + (((paneX / 2) * zoom) / scale)), (centre.getY() - (((paneY / 2) * zoom) / scale)));
 //		System.out.println(topLeft.getX() + ", " + topLeft.getY() + "   " + bottomRight.getX() + ", " + bottomRight.getY());
@@ -170,7 +165,7 @@ class Canvas extends JPanel
 
 		g.drawString(String.valueOf(zoom), 50, 50);
 
-		drawRoute(model.getRoute(), g);
+		drawRoute(model.getRoute(), (Graphics2D) g);
 
 
 		//
@@ -247,18 +242,23 @@ class Canvas extends JPanel
 
 	}
 
-	public void drawRoute(ArrayList<Point2D.Double> route, Graphics g){
+	public void drawRoute(ArrayList<Point2D.Double> route, Graphics2D g){
 		Point2D o = geoToCanvas(topLeft);
-//		System.out.println((int) Math.round(geoToCanvas(route.get(0)).getX() - o.getX()) + " " + (int) Math.round(geoToCanvas(route.get(0)).getY() - o.getY()));
-		g.setColor(Color.MAGENTA);
-		Point2D.Double u = route.get(0);
-		for (Point2D.Double v : route) {
-			Point2D uC = geoToCanvas(u);
-			Point2D vC = geoToCanvas(v);
-			g.drawLine((int) Math.round((uC.getX() - o.getX()) / zoom), (int) Math.round((uC.getY() - o.getY()) / zoom), (int) Math.round((vC.getX() - o.getX()) / zoom), (int) Math.round((vC.getY()  - o.getY()) / zoom));
-//			System.out.println((int) Math.round(uC.getX() - topLeft.getX()) + " " + (int) Math.round(uC.getY() - topLeft.getY()));
-			u = v;
+		Path2D path = new Path2D.Double();
+		Point2D first = geoToCanvas(route.get(0));
+		path.moveTo((int) Math.round((first.getX() - o.getX()) / zoom), (int) Math.round((first.getY()  - o.getY()) / zoom));
+		for(Point2D.Double point : route){
+			point = geoToCanvas(point);
+			path.lineTo((int) Math.round((point.getX() - o.getX()) / zoom), (int) Math.round((point.getY()  - o.getY()) / zoom));
+			System.out.println((int) Math.round((point.getX() - o.getX()) / zoom) + " " + (int) Math.round((point.getY()  - o.getY()) / zoom));
 		}
+		g.setColor(Color.RED.darker());
+		g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+		g.draw(path);
+		g.setColor(Color.RED);
+		g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+		g.draw(path);
+
 	}
 
 	public Point2D.Double geoToCanvas(Point2D geoCoord){

@@ -11,7 +11,7 @@ public class TestRun {
 
     public static void main(String[] args) throws InterruptedException{
         long startTime, endTime;
-        String region = "england";
+        String region = "wales";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 
@@ -32,10 +32,6 @@ public class TestRun {
             File fe = new File(System.getProperty("user.dir").concat("/draw/"));
             fe.mkdirs();
             fe.createNewFile();
-
-            MyMap2 map2 = new MyMap2(f);
-
-            System.exit(0);
 
 
             startTime = System.nanoTime();

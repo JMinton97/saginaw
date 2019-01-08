@@ -51,6 +51,7 @@ public class MyMap {
     public static double[][][] bounds;
 
     private String region;
+    private String filePrefix;
 
 
     public MyMap(File file) throws IOException {
@@ -123,6 +124,8 @@ public class MyMap {
 
         this.region = region;
 
+        filePrefix = "files//".concat(region + "//");
+
         counter = 0;
         this.file = file;
         int scale = 40000; //pixels per degree!
@@ -148,7 +151,7 @@ public class MyMap {
 
 
         DB db = DBMaker
-                .fileDB("files//allNodes.db")
+                .fileDB(filePrefix.concat("allNodes.db"))
                 .fileMmapEnable()
                 .checksumHeaderBypass()
                 .closeOnJvmShutdown()
@@ -219,7 +222,7 @@ public class MyMap {
         for(int x = 0; x < (int) Math.ceil((scale * width) / maxEdge); x++){
             for(int y = 0; y < (int) Math.ceil((scale * height) / maxEdge); y++){
                 tileNodesDBs[x][y] = DBMaker
-                        .fileDB("files//".concat(String.valueOf(x).concat("-").concat(String.valueOf(y)).concat(".nodes.db")))
+                        .fileDB(filePrefix.concat(String.valueOf(x).concat("-").concat(String.valueOf(y)).concat(".nodes.db")))
                         .fileMmapEnable()
                         .checksumHeaderBypass()
                         .closeOnJvmShutdown()
@@ -230,7 +233,7 @@ public class MyMap {
         for(int x = 0; x < (int) Math.ceil((scale * width) / maxEdge); x++){
             for(int y = 0; y < (int) Math.ceil((scale * height) / maxEdge); y++){
                 tileWaysDBs[x][y] = DBMaker
-                        .fileDB("files//".concat(String.valueOf(x).concat("-").concat(String.valueOf(y)).concat(".ways.db")))
+                        .fileDB(filePrefix.concat(String.valueOf(x).concat("-").concat(String.valueOf(y)).concat(".ways.db")))
                         .fileMmapEnable()
                         .checksumHeaderBypass()
                         .closeOnJvmShutdown()
@@ -693,9 +696,11 @@ public class MyMap {
                 System.out.println("z" + z);
                 //need to wrap this bit in a loop over blocks - done below?
                 for(int jumpY = 1; jumpY <= tiles.length + 1; jumpY = jumpY + z){
-                    System.out.println(tiles[0].length);
+//                    System.out.println(tiles[0].length);
                     for(int jumpX = 1; jumpX <= tiles[0].length + 1; jumpX = jumpX + z){
                         BufferedImage[][] images = new BufferedImage[z][z];
+                        System.out.println();
+                        System.out.println("Drawing " + jumpX + "-" + jumpY);
                         for(int x = jumpX; x < z + jumpX; x++) {
                             for (int y = jumpY; y < z + jumpY; y++) {
                                 System.out.println("x " + x + "y " + y);
@@ -706,7 +711,7 @@ public class MyMap {
 //                                    System.out.println("reading draw/stitches/tile-".concat(String.valueOf(y)).concat("-").concat(String.valueOf(x)).concat("_").concat(Integer.toString(z)).concat(".png"));
                                     images[x - jumpX][y - jumpY] = ImageIO.read(inputfile);
                                 } else {
-//                                    System.out.println("Doesn't exist.");
+                                    System.out.println("Doesn't exist.");
                                     images[x - jumpX][y - jumpY] = new BufferedImage((maxEdge / z), (maxEdge/z), 1);
                                 }
                             }
@@ -716,7 +721,7 @@ public class MyMap {
                         int increment = maxEdge / z;
                         for(int x = 1; x <= z; x++) {
                             for (int y = 1; y <= z; y++) {
-//                                System.out.println((x * increment) - increment);
+                                System.out.println("Drawing " + x + " " + y + " at " + ((x * increment) - increment) + " " + ((y * increment) - increment));
                                 g.drawImage(images[x - 1][y - 1], (x * increment) - increment,  (y * increment) - increment,null);
                             }
                         }

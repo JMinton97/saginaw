@@ -13,6 +13,7 @@ import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,7 +39,7 @@ public class Model {
 	private String region = "wales";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
-	private double zoom, baseScale;
+	private BigDecimal zoom, baseScale;
 	private Point2D.Double centreCoord = new Point2D.Double(-3.83, 53.32);
 //	private Point2D.Double centreCoord = new Point2D.Double(-5.425, 53.425);
 	private Point2D.Double origin = new Point2D.Double (-5.5, 53.5);
@@ -51,8 +52,8 @@ public class Model {
 	public Model() {
 		x = 1;
 		y = 1;
-		baseScale = 40000;
-		zoom = 1.0;
+		baseScale = BigDecimal.valueOf(40000);
+		zoom = BigDecimal.ONE;
 		level = 1;
 
 		File f = new File(mapDir.concat(region).concat(".osm.pbf"));
@@ -84,7 +85,7 @@ public class Model {
 		return y;
 	}
 
-	public double getZ() {
+	public BigDecimal getZ() {
 		return zoom;
 	}
 
@@ -104,7 +105,7 @@ public class Model {
 		return origin;
 	}
 
-	public double getScale() {
+	public BigDecimal getScale() {
 		return baseScale;
 	}
 
@@ -210,10 +211,11 @@ public class Model {
 	}
 
 	public void move(double xD, double yD) {
-		xD = xD * (zoom * zoom);
-		yD = yD * (zoom * zoom);
-		geomXD = (xD / (baseScale * zoom)) + centreCoord.getX();
-		geomYD = (yD / (baseScale * zoom)) + centreCoord.getY();
+		xD = (zoom.multiply(zoom)).multiply(BigDecimal.valueOf(xD)).doubleValue();
+		yD = (zoom.multiply(zoom)).multiply(BigDecimal.valueOf(yD)).doubleValue();
+		double baseScaleZoom = (baseScale.multiply(zoom)).doubleValue();
+		geomXD = (xD / baseScaleZoom) + centreCoord.getX();
+		geomYD = (yD / baseScaleZoom) + centreCoord.getY();
 		if(geomXD < origin.getX()){
 			geomXD = origin.getX();
 		}
@@ -233,88 +235,88 @@ public class Model {
 	}
 
 	public void zoomIn() {
-		if(zoom + 0.1 >= 0.2){
-			if(zoom + 0.1 >= 2){
-				if(zoom + 0.1 >= 4){
-					if(zoom + 0.1 >= 8){
-						if(zoom + 0.1 >= 16){
-							if(zoom + 0.1 >= 32){
-								if(zoom + 0.1 >= 64){
+		if(zoom.compareTo(BigDecimal.valueOf(0.19)) > 0){
+			if(zoom.compareTo(BigDecimal.valueOf(1.99)) > 0){
+				if(zoom.compareTo(BigDecimal.valueOf(3.99)) > 0){
+					if(zoom.compareTo(BigDecimal.valueOf(7.99)) > 0){
+						if(zoom.compareTo(BigDecimal.valueOf(15.99)) > 0){
+							if(zoom.compareTo(BigDecimal.valueOf(31.99)) > 0){
+								if(zoom.compareTo(BigDecimal.valueOf(63.99)) > 0){
 									level = 6;
-									zoom -= 12.8;
+									zoom = zoom.subtract(BigDecimal.valueOf(12.8));
 									return;
 								} else {
 									level = 6;
-									zoom -= 6.4;
+									zoom = zoom.subtract(BigDecimal.valueOf(6.4));
 									return;
 								}
 							} else {
 								level = 5;
-								zoom -=  3.2;
+								zoom = zoom.subtract(BigDecimal.valueOf(3.2));
 								return;
 							}
 						} else {
 							level = 4;
-							zoom -= 1.6;
+							zoom = zoom.subtract(BigDecimal.valueOf(1.6));
 							return;
 						}
 					} else {
 						level = 3;
-						zoom -=0.8;
+						zoom = zoom.subtract(BigDecimal.valueOf(0.8));
 						return;
 					}
 				} else {
 					level = 2;
-					zoom -=0.4;
+					zoom = zoom.subtract(BigDecimal.valueOf(0.4));
 					return;
 				}
 			} else {
 				level = 1;
-				zoom -= 0.2;
+				zoom = zoom.subtract(BigDecimal.valueOf(0.2));
 				return;
 			}
 		}
 	}
 
 	public void zoomOut() {
-		if(zoom + 0.1 >= 0.2){
-			if(zoom + 0.1 >= 2){
-				if(zoom + 0.1 >= 4){
-					if(zoom + 0.1 >= 8){
-						if(zoom + 0.1 >= 16){
-							if(zoom + 0.1 >= 32){
-								if(zoom + 0.1 >= 64){
-									level = 7;
-									zoom += 12.8;
+		if(zoom.compareTo(BigDecimal.valueOf(0.19)) > 0){
+			if(zoom.compareTo(BigDecimal.valueOf(1.99)) > 0){
+				if(zoom.compareTo(BigDecimal.valueOf(3.99)) > 0){
+					if(zoom.compareTo(BigDecimal.valueOf(7.99)) > 0){
+						if(zoom.compareTo(BigDecimal.valueOf(15.99)) > 0){
+							if(zoom.compareTo(BigDecimal.valueOf(31.99)) > 0){
+								if(zoom.compareTo(BigDecimal.valueOf(63.99)) > 0){
+									level = 6;
+									zoom = zoom.add(BigDecimal.valueOf(12.8));
 									return;
 								} else {
 									level = 6;
-									zoom += 6.4;
+									zoom = zoom.add(BigDecimal.valueOf(6.4));
 									return;
 								}
 							} else {
 								level = 5;
-								zoom += 3.2;
+								zoom = zoom.add(BigDecimal.valueOf(3.2));
 								return;
 							}
 						} else {
 							level = 4;
-							zoom += 1.6;
+							zoom = zoom.add(BigDecimal.valueOf(1.6));
 							return;
 						}
 					} else {
 						level = 3;
-						zoom += 0.8;
+						zoom = zoom.add(BigDecimal.valueOf(0.8));
 						return;
 					}
 				} else {
 					level = 2;
-					zoom += 0.4;
+					zoom = zoom.add(BigDecimal.valueOf(0.4));
 					return;
 				}
 			} else {
 				level = 1;
-				zoom += 0.2;
+				zoom = zoom.add(BigDecimal.valueOf(0.2));
 				return;
 			}
 		}
