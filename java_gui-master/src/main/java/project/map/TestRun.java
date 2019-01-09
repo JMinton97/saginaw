@@ -35,7 +35,7 @@ public class TestRun {
 
 
             startTime = System.nanoTime();
-            MyMap map = new MyMap(f, region, 2000, false);
+            MyMap2 map2 = new MyMap2(f, region, 2048, false);
             endTime = System.nanoTime();
             System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
 

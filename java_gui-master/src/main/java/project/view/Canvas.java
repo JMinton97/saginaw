@@ -44,7 +44,7 @@ class Canvas extends JPanel
 	private double scale;
 	private double zoom;
 	private double oX, oY;
-	private double imageEdge = 2000;
+	private double imageEdge = 2048;
 	private double paneX = 800;
 	private double paneY = 800;
 	private int xDimension, yDimension;
@@ -85,8 +85,8 @@ class Canvas extends JPanel
 		origin = model.getOrigin();
 		layers = new HashMap<Integer, Tile[][]>();
 
-		xDimension = 59;
-		yDimension = 44;
+		xDimension = 63;
+		yDimension = 47;
 		this.scale = model.getScale().doubleValue();
 		for(int l = 1; l < 512; l *= 2){
 			tileGrid = new Tile[(int) Math.ceil(xDimension / (double) l)][(int) Math.ceil(yDimension / (double) l)];
@@ -145,10 +145,10 @@ class Canvas extends JPanel
 		tileGrid = layers.get(modifier);
 		System.out.println("Level = " + level);
 
-		LOOP: for(int x = 0; x < tileGrid[0].length; x++){
+		LOOP: for(int x = 0; x < tileGrid.length; x++){
 			for(int y = 0; y < tileGrid[0].length; y++){
 				if(tileGrid[x][y].overlaps(topLeft, bottomRight)){
-					System.out.println("VISIBLE");
+					System.out.println("VISIBLE " + x + " " + y);
 					flag = true;
 					t = tileGrid[x][y];
 					System.out.println(topLeft + " " + bottomRight);
@@ -250,7 +250,6 @@ class Canvas extends JPanel
 		for(Point2D.Double point : route){
 			point = geoToCanvas(point);
 			path.lineTo((int) Math.round((point.getX() - o.getX()) / zoom), (int) Math.round((point.getY()  - o.getY()) / zoom));
-			System.out.println((int) Math.round((point.getX() - o.getX()) / zoom) + " " + (int) Math.round((point.getY()  - o.getY()) / zoom));
 		}
 		g.setColor(Color.RED.darker());
 		g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));

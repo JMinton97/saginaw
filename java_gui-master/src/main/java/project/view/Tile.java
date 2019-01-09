@@ -41,9 +41,9 @@ public class Tile {
 
     public void loadImage(){
         try{
-            image = ImageIO.read(new File("draw/" + region + "/" + z + "/" + x + "-" + y));
+            image = ImageIO.read(new File("draw/" + region + "/" + z + "/" + x + "-" + y + ".png"));
         } catch(IOException e){
-            System.out.println("Couldn't load " + "/" + z + "/" + x + "-" + y);
+            System.out.println("Couldn't load " + "/" + z + "/" + x + "-" + y + ".png");
         }
     }
 

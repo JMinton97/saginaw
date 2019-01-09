@@ -34,9 +34,6 @@ public class MyMap {
     private static double northMost, westMost, southMost, eastMost;
     private static long northMostNode, westMostNode, southMostNode, eastMostNode;
     private double spaceModifierX;
-    private double spaceModifierY;
-    private double paneHeight = 2000.00;
-    private double paneWidth;
     private static double interval;
     private static boolean parsingNodes, tile;
     private static int counter;
@@ -118,7 +115,7 @@ public class MyMap {
 //        spaceModifierX = spaceModifierY * 0.75;
     }
 
-    public MyMap(File file, String region, int maxEdge, boolean alreadyFiled) throws IOException{
+    public MyMap(File file, String region, int maxEdge, boolean alreadyFiled, boolean alreadyDrawn) throws IOException{
 
         this.maxEdge = maxEdge; //max edge length of an image
 
@@ -134,15 +131,15 @@ public class MyMap {
 //        mapRoads = new ArrayList<>();                //IMPORTANT - memoryDB option in quickstart?
         mapWays = new HashMap<>();
 
-        northMost = 53.5; //56;
-        westMost = -5.5; //-6;          //WALES
-        southMost = 51.3; //49.5;
-        eastMost = -2.5; //2;
+//        northMost = 53.5; //56;
+//        westMost = -5.5; //-6;          //WALES
+//        southMost = 51.3; //49.5;
+//        eastMost = -2.5; //2;
 
-//        northMost = 56;
-//        westMost = -6;
-//        southMost = 49.5;   //IT"S COMING HOME
-//        eastMost = 2;
+        northMost = 56;
+        westMost = -6;
+        southMost = 49.5;   //IT"S COMING HOME
+        eastMost = 2;
 
 //        northMost = 51.1;
 //        westMost = -5.3;
@@ -304,21 +301,12 @@ public class MyMap {
 
         PngEncoder encoder = new PngEncoder();
 
-//        if(alreadyFiled) {
-//            combineTiles(tiles);
-//        } else {
+
+        if(!alreadyDrawn){
             int counter = 0;
             for(int x = 0; x < bounds.length; x++) {
                 for (int y = 0; y < bounds[0].length; y++) {
                     if (x != 0 && y != 0) {
-//                    xLow = bounds[x-1][y][1];
-//                    xHigh = bounds[x][y][1];
-//                    yLow = bounds[x][y-1][0];
-//                    yHigh = bounds[x][y][0];
-//                     startTime = System.nanoTime();
-//                    readTile(x, y, bounds);
-//                     endTime = System.nanoTime();
-//                    System.out.println("Read time: " + (((float) endTime - (float)startTime) / 1000000000));
                         counter++;
                         System.out.println("Drawing " + counter + " of " + ((bounds.length - 1) * (bounds[0].length - 1)) + " (" + (int) ((counter / ((bounds.length - 1f) * (bounds[0].length - 1f))) * 100) + "%)");
                         startTime = System.nanoTime();
@@ -336,8 +324,8 @@ public class MyMap {
                     }
                 }
             }
-            combineTiles(tiles);
-//        }
+        }
+        combineTiles(tiles);
     }
 
     public void readTile(int x, int y, double[][][] bounds) throws IOException{
@@ -614,10 +602,10 @@ public class MyMap {
                 u = dictionary.get(wayNodes[node]); //dictionary.get(wayNodes.get(node)); //efficiency by using previous v?
                 v = dictionary.get(wayNodes[node + 1]);
 //                System.out.println(u.toString());
-                double uy = Math.abs(u[0] - bound[0]) * spaceModifierX;
-                double ux = Math.abs(u[1] - bound[1]) * spaceModifierX;
-                double vy = Math.abs(v[0] - bound[0]) * spaceModifierX;
-                double vx = Math.abs(v[1] - bound[1]) * spaceModifierX;
+                double uy = Math.abs(bound[0] - u[0]) * spaceModifierX;
+                double ux = Math.abs(bound[1] - u[1]) * spaceModifierX;
+                double vy = Math.abs(bound[0] - v[0]) * spaceModifierX;
+                double vx = Math.abs(bound[1] - v[1]) * spaceModifierX;
                 mapGraphics.drawLine((int) Math.round(ux), (int) Math.round(uy), (int) Math.round(vx), (int) Math.round(vy));
                 linesDrawn++;
             }
@@ -630,8 +618,8 @@ public class MyMap {
         for (int node = 0; node < wayNodes.length; node++) {
             if (dictionary.containsKey(wayNodes[node])) {
                 double[] u = dictionary.get(wayNodes[node]); //efficiency by using previous v?
-                double uy = Math.abs(u[0] - bound[0]) * spaceModifierX;
-                double ux = Math.abs(u[1] - bound[1]) * spaceModifierX;
+                double uy = Math.abs(bound[0] - u[0]) * spaceModifierX;
+                double ux = Math.abs(bound[1] - u[1]) * spaceModifierX;
                 if (first) {
                     waterPath.moveTo(ux, uy);
                     first = false;
@@ -658,7 +646,7 @@ public class MyMap {
     public void saveMap(BufferedImage map, int x, int y, PngEncoder encoder){
         try {
             new File("draw/" + region + "/1").mkdirs();
-            String filename = "draw/" + region + "/1/" + x + "-" + y;
+            String filename = "draw/" + region + "/1/" + x + "-" + y + ".png";
             FileOutputStream fout = new FileOutputStream(filename);
 //            ImageIO.write(map, "png", outputfile);
             encoder.encode(map, fout);
@@ -668,18 +656,18 @@ public class MyMap {
 //            g.drawImage(map, 0, 0, x / 2, y / 2, null);
 //            g.dispose();
 
-            for(int z = 2; z < 64; z = z * 2){
-                new File("draw/" + region + "/" + z + "s/").mkdirs();
-                map = Thumbnails.of(map)
-                        .size(maxEdge/z, maxEdge/z)
-                        .asBufferedImage();
-
-//                filename = "draw/stitches/tile-".concat(String.valueOf(y)).concat("-").concat(String.valueOf(x)).concat("_").concat(Integer.toString(z)).concat(".png");
-                filename = "draw/" + region + "/" + z + "s/" + x + "-" + y;
-                fout = new FileOutputStream(filename);
-//                ImageIO.write(map, "png", outputfile);
-                encoder.encode(map, fout);
-            }
+//            for(int z = 2; z < 64; z = z * 2){
+//                new File("draw/" + region + "/" + z + "s/").mkdirs();
+//                map = Thumbnails.of(map)
+//                        .size(maxEdge/z, maxEdge/z)
+//                        .asBufferedImage();
+//
+////                filename = "draw/stitches/tile-".concat(String.valueOf(y)).concat("-").concat(String.valueOf(x)).concat("_").concat(Integer.toString(z)).concat(".png");
+//                filename = "draw/" + region + "/" + z + "s/" + x + "-" + y;
+//                fout = new FileOutputStream(filename);
+////                ImageIO.write(map, "png", outputfile);
+//                encoder.encode(map, fout);
+//            }
 
         } catch (IOException e) {
             // handle exception
@@ -687,31 +675,36 @@ public class MyMap {
     }
 
     public void combineTiles(BufferedImage[][] tiles) {
+        System.out.println("Tiles.length: " + tiles.length + " tiles[0].length: " + tiles[0].length);
         String filename;
         File inputfile, outputfile;
+        BufferedImage map;
         try{
             for(int z = 2; z < 128; z = z * 2){
                 new File("draw/" + region + "/" + z + "/").mkdirs();
 //                if(Math.max(tiles.length, tiles[0].length))
                 System.out.println("z" + z);
                 //need to wrap this bit in a loop over blocks - done below?
-                for(int jumpY = 1; jumpY <= tiles.length + 1; jumpY = jumpY + z){
+                for(int jumpY = 1; jumpY <= tiles[0].length + 1; jumpY = jumpY + z){
 //                    System.out.println(tiles[0].length);
-                    for(int jumpX = 1; jumpX <= tiles[0].length + 1; jumpX = jumpX + z){
+                    for(int jumpX = 1; jumpX <= tiles.length + 1; jumpX = jumpX + z){
+
                         BufferedImage[][] images = new BufferedImage[z][z];
                         System.out.println();
                         System.out.println("Drawing " + jumpX + "-" + jumpY);
-                        for(int x = jumpX; x < z + jumpX; x++) {
-                            for (int y = jumpY; y < z + jumpY; y++) {
+                        for(int x = jumpX; x < z + jumpX; x = x + (z / 2)) {
+                            for (int y = jumpY; y < z + jumpY; y = y + (z / 2)) {
                                 System.out.println("x " + x + "y " + y);
-                                filename = "draw/" + region + "/" + z + "s/" + x + "-" + y;
+                                filename = "draw/" + region + "/" + (z / 2) + "/" + x + "-" + y + ".png";
                                 inputfile = new File(filename);
                                 if(inputfile.exists()){
 //                                    System.out.println((x - jumpX) + " " + (y - jumpY));
 //                                    System.out.println("reading draw/stitches/tile-".concat(String.valueOf(y)).concat("-").concat(String.valueOf(x)).concat("_").concat(Integer.toString(z)).concat(".png"));
+                                    timerStart();
                                     images[x - jumpX][y - jumpY] = ImageIO.read(inputfile);
+                                    timerEnd("Load image");
                                 } else {
-                                    System.out.println("Doesn't exist.");
+                                    System.out.println(filename + " doesn't exist.");
                                     images[x - jumpX][y - jumpY] = new BufferedImage((maxEdge / z), (maxEdge/z), 1);
                                 }
                             }
@@ -719,16 +712,15 @@ public class MyMap {
                         BufferedImage out = new BufferedImage(maxEdge, maxEdge, 1);
                         Graphics g = out.createGraphics();
                         int increment = maxEdge / z;
-                        for(int x = 1; x <= z; x++) {
-                            for (int y = 1; y <= z; y++) {
-                                System.out.println("Drawing " + x + " " + y + " at " + ((x * increment) - increment) + " " + ((y * increment) - increment));
-                                g.drawImage(images[x - 1][y - 1], (x * increment) - increment,  (y * increment) - increment,null);
+                        for(int x = 1; x <= z; x = x + (z / 2)) {
+                            for (int y = 1; y <= z; y = y + (z / 2)) {
+                                map = Thumbnails.of(images[x - 1][y - 1])
+                                        .size(maxEdge/2, maxEdge/2)
+                                        .asBufferedImage();
+                                g.drawImage(map, (x * increment) - increment,  (y * increment) - increment,null);
                             }
                         }
-                        filename = "draw/" + region + "/" + z + "/" + jumpX + "-" + jumpY;
-
-
-
+                        filename = "draw/" + region + "/" + z + "/" + jumpX + "-" + jumpY + ".png";
 //                        filename = "draw/".concat().concat(Integer.toString(z)).concat("/tile-L".concat(Integer.toString(z)).concat("_").concat(Integer.toString(jumpY)).concat("-").concat(Integer.toString(jumpX)).concat(".png"));
                         outputfile = new File(filename);
                         ImageIO.write(out, "png", outputfile);
