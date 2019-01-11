@@ -44,7 +44,7 @@ class Canvas extends JPanel
 	private double scale;
 	private double zoom;
 	private double oX, oY;
-	private double imageEdge = 2048;
+	private double imageEdge;
 	private double paneX = 800;
 	private double paneY = 800;
 	private int xDimension, yDimension;
@@ -84,16 +84,17 @@ class Canvas extends JPanel
 		this.setSize((int) paneX, (int) paneY);
 		origin = model.getOrigin();
 		layers = new HashMap<Integer, Tile[][]>();
+		imageEdge = model.getImageEdge();
 
-		xDimension = 63;
-		yDimension = 47;
+		xDimension = model.getMap().getTileWidth();
+		yDimension = model.getMap().getTileHeight();
 		this.scale = model.getScale().doubleValue();
 		for(int l = 1; l < 512; l *= 2){
 			tileGrid = new Tile[(int) Math.ceil(xDimension / (double) l)][(int) Math.ceil(yDimension / (double) l)];
 			System.out.println(l + " is " +  (int) Math.ceil(xDimension / (double) l) + ", " + (int) Math.ceil(yDimension / (double) l));
 			for(int x = 0; x < tileGrid.length; x++){
 				for(int y = 0; y < tileGrid[0].length; y++){
-					tileGrid[x][y] = new Tile((l * x) + 1, (l * y) + 1, l, scale, imageEdge, model.getRegion());
+					tileGrid[x][y] = new Tile((l * x), (l * y), l, scale, imageEdge, model.getRegion());
 					Point2D.Double topLeft = new Point2D.Double(origin.getX() + ((imageEdge / (scale / l)) * x), origin.getY() - ((imageEdge / (scale / l)) * y));
 					Point2D.Double bottomRight = new Point2D.Double(topLeft.getX() + (imageEdge / (scale / l)), topLeft.getY() - (imageEdge / (scale / l)));
 					tileGrid[x][y].setTopLeftAndBottomRight(topLeft, bottomRight);
@@ -164,6 +165,7 @@ class Canvas extends JPanel
 		}
 
 		g.drawString(String.valueOf(zoom), 50, 50);
+		g.drawString(String.valueOf(centre.getX()) + " " + String.valueOf(centre.getY()), 100, 50);
 
 		drawRoute(model.getRoute(), (Graphics2D) g);
 

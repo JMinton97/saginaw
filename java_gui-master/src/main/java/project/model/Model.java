@@ -1,9 +1,6 @@
 package project.model;
 
-import project.map.BiDijkstra;
-import project.map.MyGraph;
-import project.map.MyMap;
-import project.map.MyNode;
+import project.map.*;
 import project.utils.ImageFile;
 import project.utils.UnsupportedImageTypeException;
 
@@ -34,16 +31,17 @@ import java.util.List;
  */
 public class Model {
 	private BufferedImage image = null;
-	private MyGraph map = null;
+	private MyMap2 map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
 	private String region = "wales";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
 	private BigDecimal zoom, baseScale;
-	private Point2D.Double centreCoord = new Point2D.Double(-3.83, 53.32);
+	private Point2D.Double centreCoord;
 //	private Point2D.Double centreCoord = new Point2D.Double(-5.425, 53.425);
-	private Point2D.Double origin = new Point2D.Double (-5.5, 53.5);
+	private Point2D.Double origin;
 	private double geomXD, geomYD;
+	private int imageEdge = 1024;
 
 	private BiDijkstra bdijk;
 	private MyGraph graph;
@@ -53,12 +51,13 @@ public class Model {
 		x = 1;
 		y = 1;
 		baseScale = BigDecimal.valueOf(40000);
-		zoom = BigDecimal.ONE;
-		level = 1;
+		zoom = BigDecimal.valueOf(32);
+		level = 6;
 
 		File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 		try {
-			graph = graph = new MyGraph(f, region);
+			graph = new MyGraph(f, region);
+			map = new MyMap2(f, region, imageEdge, false);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -67,9 +66,15 @@ public class Model {
 		Long src = Long.parseLong("1349207723"); //wales
 		Long dst = Long.parseLong("707151082");
 
+//		src = Long.parseLong("370459811"); //wolverton to sheffield
+//		dst = Long.parseLong("1014466202");
+
 		bdijk.compute(src, dst);
 
 		route = graph.refsToNodes(bdijk.compute(src, dst));
+
+		centreCoord = map.getCentre();
+		origin = map.getOrigin();
 
 	}
 
@@ -320,6 +325,14 @@ public class Model {
 				return;
 			}
 		}
+	}
+
+	public int getImageEdge(){
+		return imageEdge;
+	}
+
+	public MyMap2 getMap(){
+		return map;
 	}
 
 }

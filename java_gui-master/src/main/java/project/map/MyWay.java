@@ -5,7 +5,7 @@ import java.util.List;
 
 public class MyWay {
 
-    public MyWay(List<Long> wayNodes){
+    public MyWay(long[] wayNodes){
         this.wayNodes = wayNodes;
     }
 
@@ -21,27 +21,23 @@ public class MyWay {
 
     public MyWay(){}
 
-    public List<Long> getWayNodes() {
+    public long[] getWayNodes() {
         return wayNodes;
     }
 
-    public long[] getWayNodesArray() {
-        long[] asArray = new long[wayNodes.size()];
-        for(int i = 0; i < asArray.length; i++){
-            asArray[i] = wayNodes.get(i);
-        }
-        return asArray;
-    }
+//    public long[] getWayNodesArray() {
+//        long[] asArray = new long[wayNodes.size()];
+//        for(int i = 0; i < asArray.length; i++){
+//            asArray[i] = wayNodes.get(i);
+//        }
+//        return asArray;
+//    }
 
-    public void setWayNodes(ArrayList<Long> wayNodes) {
+    public void setWayNodes(long[] wayNodes) {
         this.wayNodes = wayNodes;
     }
 
-    public void addWayNode(long wayNode) {
-        wayNodes.add(wayNode);
-    }
-
-    public List<Long> wayNodes = new ArrayList<Long>();
+    public long[] wayNodes;
 
     public long getWayId() {
         return wayId;

@@ -2,6 +2,7 @@ package project.view;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import java.awt.*;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -41,9 +42,14 @@ public class Tile {
 
     public void loadImage(){
         try{
+            System.out.println("Loading image.");
             image = ImageIO.read(new File("draw/" + region + "/" + z + "/" + x + "-" + y + ".png"));
         } catch(IOException e){
             System.out.println("Couldn't load " + "/" + z + "/" + x + "-" + y + ".png");
+            image = new BufferedImage((int) imageEdge, (int) imageEdge, 1);
+            Graphics g = image.getGraphics();
+            g.setColor(Color.cyan);
+            g.fillRect(0, 0, (int) imageEdge, (int) imageEdge);
         }
     }
 

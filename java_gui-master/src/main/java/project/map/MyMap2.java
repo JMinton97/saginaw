@@ -13,12 +13,11 @@ import org.mapdb.Serializer;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.GeneralPath;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 //import gnu.trove.map.hash.THashMap;
@@ -27,21 +26,21 @@ import java.util.concurrent.ConcurrentMap;
 //import org.mapdb.*;
 
 public class MyMap2 {
-    private static HashMap<Long, long[]> putWayNodes;
     private static double northMost, westMost, southMost, eastMost;
-    private static long northMostNode, westMostNode, southMostNode, eastMostNode;
     private double spaceModifierX;
     private double spaceModifierY;
     private static double interval;
-    private static boolean parsingNodes, tile;
+    private static boolean parsingNodes;
     private static int counter;
     private static int linesDrawn, maxEdge;
     public static int bX1, bX2, bY1, bY2;
-    public static double xLow, xHigh, yLow, yHigh;
     public long startTime, endTime;
-    public int level;
     public static HashMap<Long, double[]> tileNodes;
-    public static HashMap<long[], long[]> tileWays;
+    public static HashMap<Long, MyWay>[][] tileWays;
+    private int xDimension, yDimension;
+    private int scale;
+    private double height, width;
+    private Point2D.Double centre, origin;
 
     private static File file;
     public static double[][][] bounds;
@@ -56,10 +55,9 @@ public class MyMap2 {
         timerStart();
         new BlockInputStream(input, brad).process();
         timerEnd("Testing");
-
     }
 
-    public MyMap2(File file, String region, int maxEdge, boolean alreadyFiled) throws IOException{
+    public MyMap2(File file, String region, int maxEdge, boolean alreadyFiled) throws IOException {
 
         this.maxEdge = maxEdge; //max edge length of an image
 
@@ -67,59 +65,74 @@ public class MyMap2 {
 
         counter = 0;
         this.file = file;
-        int scale = 40000; //pixels per degree!
+        scale = 40000; //pixels per degree!
 
+        if (region == "wales") {
+            northMost = 53.5; //56;
+            westMost = -5.5; //-6;          //WALES
+            southMost = 51.3; //49.5;
+            eastMost = -2.5; //2;
+        } else if (region == "england") {
+            northMost = 56;
+            westMost = -6;
+            southMost = 49.5;   //IT"S COMING HOME
+            eastMost = 2;
 
-        northMost = 53.5; //56;
-        westMost = -5.5; //-6;          //WALES
-        southMost = 51.3; //49.5;
-        eastMost = -2.5; //2;
-
-//        northMost = 56;
-//        westMost = -6;
-//        southMost = 49.5;   //IT"S COMING HOME
-//        eastMost = 2;
-
-//        northMost = 51.1;
-//        westMost = -5.3;
-//        southMost = 42.3;   //FRANCE
-//        eastMost = 8.4;
-
+//            northMost = 52.66;
+//            westMost = -2.24;
+//            southMost = 49.5;   //IT"S COMING HOME
+//            eastMost = 2;
+        } else if (region == "france") {
+            northMost = 51.1;
+            westMost = -5.3;
+            southMost = 42.3;   //FRANCE
+            eastMost = 8.4;
+        }
 
         counter = 0;
 
-
-        double height;
-        if(northMost > southMost) {
+        if (northMost > southMost) {
             height = Math.abs(northMost - southMost);
         } else {
             height = Math.abs(southMost - northMost);
         }
 
-        double width;
-        if(eastMost > westMost) {
+        if (eastMost > westMost) {
             width = Math.abs(eastMost - westMost);
         } else {
             width = Math.abs(westMost - eastMost);
         }
 
-        System.out.println("Total map width in px: " + scale * width);
+        centre = new Point2D.Double(westMost + (width / 2), northMost - (height / 2));
+        origin = new Point2D.Double(westMost, northMost);
+
+        System.out.println(centre);
+
+//        System.out.println("Total map width in px: " + scale * width);
 
 
         interval = width / ((scale * width) / maxEdge);
         spaceModifierX = maxEdge / interval;
 
 
-        int xDimension = (int) Math.ceil((scale * width) / maxEdge) + 1;
-        int yDimension = (int) Math.ceil((scale * height) / maxEdge) + 1;
+        xDimension = (int) Math.ceil((scale * width) / maxEdge);
+        yDimension = (int) Math.ceil((scale * height) / maxEdge) + 1;
+        System.out.println("SIZE " + xDimension + " " + yDimension);
+
+    }
+
+    public void draw() throws IOException{
 
         BufferedImage[][] tiles = new BufferedImage[(int) Math.ceil((scale * width) / maxEdge)][(int) Math.ceil((scale * height) / maxEdge)];
         bounds = new double[(int) Math.ceil((scale * width) / maxEdge) + 1][(int) Math.ceil((scale * height) / maxEdge) + 1][2];
 
         PngEncoder encoder = new PngEncoder();
 
+        int j = 64;
+
         tileNodes = new HashMap<>();
-        tileWays = new HashMap<>();
+        tileWays = new HashMap[j][j];
+
 
         InputStream input = new FileInputStream(file);
         BlockReaderAdapter brad = new TestBinaryParser();
@@ -149,42 +162,52 @@ public class MyMap2 {
             }
         }
 
-        int j = 8;
-
         counter = 0;
-        for(int x = 1; x < xDimension; x = x + j){
-            for(int y = 1; y < yDimension; y = y + j){
-                    bX1 = x;
-                    bX2 = x + j;
-                    bY1 = y;
-                    bY2 = y + j;
-                    System.out.println("bX1: " + bX1 + " bX2: " + bX2 + " bY1: " + bY1 + " bY2: " + bY2);
-                    tileNodes.clear();
-                    parsingNodes = true;
-                    input = new FileInputStream(file);
-                    brad = new TestBinaryParser();
-                    reader = new BlockInputStream(input, brad);
-                    timerStart();
-                    reader.process(); //collect nodes in tile
-                    timerEnd("Reading nodes");
-                    System.out.println("Nodes found: " + tileNodes.size());
-
-                    tileWays.clear();
-                    parsingNodes = false;
+        System.out.println("up to " + xDimension);
+        for(int x = 0; x < xDimension; x = x + j){
+            for(int y = 0; y < yDimension; y = y + j){
+                bX1 = x;
+                bX2 = x + j;
+                bY1 = y;
+                bY2 = y + j;
+                System.out.println("bX1: " + bX1 + " bX2: " + bX2 + " bY1: " + bY1 + " bY2: " + bY2);
+                tileNodes.clear();
+                parsingNodes = true;
+                input = new FileInputStream(file);
+                brad = new TestBinaryParser();
+                reader = new BlockInputStream(input, brad);
+                timerStart();
+                reader.process(); //collect nodes in tile
+                timerEnd("Reading nodes");
+                System.out.println("Nodes found: " + tileNodes.size());
+                if(tileNodes.size() > 0){
+                    tileWays = new HashMap[j][j];                             //NOTE TO SELF - with each way, store the exact tile it is in, and then check this before drawing it so we can collect large amounts of ways more effectively
+                    for(int jx = 0; jx < tileWays.length; jx++){
+                        for(int jy = 0; jy < tileWays[0].length; jy++){
+                            tileWays[jx][jy] = new HashMap<>();
+                        }
+                    }
+                    parsingNodes = false;                                   //or just have a jxj array of hashmaps and put it into the appropriate one.
                     input = new FileInputStream(file);
                     brad = new TestBinaryParser();
                     reader = new BlockInputStream(input, brad);
                     timerStart();
                     reader.process(); //collect ways in tile
                     timerEnd("Reading ways");
-                    System.out.println("Ways found: " + tileWays.size());
+//                        System.out.println("Ways found: " + tileWays.size());
+                } else {
+                    System.out.println("Skipping way read.");
+                }
 
-                    for(int xDraw = x; xDraw < x + j; xDraw++){
-                        for(int yDraw = y; yDraw < y + j; yDraw++){
-                            counter++;
-                            System.out.println("Drawing " + counter + " of " + ((bounds.length - 1) * (bounds[0].length - 1)) + " (" + (int) ((counter / ((bounds.length - 1f) * (bounds[0].length - 1f))) * 100) + "%)");
+                for(int xDraw = x; xDraw < x + j; xDraw++){
+                    for(int yDraw = y; yDraw < y + j; yDraw++){
+                        counter++;
+                        System.out.println("Drawing " + counter + " of " + ((bounds.length) * (bounds[0].length)) + " (" + (int) ((counter / ((bounds.length - 1f) * (bounds[0].length - 1f))) * 100) + "%)");
+                        if(tileWays[xDraw - x][yDraw - y].size() == 0){
+                            System.out.println("Nothing to draw!");
+                        } else {
                             startTime = System.nanoTime();
-                            BufferedImage tile = drawTile(xDraw, yDraw, maxEdge);
+                            BufferedImage tile = drawTile(xDraw, yDraw, x, y, maxEdge);
                             endTime = System.nanoTime();
                             System.out.print("Draw time: " + (((float) endTime - (float)startTime) / 1000000000));
                             System.out.print(". Number of ways: " + linesDrawn + ", " + ((linesDrawn + 1) / (((float) endTime - (float)startTime) / 1000000000)) + "w/s");
@@ -196,7 +219,7 @@ public class MyMap2 {
                             System.out.println();
                         }
                     }
-
+                }
             }
         }
 
@@ -206,7 +229,7 @@ public class MyMap2 {
     }
 
 
-    public BufferedImage drawTile(int x, int y, int edge){
+    public BufferedImage drawTile(int x, int y, int xO, int yO, int edge){
 //        System.out.print("Drawing tile. ");
         double[] axis = new double[2];
 
@@ -234,58 +257,53 @@ public class MyMap2 {
 
         linesDrawn = 0;
 
+        HashMap<Long, MyWay> subTileWays = tileWays[x - xO][y - yO];
 
-        System.out.println(x + " " + y + " is this big " + tileWays.size());
-        System.out.println(axis[0] + " " + axis[1]);
-
-        for(Map.Entry<long[], long[]> w : (tileWays.entrySet())){
-            if(w.getKey()[0] == Long.parseLong("22815916")){
-                System.out.println("found ref draw");
-            }
-            if(w.getKey()[1] == Long.parseLong("6")) {
+        for(MyWay w : subTileWays.values()){
+            if(w.getType() == WayType.GREEN){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
         } //GREENS
 
-        for(Map.Entry<long[], long[]> w : (tileWays.entrySet())){
-            if(w.getKey()[1] == Long.parseLong("9")) {
+        for(MyWay w : subTileWays.values()){
+            if(w.getType() == WayType.TREE){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
         } //FORESTS
 
-        for(Map.Entry<long[], long[]> w : (tileWays.entrySet())){
-            if(w.getKey()[1] == Long.parseLong("7")) {
+        for(MyWay w : subTileWays.values()){
+            if(w.getType() == WayType.WATERWAY){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
         } //RAILS
 
-        for(Map.Entry<long[], long[]> w : (tileWays.entrySet())){
-            if(w.getKey()[1] == Long.parseLong("8")) {
+        for(MyWay w : subTileWays.values()){
+            if(w.getType() == WayType.WATERBODY){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
         } //WATERBODIES
 
-        for(Map.Entry<long[], long[]> w : (tileWays.entrySet())){
-            if(w.getKey()[1] == Long.parseLong("5")) {
+        for(MyWay w : subTileWays.values()){
+            if(w.getType() == WayType.RAILWAY){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
         } //RAILWAYS
 
-//        for(Map.Entry<long[], long[]> w : (tileWasy.entrySet())){
-//            if(w.getKey()[1] == (Long.parseLong("0")) || w.getKey()[1] == (Long.parseLong("1")) || w.getKey()[1] == (Long.parseLong("2")) || w.getKey()[1] == (Long.parseLong("3")) || w.getKey()[1] == (Long.parseLong("4"))) {
-//                drawWay(w, mapGraphics, true, axis, tileNodes.get(x - 1).get(y - 1));
+//        for(MyWay w : subTileWays){
+//            if(w.getType() == WayType.ROAD){
+//                drawWay(w, mapGraphics, false, axis, tileNodes);
 //            }
 //        } //ROADS UNDER
 
-        for(Map.Entry<long[], long[]> w : (tileWays.entrySet())){
-            if(w.getKey()[1] == (Long.parseLong("0")) || w.getKey()[1] == (Long.parseLong("1")) || w.getKey()[1] == (Long.parseLong("2")) || w.getKey()[1] == (Long.parseLong("3")) || w.getKey()[1] == (Long.parseLong("4"))) {
+        for(MyWay w : subTileWays.values()){
+            if(w.getType() == WayType.ROAD){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
         } //ROADS OVER
 
-//        for(Map.Entry<long[], long[]> w : (tileWay.entrySet())){
-//            if(w.getKey()[1] == Long.parseLong("10")) {
-//                drawWay(w, mapGraphics, false, axis, tileNodes.get(x - 1).get(y - 1));
+//        for(MyWay w : subTileWays){
+//            if(w.getType() == WayType.CYCLE){
+//                drawWay(w, mapGraphics, false, axis, tileNodes);
 //            }
 //        }
 
@@ -295,16 +313,31 @@ public class MyMap2 {
     }
 
 
-    private void drawWay(Map.Entry<long[], long[]> way, Graphics2D mapGraphics, boolean underlay, double[] bound, HashMap<Long, double[]> dictionary) {
+    private void drawWay(MyWay way, Graphics2D mapGraphics, boolean underlay, double[] bound, HashMap<Long, double[]> dictionary) {
 //        System.out.println("Drawing way " + way.getKey()[0]);
         Color wayColor = Color.WHITE;
         Color inColor;
         Color outColor;
-        long[] wayNodes = way.getValue();
+        long[] wayNodes = way.getWayNodes();
 //                List<Long> allNodes = DouglasPeucker.decimate(way.getWayNodes(), 0.0001, dictionary);
-        switch (Long.toString(way.getKey()[1])) {
-            case "0": //motorway
-                wayColor = Color.BLUE;
+        switch (way.getType()) {
+            case ROAD:
+                switch (way.getRoadType()) {
+                    case MOTORWAY:
+                        wayColor = Color.BLUE;
+                        break;
+                    case TRUNK:
+                        wayColor = Color.MAGENTA;
+                        break;
+                    case PRIMARY:
+                        wayColor = Color.ORANGE;
+                        break;
+                    case SECONDARY:
+                        wayColor = Color.YELLOW;
+                        break;
+                    case ROAD:
+                        wayColor = Color.WHITE;
+                }
                 if (underlay) {
                     mapGraphics.setPaint(wayColor.darker());
                     mapGraphics.setStroke(new BasicStroke((8)));
@@ -315,93 +348,45 @@ public class MyMap2 {
                 drawPolyline(mapGraphics, wayNodes, bound, dictionary);
                 break;
 
-            case "1": //trunk
-                wayColor = Color.MAGENTA;
-                if (underlay) {
-                    mapGraphics.setPaint(wayColor.darker());
-                    mapGraphics.setStroke(new BasicStroke((8)));
-                } else {
-                    mapGraphics.setPaint(wayColor);
-                    mapGraphics.setStroke(new BasicStroke((4)));
-                }
-                drawPolyline(mapGraphics, wayNodes, bound, dictionary);
-                break;
-
-            case "2": //primary
-                wayColor = Color.ORANGE;
-                if (underlay) {
-                    mapGraphics.setPaint(wayColor.darker());
-                    mapGraphics.setStroke(new BasicStroke((8)));
-                } else {
-                    mapGraphics.setPaint(wayColor);
-                    mapGraphics.setStroke(new BasicStroke((4)));
-                }
-                drawPolyline(mapGraphics, wayNodes, bound, dictionary);
-                break;
-
-            case "3": //secondary
-                wayColor = Color.YELLOW;
-                if (underlay) {
-                    mapGraphics.setPaint(wayColor.darker());
-                    mapGraphics.setStroke(new BasicStroke((8)));
-                } else {
-                    mapGraphics.setPaint(wayColor);
-                    mapGraphics.setStroke(new BasicStroke((4)));
-                }
-                drawPolyline(mapGraphics, wayNodes, bound, dictionary);
-                break;
-
-            case "4": //road
-                wayColor = Color.WHITE;
-                if (underlay) {
-                    mapGraphics.setPaint(wayColor.darker());
-                    mapGraphics.setStroke(new BasicStroke((8)));
-                } else {
-                    mapGraphics.setPaint(wayColor);
-                    mapGraphics.setStroke(new BasicStroke((3)));
-                }
-                drawPolyline(mapGraphics, wayNodes, bound, dictionary);
-                break;
-
-            case "5": //rails
+            case RAILWAY:
                 mapGraphics.setStroke(new BasicStroke(2));
                 mapGraphics.setPaint(Color.BLACK);
                 drawPolyline(mapGraphics, wayNodes, bound, dictionary);
                 break;
 
-            case "7": //rivers
-                mapGraphics.setStroke(new BasicStroke(3));
+            case WATERWAY:
+                mapGraphics.setStroke(new BasicStroke(4));
                 mapGraphics.setPaint(new Color(102, 178, 255));
                 drawPolyline(mapGraphics, wayNodes, bound, dictionary);
                 break;
 
-            case "10": //cycles
-                mapGraphics.setStroke(new BasicStroke(2));
+            case CYCLE:
+                mapGraphics.setStroke(new BasicStroke(4));
                 mapGraphics.setPaint(Color.RED);
                 drawPolyline(mapGraphics, wayNodes, bound, dictionary);
                 break;
 
-            case "6": //green
-                mapGraphics.setStroke(new BasicStroke(2));
+            case GREEN:
+                mapGraphics.setStroke(new BasicStroke(4));
                 inColor = new Color(153, 255, 153);
                 outColor = new Color(102, 255, 102);
                 drawArea(mapGraphics, wayNodes, bound, inColor, outColor, dictionary);
                 break;
 
-            case "9": //tree
-                mapGraphics.setStroke(new BasicStroke(2));
+            case TREE:
+                mapGraphics.setStroke(new BasicStroke(4));
                 inColor = new Color(0, 204, 102);
                 outColor = new Color(0, 153, 76);
                 drawArea(mapGraphics, wayNodes, bound, inColor, outColor, dictionary);
                 break;
 
-            case "8": //waterbody
-                mapGraphics.setStroke(new BasicStroke(2));
+            case WATERBODY:
+                mapGraphics.setStroke(new BasicStroke(4));
                 inColor = new Color(153, 204, 255);
                 outColor = new Color(102, 178, 255);
                 drawArea(mapGraphics, wayNodes, bound, inColor, outColor, dictionary);
                 break;
-            }
+        }
     }
 
     private void drawPolyline(Graphics2D mapGraphics, long[] wayNodes, double[] bound, HashMap<Long, double[]> dictionary) {
@@ -410,9 +395,9 @@ public class MyMap2 {
             if (tileNodes.containsKey(wayNodes[node]) && tileNodes.containsKey(wayNodes[node + 1])) {
                 u = tileNodes.get(wayNodes[node]); //dictionary.get(wayNodes.get(node)); //efficiency by using previous v?
                 v = tileNodes.get(wayNodes[node + 1]);
-                double uy = (u[0] - bound[0]) * spaceModifierX;
+                double uy = (bound[0] - u[0]) * spaceModifierX;
                 double ux = (u[1] - bound[1]) * spaceModifierX;
-                double vy = (v[0] - bound[0]) * spaceModifierX;
+                double vy = (bound[0] - v[0]) * spaceModifierX;
                 double vx = (v[1] - bound[1]) * spaceModifierX;
                 mapGraphics.drawLine((int) Math.round(ux), (int) Math.round(uy), (int) Math.round(vx), (int) Math.round(vy));
 
@@ -427,7 +412,7 @@ public class MyMap2 {
         for (int node = 0; node < wayNodes.length; node++) {
             if (dictionary.containsKey(wayNodes[node])) {
                 double[] u = dictionary.get(wayNodes[node]); //efficiency by using previous v?
-                double uy = (u[0] - bound[0]) * spaceModifierX;
+                double uy = (bound[0] - u[0]) * spaceModifierX;
                 double ux = (u[1] - bound[1]) * spaceModifierX;
                 if (first) {
                     waterPath.moveTo(ux, uy);
@@ -494,10 +479,10 @@ public class MyMap2 {
 //                if(Math.max(tiles.length, tiles[0].length))
                 System.out.println("z" + z);
                 //need to wrap this bit in a loop over blocks - done below?
-                for(int jumpY = 1; jumpY <= tiles[0].length + 1; jumpY = jumpY + z){
+                for(int jumpY = 0; jumpY <= tiles[0].length + 1; jumpY = jumpY + z){
 //                    System.out.println(tiles[0].length);
-                    for(int jumpX = 1; jumpX <= tiles.length + 1; jumpX = jumpX + z){
-
+                    for(int jumpX = 0; jumpX <= tiles.length + 1; jumpX = jumpX + z){
+                        int emptyCount = 0;
                         BufferedImage[][] images = new BufferedImage[z][z];
                         System.out.println();
                         System.out.println("Drawing " + jumpX + "-" + jumpY);
@@ -514,9 +499,14 @@ public class MyMap2 {
                                     timerEnd("Load image");
                                 } else {
                                     System.out.println(filename + " doesn't exist.");
+                                    emptyCount++;
                                     images[x - jumpX][y - jumpY] = new BufferedImage((maxEdge / z), (maxEdge/z), 1);
                                 }
                             }
+                        }
+                        if(emptyCount == 3){
+                            System.out.println("No images in this tile; skipping.");
+                            continue;
                         }
                         BufferedImage out = new BufferedImage(maxEdge, maxEdge, 1);
                         Graphics g = out.createGraphics();
@@ -564,30 +554,37 @@ public class MyMap2 {
 
         @Override
         protected void parseRelations(List<Relation> rels) {
-//            System.out.println("Parsing relations.");
-//            if (!rels.isEmpty()) {
-//                System.out.println("Got some relations to parse.");
+//            if(!parsingNodes){
+//                if (!rels.isEmpty()) {
+////                    System.out.println("Got some relations to parse.");
 //
-//                for (Relation r : rels){
-//                    for (int i = 0; i < r.getKeysCount(); i++) {
-//                        System.out.println(getStringById(r.getKeys(i)) + " " + getStringById(r.getVals(i)));
+//                    for (Relation r : rels){
+//                        if(r.getId() == Long.parseLong("3084421")){
+//                            System.out.println("TRAWS");
+//                        }
+//                        for (int i = 0; i < r.getKeysCount(); i++) {
+//                            if(getStringById(r.getKeys(i)).equals("natural") && getStringById(r.getVals(i)).equals("water")){
+//                                System.out.println("YES");
+//                                long lastRef = 0;
+//                                for (int k = 0; k < r.getMemidsCount(); k++) { //SMALLER THAN OR EQUAL TO OR NOT?
+//                                    lastRef += (r.getMemids(k));
+//                                    if (getStringById(r.getRolesSid(k)).equals("outer")){
+//                                        System.out.println("Found reservoir: " + lastRef);
+//                                    }
+//                                }
+//                            }
+////                            System.out.println(getStringById(r.getKeys(i)) + " " + getStringById(r.getVals(i)));
+//
+//                        }
+//                        for (int i = 0; i < r.getRolesSidCount(); i++) {
+////                            System.out.println(getStringById(r.getRolesSid(i)));
+//                        }
+////                        System.out.println(r.getRolesSidList());
+////                        System.out.println();
 //                    }
-//                    System.out.println();
-//                    long lastRef = 0;
-//                    for (int i = 0; i < r.getMemidsCount(); i++) { //SMALLER THAN OR EQUAL TO OR NOT?
-//                        System.out.println(lastRef += (r.getMemids(i)));
-//                        if (getStringById(r.getRolesSid(i)).equals("inner"))
-//                    }
-//                    for (int i = 0; i < r.getRolesSidCount(); i++) {
-//                        System.out.println(getStringById(r.getRolesSid(i)));
-//                    }
-//                    System.out.println(r.getRolesSidList());
-//                    System.out.println();
-//            }
 //
-//            Relation r = null;
-//
-//
+//                    Relation r = null;
+//                }
 //            }
         }
 
@@ -609,12 +606,13 @@ public class MyMap2 {
 //                    System.out.println("xOffset " + xOffset);
                     int x = (int) Math.floor(xOffset / interval);
                     int y = (int) Math.floor(yOffset / interval);
-//                    System.out.println("x " + x);
                     if((x >= bX1 && x < bX2) && (y >= bY1 && y < bY2)){
 //                        System.out.println("FOUND");
-                        double[] tempDense = new double[2];
+                        double[] tempDense = new double[4];
                         tempDense[0] = parseLat(lastLat);
                         tempDense[1] = parseLon(lastLon);
+                        tempDense[2] = x - bX1;
+                        tempDense[3] = y - bY1;
                         tileNodes.put(lastId, tempDense);
                     }
                 }
@@ -639,112 +637,107 @@ public class MyMap2 {
                     WAY: for (Long ref : w.getRefsList()) {
                         lastRef += ref;
                         if (tileNodes.containsKey(lastRef)) {
-                            if(w.getId() == Long.parseLong("22815916")){
-                                System.out.println("found ref at x " + bX1 + " y " + bY1);
-                            }
+//                            if(w.getId() == Long.parseLong("22815916")){
+//                                System.out.println("found ref at x " + bX1 + " y " + bY1);
+//                            }
+                            double[] data = tileNodes.get(lastRef);
                             String key;
                             String value;
-                            for (int i = 0; i < w.getKeysCount(); i++) {
+                            for (int i=0 ; i<w.getKeysCount() ; i++) {
                                 key = getStringById(w.getKeys(i));
                                 value = getStringById(w.getVals(i));
-                                if (key.equals("highway")) {
+                                if(key.equals("highway")){
 //                            System.out.println("GOT A ROAD");
-                                    if (value.matches("motorway|motorway_link")) {
-                                        long[] wayBody = buildMyWay(w, Long.parseLong("0"));
-                                        long[] wayHeader = new long[]{w.getId(), Long.parseLong("0")};
-//                                tempWay.setType(WayType.ROAD);
-//                                tempWay.setRoadType(RoadType.MOTORWAY);
-                                        tileWays.put(wayHeader, wayBody);
-                                    } else if (value.matches("trunk|trunk_link")) {
-                                        long[] wayBody = buildMyWay(w, Long.parseLong("1"));
-                                        long[] wayHeader = new long[]{w.getId(), Long.parseLong("1")};
-//                                tempWay.setType(WayType.ROAD);
-//                                tempWay.setRoadType(RoadType.TRUNK);
-                                        tileWays.put(wayHeader, wayBody);
-                                    } else if (value.matches("primary|primary_link")) {
-                                        long[] wayBody = buildMyWay(w, Long.parseLong("2"));
-                                        long[] wayHeader = new long[]{w.getId(), Long.parseLong("2")};
-//                                tempWay.setRoadType(RoadType.PRIMARY);
-                                        tileWays.put(wayHeader, wayBody);
-                                    } else if (value.matches("secondary|secondary_link")) {
-                                        long[] wayBody = buildMyWay(w, Long.parseLong("3"));
-                                        long[] wayHeader = new long[]{w.getId(), Long.parseLong("3")};
-//                                tempWay.setType(WayType.ROAD);
-//                                tempWay.setRoadType(RoadType.SECONDARY);
-                                        tileWays.put(wayHeader, wayBody);
-                                    } else if (value.matches("tertiary|unclassified|residential|service|tertiary_link|road")) {
-                                        long[] wayBody = buildMyWay(w, Long.parseLong("4"));
-                                        long[] wayHeader = new long[]{w.getId(), Long.parseLong("4")};
-//                                tempWay.setType(WayType.ROAD);
-//                                tempWay.setRoadType(RoadType.ROAD);
-                                        tileWays.put(wayHeader, wayBody);
+                                    if(value.matches("motorway|motorway_link")){
+                                        MyWay tempWay = buildMyWay(w);
+                                        tempWay.setType(WayType.ROAD);
+                                        tempWay.setRoadType(RoadType.MOTORWAY);
+                                        tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
+                                    } else if (value.matches("trunk|trunk_link")){
+                                        MyWay tempWay = buildMyWay(w);
+                                        tempWay.setType(WayType.ROAD);
+                                        tempWay.setRoadType(RoadType.TRUNK);
+                                        tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
+                                    } else if (value.matches("primary|primary_link")){
+                                        MyWay tempWay = buildMyWay(w);
+                                        tempWay.setType(WayType.ROAD);
+                                        tempWay.setRoadType(RoadType.PRIMARY);
+                                        tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
+                                    } else if (value.matches("secondary|secondary_link")){
+                                        MyWay tempWay = buildMyWay(w);
+                                        tempWay.setType(WayType.ROAD);
+                                        tempWay.setRoadType(RoadType.SECONDARY);
+                                        tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
+                                    } else if (value.matches("tertiary|unclassified|residential|service|tertiary_link|road")){
+                                        MyWay tempWay = buildMyWay(w);
+                                        tempWay.setType(WayType.ROAD);
+                                        tempWay.setRoadType(RoadType.ROAD);
+                                        tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                     }
                                 }
-                                if (key.equals("railway")) {
-                                    long[] wayBody = buildMyWay(w, Long.parseLong("5"));
-                                    long[] wayHeader = new long[]{w.getId(), Long.parseLong("5")};
-//                            tempWay.setType(WayType.RAILWAY);
-                                    tileWays.put(wayHeader, wayBody);
+                                if(key.equals("railway")){
+                                    MyWay tempWay = buildMyWay(w);
+                                    tempWay.setType(WayType.RAILWAY);
+                                    tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
-                                if ((key.equals("natural") && value.equals("grass"))
+                                if((key.equals("natural") && value.equals("grass"))
                                         || (key.equals("leisure") && value.equals("common"))
                                         || (key.equals("leisure") && value.equals("park"))
                                         || (key.equals("leisure") && value.equals("golf_course"))
                                         || value.equals("meadow")
                                         || value.equals("recreation_ground")
                                         || value.equals("conservation")
-                                        || value.equals("park")) {
-                                    long[] wayBody = buildMyWay(w, Long.parseLong("6"));
-                                    long[] wayHeader = new long[]{w.getId(), Long.parseLong("6")};
-//                            tempWay.setType(WayType.GREEN);
-                                    tileWays.put(wayHeader, wayBody);
+                                        || value.equals("park")){
+                                    MyWay tempWay = buildMyWay(w);
+                                    tempWay.setType(WayType.GREEN);
+                                    tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
-                                if (key.equals("waterway") && (value.matches("river|stream|canal"))) {
-                                    long[] wayBody = buildMyWay(w, Long.parseLong("7"));
-                                    long[] wayHeader = new long[]{w.getId(), Long.parseLong("7")};
-//                            tempWay.setType(WayType.WATERWAY);
-                                    tileWays.put(wayHeader, wayBody);
+                                if(key.equals("waterway") && (value.matches("river|stream|canal"))){
+                                    MyWay tempWay = buildMyWay(w);
+                                    tempWay.setType(WayType.WATERWAY);
+                                    tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
-                                if ((key.equals("natural") && value.equals("water"))
-                                        || value.matches("reservoir|basin")) {
-                                    long[] wayBody = buildMyWay(w, Long.parseLong("8"));
-                                    long[] wayHeader = new long[]{w.getId(), Long.parseLong("8")};
-//                            tempWay.setType(WayType.WATERBODY);
-                                    tileWays.put(wayHeader, wayBody);
+                                if((key.equals("natural") && value.equals("water"))
+                                        || value.matches("reservoir|basin")){
+                                    MyWay tempWay = buildMyWay(w);
+                                    tempWay.setType(WayType.WATERBODY);
+                                    tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
-                                if ((key.equals("natural") && value.equals("wood"))
-                                        || (key.equals("landuse") && value.equals("forest"))) {
-                                    long[] wayBody = buildMyWay(w, Long.parseLong("9"));
-                                    long[] wayHeader = new long[]{w.getId(), Long.parseLong("9")};
-//                            tempWay.setType(WayType.TREE);
-                                    tileWays.put(wayHeader, wayBody);
+                                if((key.equals("natural") && value.equals("wood"))
+                                        || (key.equals("landuse") && value.equals("forest"))){
+                                    MyWay tempWay = buildMyWay(w);
+                                    tempWay.setType(WayType.TREE);
+                                    tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
-                                if (key.equals("cycleway") || value.equals("cycleway") ||
-                                        (key.equals("route") && value.equals("bicycle"))) {
-                                    long[] wayBody = buildMyWay(w, Long.parseLong("10"));
-                                    long[] wayHeader = new long[]{w.getId(), Long.parseLong("10")};
-//                            tempWay.setType(WayType.CYCLE);
-                                    tileWays.put(wayHeader, wayBody);
+                                if(key.equals("cycleway") || value.equals("cycleway") ||
+                                        (key.equals("route") && value.equals("bicycle"))){
+                                    MyWay tempWay = buildMyWay(w);
+                                    tempWay.setType(WayType.CYCLE);
+                                    tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
                             }
-                            break WAY;
                         }
                     }
                 }
             }
         }
 
-        private long[] buildMyWay(Way w, long type){
-            long[] tempWay = new long[w.getRefsList().size()];
+        private MyWay buildMyWay(Way w){
+            MyWay tempWay = new MyWay();
+            long id = w.getId();
+            tempWay.setWayId(id);
             long lastRef = 0;
+            long[] wayNodes = new long[w.getRefsList().size()];
             int wayCtr = 0;
             for (Long ref : w.getRefsList()) {
                 lastRef += ref;
-                tempWay[wayCtr] = lastRef;
+                wayNodes[wayCtr] = lastRef;
                 wayCtr++;
             }
+            tempWay.setWayNodes(wayNodes);
             return tempWay;
         }
+
 
         @Override
         protected void parse(HeaderBlock header) {
@@ -767,19 +760,20 @@ public class MyMap2 {
         System.out.println();
     }
 
-    private void serialise(Object obj, String name) throws IOException {
-        FileOutputStream fio = new FileOutputStream(name);
-        ObjectOutputStream objo = new ObjectOutputStream(fio);
-        objo.writeObject(obj);
-        objo.close();
-        fio.close();
+    public int getTileWidth(){
+        return xDimension;
     }
 
-    private HashMap<Long, long[]> readHash(String name) throws IOException, ClassNotFoundException {
-        FileInputStream fii = new FileInputStream(name);
-        ObjectInputStream obji = new ObjectInputStream(fii);
-        HashMap<Long, long[]> hashMap = (HashMap<Long, long[]>) obji.readObject();
-        return hashMap;
+    public int getTileHeight(){
+        return yDimension;
+    }
+
+    public Point2D.Double getCentre(){
+        return centre;
+    }
+
+    public Point2D.Double getOrigin(){
+        return origin;
     }
 
     private void timerStart(){
