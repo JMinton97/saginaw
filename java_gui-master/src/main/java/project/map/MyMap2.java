@@ -128,7 +128,7 @@ public class MyMap2 {
 
         PngEncoder encoder = new PngEncoder();
 
-        int j = 64;
+        int j = 32;
 
         tileNodes = new HashMap<>();
         tileWays = new HashMap[j][j];
@@ -181,7 +181,6 @@ public class MyMap2 {
                 timerEnd("Reading nodes");
                 System.out.println("Nodes found: " + tileNodes.size());
                 if(tileNodes.size() > 0){
-                    tileWays = new HashMap[j][j];                             //NOTE TO SELF - with each way, store the exact tile it is in, and then check this before drawing it so we can collect large amounts of ways more effectively
                     for(int jx = 0; jx < tileWays.length; jx++){
                         for(int jy = 0; jy < tileWays[0].length; jy++){
                             tileWays[jx][jy] = new HashMap<>();
@@ -258,6 +257,7 @@ public class MyMap2 {
         linesDrawn = 0;
 
         HashMap<Long, MyWay> subTileWays = tileWays[x - xO][y - yO];
+        System.out.println("This many ways stored: " + subTileWays.size());
 
         for(MyWay w : subTileWays.values()){
             if(w.getType() == WayType.GREEN){
@@ -400,10 +400,9 @@ public class MyMap2 {
                 double vy = (bound[0] - v[0]) * spaceModifierX;
                 double vx = (v[1] - bound[1]) * spaceModifierX;
                 mapGraphics.drawLine((int) Math.round(ux), (int) Math.round(uy), (int) Math.round(vx), (int) Math.round(vy));
-
-                linesDrawn++;
             }
         }
+        linesDrawn++;
     }
 
     private void drawArea(Graphics2D mapGraphics, long[] wayNodes, double[] bound, Color inColor, Color outColor, HashMap<Long, double[]> dictionary){
@@ -420,9 +419,11 @@ public class MyMap2 {
                 } else {
                     waterPath.lineTo(ux, uy);
                 }
-                linesDrawn++;
+
             }
         }
+        linesDrawn++;
+
 //        waterPath.closePath();
         mapGraphics.setPaint(inColor);
         mapGraphics.fill(waterPath);
@@ -474,7 +475,7 @@ public class MyMap2 {
         File inputfile, outputfile;
         BufferedImage map;
         try{
-            for(int z = 2; z < 128; z = z * 2){
+            for(int z = 2; z < 1024; z = z * 2){
                 new File("draw/" + region + "/" + z + "/").mkdirs();
 //                if(Math.max(tiles.length, tiles[0].length))
                 System.out.println("z" + z);
@@ -504,7 +505,7 @@ public class MyMap2 {
                                 }
                             }
                         }
-                        if(emptyCount == 3){
+                        if(emptyCount == 4){
                             System.out.println("No images in this tile; skipping.");
                             continue;
                         }

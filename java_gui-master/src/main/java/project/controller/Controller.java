@@ -159,16 +159,24 @@ public class Controller
 
 	public void moveMap(int x, int y){
 		model.move(x, y);
-		view.updateRegion();
+//		view.updateRegion();
 	}
 
 	public void zoomOut(){
 		model.zoomOut();
-		view.updateRegion();
+//		view.updateRegion();
 	}
 
 	public void zoomIn(){
 		model.zoomIn();
-		view.updateRegion();
+//		view.updateRegion();
+	}
+
+	public void upDoug(){
+		view.upDoug();
+	}
+
+	public void downDoug(){
+		view.downDoug();
 	}
 }

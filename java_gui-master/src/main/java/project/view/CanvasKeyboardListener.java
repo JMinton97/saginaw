@@ -34,6 +34,10 @@ public class CanvasKeyboardListener implements KeyListener {
             controller.zoomOut();
         } else if(e.getKeyCode() == (KeyEvent.VK_C)){
             controller.zoomIn();
+        } else if(e.getKeyCode() == (KeyEvent.VK_R)){
+            controller.upDoug();
+        } else if(e.getKeyCode() == (KeyEvent.VK_F)){
+            controller.downDoug();
         }
         this.view.repaint();
     }

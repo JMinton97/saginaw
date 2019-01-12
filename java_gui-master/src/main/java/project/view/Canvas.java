@@ -1,6 +1,7 @@
 package project.view;
 
 import project.controller.Controller;
+import project.map.DouglasPeucker;
 import project.map.MyNode;
 import project.model.Model;
 
@@ -49,6 +50,8 @@ class Canvas extends JPanel
 	private double paneY = 800;
 	private int xDimension, yDimension;
 	private int level, modifier;
+	private DouglasPeucker doug;
+	private double dougTolerance;
 
 	/**
 	 * The default constructor should NEVER be called. It has been made private
@@ -103,6 +106,9 @@ class Canvas extends JPanel
 			layers.put(l, tileGrid);
 			System.out.println();
 		}
+
+		doug = new DouglasPeucker();
+		dougTolerance = 1;
 	}
 
 	/**
@@ -165,7 +171,8 @@ class Canvas extends JPanel
 		}
 
 		g.drawString(String.valueOf(zoom), 50, 50);
-		g.drawString(String.valueOf(centre.getX()) + " " + String.valueOf(centre.getY()), 100, 50);
+		g.drawString(String.valueOf(centre.getX()) + " " + String.valueOf(centre.getY()), 50, 100);
+		g.drawString(String.valueOf(dougTolerance), 50, 150);
 
 		drawRoute(model.getRoute(), (Graphics2D) g);
 
@@ -245,6 +252,9 @@ class Canvas extends JPanel
 	}
 
 	public void drawRoute(ArrayList<Point2D.Double> route, Graphics2D g){
+
+		route = doug.simplify(route, dougTolerance);
+
 		Point2D o = geoToCanvas(topLeft);
 		Path2D path = new Path2D.Double();
 		Point2D first = geoToCanvas(route.get(0));
@@ -274,7 +284,12 @@ class Canvas extends JPanel
 		return new Point2D.Double(-1, -1);
 	}
 
+	public void upDoug(){
+		dougTolerance *= 1.25;
+	}
 
-
+	public void downDoug(){
+		dougTolerance /= 1.25;
+	}
 
 }

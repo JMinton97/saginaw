@@ -132,7 +132,11 @@ public class View extends JFrame
 		return canvasScrollPane;
 	}
 
-	public void newImage(){
+	public void upDoug(){
+		canvas.upDoug();
+	}
 
+	public void downDoug(){
+		canvas.downDoug();
 	}
 }
