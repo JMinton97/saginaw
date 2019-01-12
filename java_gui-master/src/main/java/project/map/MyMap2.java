@@ -633,10 +633,12 @@ public class MyMap2 {
         protected void parseWays(List<Way> ways) {
             if (!parsingNodes) {
 //                System.out.println("Parsing ways.");
+                long lastRef = 0;
                 for (Way w : ways) {
-                    long lastRef = 0;
-                    WAY: for (Long ref : w.getRefsList()) {
-                        lastRef += ref;
+                    lastRef += w.getId();
+                    long lastNodeRef = 0;
+                    for (Long nodeRef : w.getRefsList()) {
+                        lastNodeRef += nodeRef;
                         if (tileNodes.containsKey(lastRef)) {
 //                            if(w.getId() == Long.parseLong("22815916")){
 //                                System.out.println("found ref at x " + bX1 + " y " + bY1);

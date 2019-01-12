@@ -253,7 +253,7 @@ class Canvas extends JPanel
 
 	public void drawRoute(ArrayList<Point2D.Double> route, Graphics2D g){
 
-		route = doug.simplify(route, dougTolerance);
+//		route = doug.simplify(route, dougTolerance);
 
 		Point2D o = geoToCanvas(topLeft);
 		Path2D path = new Path2D.Double();

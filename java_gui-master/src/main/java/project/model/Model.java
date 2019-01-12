@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -45,7 +46,8 @@ public class Model {
 
 	private BiDijkstra bdijk;
 	private MyGraph graph;
-	private ArrayList<Point2D.Double> route;
+	private ArrayList<Long> routeWays;
+	private ArrayList<Point2D.Double> routeNodes;
 
 	public Model() {
 		x = 1;
@@ -63,16 +65,24 @@ public class Model {
 		}
 		bdijk = new BiDijkstra(graph, graph.getDictionary());
 
-		Long src = Long.parseLong("1349207723"); //wales
+//		Long src = Long.parseLong("1349207723"); //wales
+		Long src = Long.parseLong("1243657905");
 		Long dst = Long.parseLong("707151082");
 
 //		src = Long.parseLong("370459811"); //wolverton to sheffield
 //		dst = Long.parseLong("1014466202");
 
 		bdijk.compute(src, dst);
+		System.out.println("Distance: " + bdijk.getDist());
 
-		route = graph.refsToNodes(bdijk.compute(src, dst));
-
+		routeWays = bdijk.compute(src, dst);
+		routeNodes = new ArrayList<>();
+		for(Long w : routeWays){
+			System.out.println(w);
+			System.out.println(graph.wayToNodes(w));
+			routeNodes.addAll(graph.refsToNodes(graph.wayToNodes(w)));
+			System.out.println();
+		}
 		centreCoord = map.getCentre();
 		origin = map.getOrigin();
 
@@ -115,7 +125,7 @@ public class Model {
 	}
 
 	public ArrayList<Point2D.Double> getRoute() {
-		return route;
+		return routeNodes;
 	}
 
 	/**

@@ -12,8 +12,10 @@ public class BiDijkstra {
     long startTime, endTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, arelaxTimeStart, arelaxTimeEnd, atotalRelaxTime, containsTimeStart, containsTimeEnd, totalContainsTime, pollTimeStart, pollTimeEnd, totalPollTime, relaxPutTimeStart, relaxPutTimeEnd, totalRelaxPutTime;
     THashMap<Long, Double> uDistTo;
     THashMap<Long, Long> uEdgeTo;
+    THashMap<Long, Long> uNodeTo;
     THashMap<Long, Double> vDistTo;
     THashMap<Long, Long> vEdgeTo;
+    THashMap<Long, Long> vNodeTo;
     PriorityQueue<DijkstraEntry> uPq;
     PriorityQueue<DijkstraEntry> vPq;
     private HashSet<Long> uRelaxed;
@@ -30,9 +32,11 @@ public class BiDijkstra {
         System.out.println("SIZE " + graph.getGraph().size());
         uDistTo = new THashMap<>(graph.getGraph().size());
         uEdgeTo = new THashMap<>(graph.getGraph().size());
+        uNodeTo = new THashMap<>(graph.getGraph().size());
 
         vDistTo = new THashMap<>(graph.getGraph().size());
         vEdgeTo = new THashMap<>(graph.getGraph().size());
+        vNodeTo = new THashMap<>(graph.getGraph().size());
 
         this.graph = graph;
         this.dictionary = dictionary;
@@ -134,7 +138,7 @@ public class BiDijkstra {
         long endTime = System.nanoTime();
         System.out.println("BiDijkstra time: " + (((float) endTime - (float)startTime) / 1000000000));
 
-        return getRoute();
+        return getRouteAsWays();
 
     }
 
@@ -143,13 +147,16 @@ public class BiDijkstra {
         explored++;
         long w = (long) edge[0];
         double weight = edge[1];
+        double wayId = edge[2];
         if(u){
             uRelaxed.add(x);
             double distToX = uDistTo.getOrDefault(x, Double.MAX_VALUE);
             if (uDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
                 relaxPutTimeStart = System.nanoTime();
                 uDistTo.put(w, distToX + weight);
-                uEdgeTo.put(w, x); //should be 'nodeBefore'
+                uNodeTo.put(w, x); //should be 'nodeBefore'
+                uEdgeTo.put(w, (long) wayId);
+//                System.out.println(w + " " + Math.round(wayId));
                 relaxPutTimeEnd = System.nanoTime();
                 totalRelaxPutTime += (relaxPutTimeEnd - relaxPutTimeStart);
                 arelaxTimeStart = System.nanoTime();
@@ -163,7 +170,9 @@ public class BiDijkstra {
             if (vDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
                 relaxPutTimeStart = System.nanoTime();
                 vDistTo.put(w, distToX + weight);
-                vEdgeTo.put(w, x); //should be 'nodeBefore'
+                vNodeTo.put(w, x); //should be 'nodeBefore'
+                vEdgeTo.put(w, (long) wayId);
+//                System.out.println(w + " " + Math.round(wayId));
                 relaxPutTimeEnd = System.nanoTime();
                 totalRelaxPutTime += (relaxPutTimeEnd - relaxPutTimeStart);
                 arelaxTimeStart = System.nanoTime();
@@ -213,17 +222,42 @@ public class BiDijkstra {
         long node = overlapNode;
         route.add(overlapNode);
         while(node != startNode){
-            node = uEdgeTo.get(node);
+            node = uNodeTo.get(node);
             route.add(node);
         }
         Collections.reverse(route);
         node = overlapNode;
         while(node != endNode){
-            node = vEdgeTo.get(node);
+            node = vNodeTo.get(node);
             route.add(node);
         }
         return route;
     }
+
+    public ArrayList<Long> getRouteAsWays(){
+        ArrayList<Long> route = new ArrayList<>();
+        long node = overlapNode;
+        long way = 0;
+        while(node != startNode){
+            way = uEdgeTo.get(node);
+            node = uNodeTo.get(node);
+//            System.out.println(way);
+            route.add(way);
+        }
+
+        Collections.reverse(route);
+        node = overlapNode;
+        while(node != endNode){
+            way = vEdgeTo.get(node);
+            node = vNodeTo.get(node);
+//            System.out.println(way);
+            route.add(way);
+        }
+        return route;
+    }
+
+
+
 
     private void timerStart(){
         startTime = System.nanoTime();
