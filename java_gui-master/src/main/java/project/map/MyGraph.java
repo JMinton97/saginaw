@@ -30,7 +30,9 @@ public class MyGraph {
     private static ConcurrentMap<Long, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a list of ways each one is part of
     private static boolean parsingNodes;
 //    private static HashSet<Long> junctions;
-    private static Map<Long, Set<double[]>> graph;
+    private static Map<Long, Set<double[]>> fwdGraph;
+    private static Map<Long, Set<double[]>> bckGraph;
+    private Pair<Map, Map> graph;
 
     private long startTime;
     private long endTime;
@@ -57,6 +59,8 @@ public class MyGraph {
 
         makeDictionary(file);
 
+//        File fwdGraphDir = new File(filePrefix.concat("fwdGraph.ser"));
+//        File bckGraphDir = new File(filePrefix.concat("bckGraph.ser"));
         File graphDir = new File(filePrefix.concat("graph.ser"));
         if(graphDir.exists()){
             System.out.println("Found graph.");
@@ -64,11 +68,21 @@ public class MyGraph {
             FileInputStream fileIn = new FileInputStream(graphDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
-                graph = (HashMap) objectIn.readObject();
+                graph = (Pair<Map, Map>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
+//            FileInputStream bFileIn = new FileInputStream(bckGraphDir);
+//            FSTObjectInput bObjectIn = new FSTObjectInput(bFileIn);
+//            try {
+//                bckGraph = (HashMap) bObjectIn.readObject();
+//            } catch (ClassNotFoundException e) {
+//                e.printStackTrace();
+//            }
             timerEnd("Read graph");
+            fwdGraph = graph.getKey();
+            bckGraph = graph.getValue();
+//            graph = new Pair<>(fwdGraph, bckGraph);
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
             Calendar cal = Calendar.getInstance();
             System.out.println(sdf.format(cal.getTime()));
@@ -76,7 +90,7 @@ public class MyGraph {
         } else {
             System.out.println("No graph found, creating now.");
 
-            Map graph = makeDijkstraGraph(mapRoads, noOfEdges);
+            graph = makeDijkstraGraph(mapRoads, noOfEdges);
 
             timerStart();
             FileOutputStream fileOut = new FileOutputStream(graphDir);
@@ -149,8 +163,10 @@ public class MyGraph {
         }
     }
 
-    private Map makeDijkstraGraph(Map<Long, long[]> edges, int noOfEdges){
-        graph = new HashMap<>(noOfEdges);
+    private Pair<Map, Map> makeDijkstraGraph(Map<Long, long[]> edges, int noOfEdges){
+        fwdGraph = new HashMap<>(noOfEdges);
+        bckGraph = new HashMap<>(noOfEdges);
+
 
         timerStart();
         System.out.println("Adding connections");
@@ -159,38 +175,42 @@ public class MyGraph {
             counter++;
 //                System.out.println(((double) counter / (double) noOfEdges) * 100);
 //            System.out.println(way.getWayId());
+
             long[] wayNodes = way.getValue();
             if(wayNodes.length > 1){
                 long fstVert = wayNodes[0];
                 long lstVert = wayNodes[wayNodes.length - 1]; //could be .get(1) if we've stripped the ways
-                if(!graph.containsKey(fstVert)){
-                    graph.put(fstVert, new HashSet<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
+                if(fstVert == (Long.parseLong("2310931045")) || lstVert == (Long.parseLong("2310931045"))){
+                    System.out.println("Something ain't right here");
                 }
-                if(!graph.containsKey(lstVert)){
-                    graph.put(lstVert, new HashSet<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
+                if(!fwdGraph.containsKey(fstVert)){
+                    fwdGraph.put(fstVert, new HashSet<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
+                }
+                if(!bckGraph.containsKey(lstVert)){
+                    bckGraph.put(lstVert, new HashSet<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
                 }
                 double length = lengthOfEdge(wayNodes);
 //                    double length = 0;
-                graph.get(fstVert).add(new double[]{(double) wayNodes[wayNodes.length - 1], length, way.getKey().doubleValue()});
-                graph.get(lstVert).add(new double[]{(double) wayNodes[0], length, way.getKey().doubleValue()});
+                fwdGraph.get(fstVert).add(new double[]{(double) lstVert, length, way.getKey().doubleValue()});
+                bckGraph.get(lstVert).add(new double[]{(double) fstVert, length, way.getKey().doubleValue()});
             }
         }
         timerEnd("Creating graph");
-        return graph;
+        return new Pair<>(fwdGraph, bckGraph);
     }
 
-    public void print(){ //print graph contents
-        for(long vert : graph.keySet()){
-            Set<double[]> neighbours = graph.get(vert);
-            ArrayList<Long> neighbourNodes = new ArrayList<>();
-            for(double[] neighbour : neighbours){
-                neighbourNodes.add((long) neighbour[0]);
-            }
-//            System.out.println("Node: " + vert + " Neighbours: " + neighbourNodes.toString());
-        }
-
-        System.out.println(graph.size());
-    }
+//    public void print(){ //print graph contents
+//        for(long vert : graph.keySet()){
+//            Set<double[]> neighbours = graph.get(vert);
+//            ArrayList<Long> neighbourNodes = new ArrayList<>();
+//            for(double[] neighbour : neighbours){
+//                neighbourNodes.add((long) neighbour[0]);
+//            }
+////            System.out.println("Node: " + vert + " Neighbours: " + neighbourNodes.toString());
+//        }
+//
+//        System.out.println(graph.size());
+//    }
 
     private double lengthOfEdge(long[] edge){
         double length = 0;
@@ -300,54 +320,51 @@ public class MyGraph {
                     lastRef += w.getId();
                     String key;
                     String value;
+                    boolean oneWay = false;
+                    ONEWAY: for (int i=0 ; i<w.getKeysCount() ; i++) {
+                        key = getStringById(w.getKeys(i));
+                        value = getStringById(w.getVals(i));
+                        if (key.equals("oneway") && value.equals("true")) {
+                            oneWay = true;
+                            break ONEWAY;
+                        }
+                    }
                     for (int i=0 ; i<w.getKeysCount() ; i++) {
                         key = getStringById(w.getKeys(i));
                         value = getStringById(w.getVals(i));
-                        if(key.equals("highway")){
+                        if(value.equals("cycleway") ||
+                                (key.equals("route") && value.equals("bicycle"))){
+                            addWay(w, oneWay, lastRef);
+                        } else if(key.equals("highway")){
                             if(value.matches("motorway|motorway_link")){
-                                long[] tempWay = buildMyWay(w);
-//                                tempWay.setType(WayType.ROAD);
-//                                tempWay.setRoadType(RoadType.MOTORWAY);
-                                mapRoads.put(lastRef, tempWay);
+                                addWay(w, oneWay, lastRef);
                             } else if (value.matches("trunk|trunk_link")){
-                                long[] tempWay = buildMyWay(w);
-//                                tempWay.setType(WayType.ROAD);
-//                                tempWay.setRoadType(RoadType.TRUNK);
-                                mapRoads.put(lastRef, tempWay);
+                                addWay(w, oneWay, lastRef);
                             } else if (value.matches("primary|primary_link")){
-                                long[] tempWay = buildMyWay(w);
-//                                tempWay.setType(WayType.ROAD);
-//                                tempWay.setRoadType(RoadType.PRIMARY);
-                                mapRoads.put(lastRef, tempWay);
+                                addWay(w, oneWay, lastRef);
                             } else if (value.matches("secondary|secondary_link")){
-                                long[] tempWay = buildMyWay(w);
-//                                tempWay.setType(WayType.ROAD);
-//                                tempWay.setRoadType(RoadType.SECONDARY);
-                                mapRoads.put(lastRef, tempWay);
+                                addWay(w, oneWay, lastRef);
                             } else if (value.matches("tertiary|unclassified|residential|service|tertiary_link|road")){
-                                long[] tempWay = buildMyWay(w);
-//                                tempWay.setType(WayType.ROAD);
-//                                tempWay.setRoadType(RoadType.ROAD);
-                                mapRoads.put(lastRef, tempWay);
+                                addWay(w, oneWay, lastRef);
                             }
                         }
-//                    if(key.equals("cycleway") || value.equals("cycleway") ||
-//                            (key.equals("route") && value.equals("bicycle"))){
-//                        tempWay.setType(WayType.CYCLE);
-//                        mapCycles.add(tempWay);
-//                    }
                     }
                 }
             }
         }
 
-        private long[] buildMyWay(Way w){
-            long[] tempWay = new long[w.getRefsList().size()];;
+        private void addWay(Way w, boolean oneWay, long wayId){
+            long[] fwdWay = new long[w.getRefsList().size()];
+            long[] bckWay = new long[w.getRefsList().size()];
             long lastRef = 0;
-            int c = 0;
+            int fwdCtr = 0;
+            int bckCtr = w.getRefsCount() - 1;
             for (Long ref : w.getRefsList()) {
                 lastRef+= ref;
-                tempWay[c] = lastRef;
+                fwdWay[fwdCtr] = lastRef;
+                if(!oneWay){
+                    bckWay[bckCtr] = lastRef;
+                }
                 int wayCount;
                 if(allWayNodes.get(lastRef) != null){
                     wayCount = allWayNodes.get(lastRef);
@@ -355,18 +372,22 @@ public class MyGraph {
                     wayCount = 0;
                 }
                 allWayNodes.put(lastRef, wayCount + 1);
-                c++;
-
-//                if(allWayNodes.containsKey(lastRef)){
-//                    junctions.add(lastRef);
-//                    allWayNodes.get(lastRef).add(w.getId());
-//                } else {
-//                    ArrayList<Long> nodeWays = new ArrayList<>();
-//                    nodeWays.add(w.getId());
-//                    allWayNodes.put(lastRef, nodeWays);
-//                }
+                if(lastRef == (Long.parseLong("2310931045"))){
+                    System.out.println(w.getId());
+                    System.out.println(wayCount);
+                }
+                fwdCtr++;
+                bckCtr--;
             }
-            return tempWay;
+//            System.out.println(Arrays.toString(fwdWay));
+//            System.out.println(Arrays.toString(bckWay));
+
+            if(oneWay){
+                mapRoads.put(wayId, fwdWay);
+            }else{
+                mapRoads.put(wayId, fwdWay);
+                mapRoads.put(generateNewWayRef(), bckWay);
+            }
         }
 
         @Override
@@ -406,26 +427,13 @@ public class MyGraph {
     }
 
     private void splitWay(Long id, long[] nodes, boolean strip){
-        if(id.equals(Long.parseLong("3421829284"))){
-            System.out.println("YEEEEEHAAAAAAW COWBOY");
-        }
         for(int i = 1; i < (nodes.length - 1); i++){
             if(allWayNodes.get(nodes[i]) > 1){
-                boolean check;
-                Random rand = new Random(id);
-                Long restOfWayId;
-                do {
-                    restOfWayId = Math.abs(rand.nextLong());
-                    check = ((long) (restOfWayId.doubleValue()) != restOfWayId) || mapRoads.containsKey(restOfWayId);
-//                    System.out.println(check);
-                } while(check);
-                if(restOfWayId.equals(Long.parseLong("3421829284"))){
-                    System.out.println("YEEEEEHAAAAAAW");
+                if(nodes[i] == (Long.parseLong("2310931045"))){
+                    System.out.println("Huh");
                 }
-//                System.out.println(check);
-//                System.out.println("New id: " + restOfWayId);
+                long restOfWayId = generateNewWayRef();
                 long[] headerWayNodes = Arrays.copyOfRange(nodes, 0, i + 1);
-//                allWayNodes.get(way.getWayNodes().get(i)).add(way.wayId);
                 mapRoads.put(id, headerWayNodes);
                 splitWay(restOfWayId, Arrays.copyOfRange(nodes, i, nodes.length), strip);
                 return;
@@ -435,11 +443,15 @@ public class MyGraph {
     }
 
     public Map<Long, Set<double[]>> getGraph() {
-        return graph;
+        return fwdGraph;
     }
 
-    public Set<double[]> adj(Long v){
-        return graph.get(v);
+    public Set<double[]> fwdAdj(Long v){
+        return fwdGraph.get(v);
+    }
+
+    public Set<double[]> bckAdj(Long v){
+        return bckGraph.get(v);
     }
 
     public ArrayList<Point2D.Double> refsToNodes(ArrayList<Long> refs){
@@ -452,7 +464,7 @@ public class MyGraph {
 
     public ArrayList<Long> wayToNodes(long wayId){
         ArrayList<Long> returnNodes = new ArrayList<>();
-        System.out.println(mapRoads.containsKey(wayId));
+//        System.out.println(mapRoads.containsKey(wayId));
         long[] nodes = mapRoads.get(wayId);
         for(int i = 0; i < nodes.length; i++){
             returnNodes.add(nodes[i]);
@@ -479,5 +491,16 @@ public class MyGraph {
 
     public BTreeMap<Long, double[]> getDictionary(){
         return dictionary;
+    }
+
+    public static long generateNewWayRef(){
+        boolean check;
+        Random rand = new Random(); //time it with the id as seed, and with no seed!
+        Long restOfWayId;
+        do {
+            restOfWayId = Math.abs(rand.nextLong());
+            check = ((long) (restOfWayId.doubleValue()) != restOfWayId) || mapRoads.containsKey(restOfWayId);
+        } while(check);
+        return restOfWayId;
     }
 }

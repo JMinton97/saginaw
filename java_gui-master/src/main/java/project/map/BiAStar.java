@@ -112,7 +112,7 @@ public class BiAStar {
             long v1 = uPq.poll().getNode();
             pollTimeEnd = System.nanoTime();
             totalPollTime += (pollTimeEnd - pollTimeStart);
-            for (double[] e : myGraph.adj(v1)){
+            for (double[] e : myGraph.fwdAdj(v1)){
                 relax(v1, e, true);
                 if (vRelaxed.contains((long) e[0])) {
                     competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((long) e[0]));
@@ -135,7 +135,7 @@ public class BiAStar {
             long v2 = vPq.poll().getNode();
             pollTimeEnd = System.nanoTime();
             totalPollTime += (pollTimeEnd - pollTimeStart);
-            for (double[] e : myGraph.adj(v2)) {
+            for (double[] e : myGraph.bckAdj(v2)) {
                 relax(v2, e, false);
                 containsTimeStart = System.nanoTime();
                 if (uRelaxed.contains((long) e[0])) {
@@ -236,7 +236,7 @@ public class BiAStar {
             fileIn.close();
             objectIn.close();
         } else {
-            dj = new DijkstraLandmarks(this.myGraph, landmarks);
+            dj = new DijkstraLandmarks(this.myGraph, landmarks, true);
             distancesFrom = dj.getDistTo();
             FileOutputStream fileOut = new FileOutputStream(dfDir);
             FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
@@ -260,7 +260,7 @@ public class BiAStar {
             fileIn.close();
             objectIn.close();
         } else {
-            dj = new DijkstraLandmarks(this.myGraph, landmarks);                             // <-- need reverse graph here
+            dj = new DijkstraLandmarks(this.myGraph, landmarks, false);                             // <-- need reverse graph here
             distancesTo = dj.getDistTo();
             FileOutputStream fileOut = new FileOutputStream(dtDir);
             FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
@@ -284,30 +284,27 @@ public class BiAStar {
 
         landmarks.clear();
 
-//        landmarks.add(Long.parseLong("27103812"));
-//        landmarks.add(Long.parseLong("299818750"));
-//        landmarks.add(Long.parseLong("312674444"));
-//        landmarks.add(Long.parseLong("273662"));
-//        landmarks.add(Long.parseLong("14644591"));
-//        landmarks.add(Long.parseLong("27210725"));
-//        landmarks.add(Long.parseLong("817576914"));
-//        landmarks.add(Long.parseLong("262840382"));
-//        landmarks.add(Long.parseLong("344881575"));
-//        landmarks.add(Long.parseLong("1795462073"));
+        landmarks.add(Long.parseLong("27103812"));
+        landmarks.add(Long.parseLong("299818750"));
+        landmarks.add(Long.parseLong("312674444"));
+        landmarks.add(Long.parseLong("273662"));
+        landmarks.add(Long.parseLong("14644591"));
+        landmarks.add(Long.parseLong("27210725"));
+        landmarks.add(Long.parseLong("817576914"));
+        landmarks.add(Long.parseLong("262840382"));
+        landmarks.add(Long.parseLong("344881575"));
+        landmarks.add(Long.parseLong("1795462073"));
 
-        landmarks.add(Long.parseLong("1997249188"));
-        landmarks.add(Long.parseLong("420592228"));
-        landmarks.add(Long.parseLong("1203772336"));
-        landmarks.add(Long.parseLong("292093917"));
-        landmarks.add(Long.parseLong("629419387"));
-        landmarks.add(Long.parseLong("1161458782"));
-        landmarks.add(Long.parseLong("702241324"));
-        landmarks.add(Long.parseLong("31898581"));
-        landmarks.add(Long.parseLong("600118738"));
-        landmarks.add(Long.parseLong("268366322"));
-
-
-
+//        landmarks.add(Long.parseLong("1997249188"));
+//        landmarks.add(Long.parseLong("420592228"));
+//        landmarks.add(Long.parseLong("1203772336"));
+//        landmarks.add(Long.parseLong("292093917"));
+//        landmarks.add(Long.parseLong("629419387"));
+//        landmarks.add(Long.parseLong("1161458782"));
+//        landmarks.add(Long.parseLong("702241324"));
+//        landmarks.add(Long.parseLong("31898581"));
+//        landmarks.add(Long.parseLong("600118738"));
+//        landmarks.add(Long.parseLong("268366322"));
 
     }
 

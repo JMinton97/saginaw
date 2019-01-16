@@ -25,7 +25,7 @@ public class DijkstraLandmarks {
     public int explored;
     ArrayList<Long> landmarks;
 
-    public DijkstraLandmarks(project.map.MyGraph graph, ArrayList<Long> startNodes){
+    public DijkstraLandmarks(project.map.MyGraph graph, ArrayList<Long> startNodes, boolean forwards){
 
         distTo = new Long2ObjectOpenHashMap<double[]>();
         pq = new PriorityQueue();
@@ -46,12 +46,12 @@ public class DijkstraLandmarks {
         for(int x = 0; x < startNodes.size(); x++){
             Calendar cal = Calendar.getInstance();
             System.out.println(x + 1 + " of " + startNodes.size() + " " + sdf.format(cal.getTime()));
-            DijkstraAlgorithm(graph, startNodes.get(x), x);
+            DijkstraAlgorithm(graph, startNodes.get(x), x, forwards);
         }
 
     }
 
-    public void DijkstraAlgorithm(MyGraph graph, long startNode, int index){
+    public void DijkstraAlgorithm(MyGraph graph, long startNode, int index, boolean forwards){
 //        System.out.println();
 //        System.out.println("Start " + startNode + " Index " + index);
 
@@ -72,10 +72,18 @@ public class DijkstraLandmarks {
         while(!pq.isEmpty()){
 //            System.out.println("get");
             long v = pq.poll().getNode();
-            for (double[] e : graph.adj(v)){
+            if(forwards){
+                for (double[] e : graph.fwdAdj(v)){
 //                System.out.println("relax");
-                relax(v, e, index);
+                    relax(v, e, index);
+                }
+            } else {
+                for (double[] e : graph.bckAdj(v)){
+//                System.out.println("relax");
+                    relax(v, e, index);
+                }
             }
+
         }
         relaxTimeEnd = System.nanoTime();
 //        System.out.println("Landmark time: " + (((float) relaxTimeEnd - (float)relaxTimeStart) / 1000000000));
@@ -87,6 +95,7 @@ public class DijkstraLandmarks {
     private void relax(Long v, double[] edge, int index){
         explored++;
         long w = (long) edge[0];
+        System.out.println(w);
         double weight = edge[1];
         double distToV = ((double[]) (distTo.get(v)))[index];
         double[] distToW = (double[]) distTo.get(w);

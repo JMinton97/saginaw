@@ -128,7 +128,7 @@ class Canvas extends JPanel
 
 //		g.fillRect(0, 0, (int) paneX, (int) paneY);
 
-		System.out.println();
+//		System.out.println();
 
 		centre = model.getCentre();
 		scale = model.getScale().doubleValue();
@@ -150,15 +150,15 @@ class Canvas extends JPanel
 		modifier = (int) Math.pow(2, level - 1);
 
 		tileGrid = layers.get(modifier);
-		System.out.println("Level = " + level);
+//		System.out.println("Level = " + level);
 
 		LOOP: for(int x = 0; x < tileGrid.length; x++){
 			for(int y = 0; y < tileGrid[0].length; y++){
 				if(tileGrid[x][y].overlaps(topLeft, bottomRight)){
-					System.out.println("VISIBLE " + x + " " + y);
+//					System.out.println("VISIBLE " + x + " " + y);
 					flag = true;
 					t = tileGrid[x][y];
-					System.out.println(topLeft + " " + bottomRight);
+//					System.out.println(topLeft + " " + bottomRight);
 					p = geoToCanvas(t.getTopLeft());
 					o = geoToCanvas(topLeft);
 //					System.out.println(p);

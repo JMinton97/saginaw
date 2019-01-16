@@ -48,6 +48,8 @@ public class TestRun {
             endTime = System.nanoTime();
             System.out.println("Making graph time: " + (((float) endTime - (float)startTime) / 1000000000));
 
+            System.exit(0);
+
             src = Long.parseLong("1349207723"); //wales
             dst = Long.parseLong("707151082");
 
@@ -80,14 +82,14 @@ public class TestRun {
 //            src = Long.parseLong("1014654504"); //north to south
 //            dst = Long.parseLong("1620423227");
 
-            src = Long.parseLong("1802487895"); //france
-            dst = Long.parseLong("1338882013");
-
-            src1 = Long.parseLong("3734850968"); //france
-            dst1 = Long.parseLong("774690360");
-
-            src2 = Long.parseLong("266864590"); //france
-            dst2 = Long.parseLong("427050694");
+//            src = Long.parseLong("1802487895"); //france
+//            dst = Long.parseLong("1338882013");
+//
+//            src1 = Long.parseLong("3734850968"); //france
+//            dst1 = Long.parseLong("774690360");
+//
+//            src2 = Long.parseLong("266864590"); //france
+//            dst2 = Long.parseLong("427050694");
 
 //
 //            System.out.println("Distance: " + astar.getDistTo().get(dst));
@@ -105,14 +107,14 @@ public class TestRun {
             System.out.println("Explored: " + biastar.explored);
 
             startTime = System.nanoTime();
-            biastar.search(src1, dst1);
+            biastar.search(src, dst);
             endTime = System.nanoTime();
             System.out.println("BiAStar 2 full time: " + (((float) endTime - (float)startTime) / 1000000000));
             System.out.println("Distance: " + biastar.getDist());
             System.out.println("Explored: " + biastar.explored);
 
             startTime = System.nanoTime();
-            biastar.search(src2, dst2);
+            biastar.search(src, dst);
             endTime = System.nanoTime();
             System.out.println("BiAStar 3 full time: " + (((float) endTime - (float)startTime) / 1000000000));
             System.out.println("Distance: " + biastar.getDist());
@@ -137,20 +139,20 @@ public class TestRun {
 //            System.out.println("----------------------");
 
 
-            startTime = System.nanoTime();
-            Dijkstra dijk = new Dijkstra(graph, src, dst);
-            endTime = System.nanoTime();
-//            System.out.println("Poll time: " + ((float) dijk.totalPollTime / 1000000000));
-//            System.out.println("Add time: " + ((float) dijk.totalAddTime / 1000000000));
-//            System.out.println("Put time: " + ((float) dijk.totalPutTime / 1000000000));
-//            System.out.println("Relax time: " + ((float) dijk.totalRelaxTime / 1000000000));
-            System.out.println("Dijkstra full time: " + (((float) endTime - (float)startTime) / 1000000000));
-            System.out.println("Distance: " + dijk.getDistTo().get(dst));
-            System.out.println("Explored: " + dijk.explored);
-            ArrayList<Long> droute = dijk.getRoute();
-            dijk.clear();
-            dijk = null;
-            System.out.println("----------------------");
+//            startTime = System.nanoTime();
+//            Dijkstra dijk = new Dijkstra(graph, src, dst);
+//            endTime = System.nanoTime();
+////            System.out.println("Poll time: " + ((float) dijk.totalPollTime / 1000000000));
+////            System.out.println("Add time: " + ((float) dijk.totalAddTime / 1000000000));
+////            System.out.println("Put time: " + ((float) dijk.totalPutTime / 1000000000));
+////            System.out.println("Relax time: " + ((float) dijk.totalRelaxTime / 1000000000));
+//            System.out.println("Dijkstra full time: " + (((float) endTime - (float)startTime) / 1000000000));
+//            System.out.println("Distance: " + dijk.getDistTo().get(dst));
+//            System.out.println("Explored: " + dijk.explored);
+//            ArrayList<Long> droute = dijk.getRoute();
+//            dijk.clear();
+//            dijk = null;
+//            System.out.println("----------------------");
 
 
 //            System.out.println();

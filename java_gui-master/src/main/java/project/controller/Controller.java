@@ -179,4 +179,7 @@ public class Controller
 	public void downDoug(){
 		view.downDoug();
 	}
+
+	public void randomRoute() {
+		model.findRandomRoute(); }
 }

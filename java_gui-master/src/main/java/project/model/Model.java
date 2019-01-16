@@ -11,9 +11,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * User: Alan P. Sexton
@@ -69,23 +67,23 @@ public class Model {
 		Long src = Long.parseLong("1243657905");
 		Long dst = Long.parseLong("707151082");
 
+		src = Long.parseLong("510837046");
+		dst = Long.parseLong("3462287546");
+
 //		src = Long.parseLong("370459811"); //wolverton to sheffield
 //		dst = Long.parseLong("1014466202");
 
-		bdijk.compute(src, dst);
-		System.out.println("Distance: " + bdijk.getDist());
-
 		routeWays = bdijk.compute(src, dst);
+		System.out.println("Distance: " + bdijk.getDist());
 		routeNodes = new ArrayList<>();
 		for(Long w : routeWays){
-			System.out.println(w);
-			System.out.println(graph.wayToNodes(w));
+//			System.out.println(w);
+//			System.out.println(graph.wayToNodes(w));
 			routeNodes.addAll(graph.refsToNodes(graph.wayToNodes(w)));
-			System.out.println();
+//			System.out.println();
 		}
 		centreCoord = map.getCentre();
 		origin = map.getOrigin();
-
 	}
 
 	public BufferedImage getImage() {
@@ -249,8 +247,37 @@ public class Model {
 //		}
 	}
 
+	public void findRoute(long src, long dst){
+		routeWays = bdijk.compute(src, dst);
+		System.out.println("Distance: " + bdijk.getDist());
+		routeNodes = new ArrayList<>();
+		for(Long w : routeWays){
+//			System.out.println(w);
+//			System.out.println(graph.wayToNodes(w));
+			routeNodes.addAll(graph.refsToNodes(graph.wayToNodes(w)));
+//			System.out.println();
+		}
+	}
+
+	public void findRandomRoute(){
+		Random generator = new Random();
+		Object[] keys = graph.getGraph().keySet().toArray();
+		Object randomSrc = keys[generator.nextInt(keys.length)];
+		Object randomDst = keys[generator.nextInt(keys.length)];
+		System.out.println(randomSrc + "    " + randomDst);
+		routeWays = bdijk.compute((Long) randomSrc, (Long) randomDst);
+		System.out.println("Distance: " + bdijk.getDist());
+		routeNodes = new ArrayList<>();
+		for(Long w : routeWays){
+//			System.out.println(w);
+//			System.out.println(graph.wayToNodes(w));
+			routeNodes.addAll(graph.refsToNodes(graph.wayToNodes(w)));
+//			System.out.println();
+		}
+	}
+
 	public void zoomIn() {
-		if(zoom.compareTo(BigDecimal.valueOf(0.19)) > 0){
+		if(zoom.compareTo(BigDecimal.valueOf(0.20)) > 0){
 			if(zoom.compareTo(BigDecimal.valueOf(1.99)) > 0){
 				if(zoom.compareTo(BigDecimal.valueOf(3.99)) > 0){
 					if(zoom.compareTo(BigDecimal.valueOf(7.99)) > 0){
