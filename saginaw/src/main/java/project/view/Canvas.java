@@ -211,10 +211,9 @@ class Canvas extends JPanel
 	}
 
 	public void drawRoute(ArrayList<Point2D.Double> route, Graphics2D g){
+		route = doug.simplify(route, dougTolerance);
 
-//		route = doug.simplify(route, dougTolerance);
 		if(route.size() > 0){
-//			System.out.println("Drawing route.");
 			Path2D path = new Path2D.Double();
 			Point2D first = geoToCanvas(route.get(0));
 			path.moveTo((int) first.getX(), (int) first.getY());
@@ -235,7 +234,6 @@ class Canvas extends JPanel
 		boolean first = true;
 		for(double[] m : model.getMarkers()){
 			Point2D marker = geoToCanvas(m);
-			System.out.println(marker);
 			if(first){
 				g.drawImage(start, (int) marker.getX() - (start.getWidth() / 2), (int) marker.getY() - start.getHeight(), start.getWidth(), start.getHeight(), null, null);
 				first = false;
