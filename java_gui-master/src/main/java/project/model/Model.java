@@ -41,11 +41,15 @@ public class Model {
 	private Point2D.Double origin;
 	private double geomXD, geomYD;
 	private int imageEdge = 1024;
+	private ArrayList<double[]> markers;
 
 	private BiDijkstra bdijk;
+	private BiAStar bstar;
 	private MyGraph graph;
 	private ArrayList<Long> routeWays;
 	private ArrayList<Point2D.Double> routeNodes;
+
+	public boolean hasRoute;
 
 	public Model() {
 		x = 1;
@@ -53,6 +57,7 @@ public class Model {
 		baseScale = BigDecimal.valueOf(40000);
 		zoom = BigDecimal.valueOf(32);
 		level = 6;
+		markers = new ArrayList<>();
 
 		File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 		try {
@@ -61,27 +66,21 @@ public class Model {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		bdijk = new BiDijkstra(graph, graph.getDictionary());
+//		bdijk = new BiDijkstra(graph, graph.getDictionary());
+		bstar = new BiAStar(graph);
 
 //		Long src = Long.parseLong("1349207723"); //wales
-		Long src = Long.parseLong("1243657905");
-		Long dst = Long.parseLong("707151082");
+		Long src, dst;
 
-		src = Long.parseLong("510837046");
-		dst = Long.parseLong("3462287546");
+//		src = Long.parseLong("510837046");
+//		dst = Long.parseLong("3462287546");
 
 //		src = Long.parseLong("370459811"); //wolverton to sheffield
 //		dst = Long.parseLong("1014466202");
 
-		routeWays = bdijk.compute(src, dst);
-		System.out.println("Distance: " + bdijk.getDist());
-		routeNodes = new ArrayList<>();
-		for(Long w : routeWays){
-//			System.out.println(w);
-//			System.out.println(graph.wayToNodes(w));
-			routeNodes.addAll(graph.refsToNodes(graph.wayToNodes(w)));
-//			System.out.println();
-		}
+//		routeWays = bdijk.search(src, dst);
+//		routeWays = bstar.search(src, dst);
+//		System.out.println("Distance: " + bstar.getDist());
 		centreCoord = map.getCentre();
 		origin = map.getOrigin();
 	}
@@ -248,7 +247,7 @@ public class Model {
 	}
 
 	public void findRoute(long src, long dst){
-		routeWays = bdijk.compute(src, dst);
+		routeWays = bstar.search(src, dst);
 		System.out.println("Distance: " + bdijk.getDist());
 		routeNodes = new ArrayList<>();
 		for(Long w : routeWays){
@@ -265,8 +264,8 @@ public class Model {
 		Object randomSrc = keys[generator.nextInt(keys.length)];
 		Object randomDst = keys[generator.nextInt(keys.length)];
 		System.out.println(randomSrc + "    " + randomDst);
-		routeWays = bdijk.compute((Long) randomSrc, (Long) randomDst);
-		System.out.println("Distance: " + bdijk.getDist());
+		routeWays = bstar.search((Long) randomSrc, (Long) randomDst);
+		System.out.println("Distance: " + bstar.getDist());
 		routeNodes = new ArrayList<>();
 		for(Long w : routeWays){
 //			System.out.println(w);
@@ -372,4 +371,29 @@ public class Model {
 		return map;
 	}
 
+	public void addMarker(double[] location){
+		if(markers.size() > 1){
+			markers.clear();
+		}
+		markers.add(new double[]{location[1], location[0]});
+		findRoute();
+	}
+
+	public ArrayList<double[]> getMarkers() {
+		return markers;
+	}
+
+	public void findRoute() {
+		if(markers.size() > 1){
+			hasRoute = true;
+			long src = graph.findClosest(markers.get(0));
+			long dst = graph.findClosest(markers.get(1));
+			routeWays = bstar.search(src, dst);
+			routeNodes = new ArrayList<>();
+			System.out.println("ROUTE LENGTH" + routeWays.size());
+			for(Long w : routeWays){
+				routeNodes.addAll(graph.refsToNodes(graph.wayToNodes(w)));
+			}
+		}
+	}
 }

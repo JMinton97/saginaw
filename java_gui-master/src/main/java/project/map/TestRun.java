@@ -11,7 +11,7 @@ public class TestRun {
 
     public static void main(String[] args) throws InterruptedException{
         long startTime, endTime;
-        String region = "wales";
+        String region = "england";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 
@@ -48,6 +48,11 @@ public class TestRun {
             endTime = System.nanoTime();
             System.out.println("Making graph time: " + (((float) endTime - (float)startTime) / 1000000000));
 
+            startTime = System.nanoTime();
+            System.out.println(graph.findClosest(new double[]{53.274129, -3.880885}));
+            endTime = System.nanoTime();
+            System.out.println("Finding nearest time: " + (((float) endTime - (float)startTime) / 1000000000));
+
             System.exit(0);
 
             src = Long.parseLong("1349207723"); //wales
@@ -63,8 +68,8 @@ public class TestRun {
 //            dst = Long.parseLong("59838278");
 
 
-            src = Long.parseLong("1107401572"); //brum
-            dst = Long.parseLong("1635424953");
+//            src = Long.parseLong("1107401572"); //brum
+//            dst = Long.parseLong("1635424953");
 
 //            src = Long.parseLong("548050322"); //england
 //            dst = Long.parseLong("513499");
@@ -76,8 +81,8 @@ public class TestRun {
 //            src = Long.parseLong("548050322"); //brum
 //            dst = Long.parseLong("280150290");
 
-            src = Long.parseLong("370459811"); //wolverton to sheffield
-            dst = Long.parseLong("1014466202");
+//            src = Long.parseLong("370459811"); //wolverton to sheffield
+//            dst = Long.parseLong("1014466202");
 
 //            src = Long.parseLong("1014654504"); //north to south
 //            dst = Long.parseLong("1620423227");
@@ -99,6 +104,7 @@ public class TestRun {
 
 
             BiAStar biastar = new BiAStar(graph);
+            System.out.println("Search");
             startTime = System.nanoTime();
             biastar.search(src, dst);
             endTime = System.nanoTime();

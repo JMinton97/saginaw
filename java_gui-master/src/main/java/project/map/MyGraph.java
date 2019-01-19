@@ -22,6 +22,7 @@ import javafx.util.Pair;
 import org.mapdb.*;
 import org.nustaq.serialization.FSTObjectInput;
 import org.nustaq.serialization.FSTObjectOutput;
+import project.kdtree.Tree;
 
 public class MyGraph {
     //    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
@@ -33,6 +34,7 @@ public class MyGraph {
     private static Map<Long, Set<double[]>> fwdGraph;
     private static Map<Long, Set<double[]>> bckGraph;
     private Pair<Map, Map> graph;
+    private Tree tree;
 
     private long startTime;
     private long endTime;
@@ -62,6 +64,7 @@ public class MyGraph {
 //        File fwdGraphDir = new File(filePrefix.concat("fwdGraph.ser"));
 //        File bckGraphDir = new File(filePrefix.concat("bckGraph.ser"));
         File graphDir = new File(filePrefix.concat("graph.ser"));
+        File treeDir = new File(filePrefix.concat("tree.ser"));
         if(graphDir.exists()){
             System.out.println("Found graph.");
             timerStart();
@@ -72,13 +75,14 @@ public class MyGraph {
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
-//            FileInputStream bFileIn = new FileInputStream(bckGraphDir);
-//            FSTObjectInput bObjectIn = new FSTObjectInput(bFileIn);
-//            try {
-//                bckGraph = (HashMap) bObjectIn.readObject();
-//            } catch (ClassNotFoundException e) {
-//                e.printStackTrace();
-//            }
+            FileInputStream treeIn = new FileInputStream(treeDir);
+            FSTObjectInput treeObjectIn = new FSTObjectInput(treeIn);
+            try {
+                tree = (Tree) treeObjectIn.readObject();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+
             timerEnd("Read graph");
             fwdGraph = graph.getKey();
             bckGraph = graph.getValue();
@@ -90,12 +94,16 @@ public class MyGraph {
         } else {
             System.out.println("No graph found, creating now.");
 
-            graph = makeDijkstraGraph(mapRoads, noOfEdges);
+            graph = makeDijkstraGraph(mapRoads, mapRoads.size());
 
             timerStart();
             FileOutputStream fileOut = new FileOutputStream(graphDir);
             FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
             objectOut.writeObject(graph);
+            objectOut.close();
+            fileOut = new FileOutputStream(treeDir);
+            objectOut = new FSTObjectOutput(fileOut);
+            objectOut.writeObject(tree);
             objectOut.close();
             timerEnd("Writing graph");
         }
@@ -167,13 +175,14 @@ public class MyGraph {
         fwdGraph = new HashMap<>(noOfEdges);
         bckGraph = new HashMap<>(noOfEdges);
 
-
         timerStart();
         System.out.println("Adding connections");
         int counter = 0;
         for(Map.Entry<Long, long[]> way : edges.entrySet()){ //iterate through every edge and add neighbours to graph vertices accordingly
             counter++;
-//                System.out.println(((double) counter / (double) noOfEdges) * 100);
+            if((counter % 100000) == 0){
+                System.out.println(((double) counter / (double) noOfEdges) * 100);
+            }
 //            System.out.println(way.getWayId());
 
             long[] wayNodes = way.getValue();
@@ -193,10 +202,43 @@ public class MyGraph {
 //                    double length = 0;
                 fwdGraph.get(fstVert).add(new double[]{(double) lstVert, length, way.getKey().doubleValue()});
                 bckGraph.get(lstVert).add(new double[]{(double) fstVert, length, way.getKey().doubleValue()});
+
+//                double[] xy = dictionary.get(fstVert);
+//                System.out.println(xy[0] + " " + xy[1]);
+//                if(!tree.contains(xy)){
+//                    tree.insert(fstVert, xy);
+//                }
             }
         }
         timerEnd("Creating graph");
+        makeTree();
         return new Pair<>(fwdGraph, bckGraph);
+    }
+
+    private void makeTree(){
+        tree = new Tree();
+        ArrayList<Long> nodes = new ArrayList<>();
+        nodes.addAll(fwdGraph.keySet());
+        Random rand = new Random();
+        boolean vertical = true;
+        while(!nodes.isEmpty()){
+//            System.out.println(nodes.size());
+            ArrayList<Pair<Long, Integer>> medians = new ArrayList<>();
+            for(int i = 0; i < 10; i++){
+                int r = rand.nextInt((nodes.size()));
+                medians.add(new Pair<>(nodes.get(r), r));
+            }
+            if(vertical){
+                Collections.sort(medians, new SortByLat());
+
+            } else {
+                Collections.sort(medians, new SortByLong());
+            }
+            vertical = !vertical;
+            tree.insert(medians.get(5).getKey(), dictionary.get(medians.get(5).getKey()));
+//            System.out.println(medians.get(5).getValue());
+            nodes.remove((int) medians.get(5).getValue());
+        }
     }
 
 //    public void print(){ //print graph contents
@@ -225,10 +267,10 @@ public class MyGraph {
 
     private double haversineDistance(double[] nodeA, double[] nodeB){
         double rad = 6371000; //radius of earth in metres
-        double aLatRadians = Math.toRadians(nodeA[0]); //0 = latitude, 1 = longitude
-        double bLatRadians = Math.toRadians(nodeB[0]);
-        double deltaLatRadians = Math.toRadians(nodeB[0] - nodeA[0]);
-        double deltaLongRadians = Math.toRadians(nodeB[1] - nodeA[1]);
+        double aLatRadians = Math.toRadians(nodeA[1]); //0 = latitude, 1 = longitude
+        double bLatRadians = Math.toRadians(nodeB[1]);
+        double deltaLatRadians = Math.toRadians(nodeB[1] - nodeA[1]);
+        double deltaLongRadians = Math.toRadians(nodeB[0] - nodeA[0]);
 
         double x = Math.sin(deltaLatRadians/2) * Math.sin(deltaLatRadians/2) +
                 Math.cos(aLatRadians) * Math.cos(bLatRadians) *
@@ -290,8 +332,8 @@ public class MyGraph {
 //                        tempDense.setLati(parseLat(lastLat));
 //                        tempDense.setLongi(parseLon(lastLon));
 //                        tempDense.setNodeId(lastId);
-                        tempDense[0] = parseLat(lastLat);
-                        tempDense[1] = parseLon(lastLon);
+                        tempDense[0] = parseLon(lastLon);
+                        tempDense[1] = parseLat(lastLat);
                         tempDense[2] = lastId;
                         dictionary.put(lastId, tempDense);
 //                        counter++;
@@ -502,5 +544,25 @@ public class MyGraph {
             check = ((long) (restOfWayId.doubleValue()) != restOfWayId) || mapRoads.containsKey(restOfWayId);
         } while(check);
         return restOfWayId;
+    }
+
+    public long findClosest(double[] loc){
+        return tree.nearest(loc);
+    }
+
+    class SortByLong implements Comparator<Pair<Long, Integer>>
+    {
+        public int compare(Pair<Long, Integer> a, Pair<Long, Integer> b)
+        {
+            return (int) (dictionary.get(a.getKey())[0] - dictionary.get(b.getKey())[0]);
+        }
+    }
+
+    class SortByLat implements Comparator<Pair<Long, Integer>>
+    {
+        public int compare(Pair<Long, Integer> a, Pair<Long, Integer> b)
+        {
+            return (int) (dictionary.get(a.getKey())[1] - dictionary.get(b.getKey())[1]);
+        }
     }
 }

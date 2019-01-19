@@ -20,8 +20,10 @@ public class BiAStar {
     long startTime, endTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, arelaxTimeStart, arelaxTimeEnd, atotalRelaxTime, containsTimeStart, containsTimeEnd, totalContainsTime, pollTimeStart, pollTimeEnd, totalPollTime, relaxPutTimeStart, relaxPutTimeEnd, totalRelaxPutTime;
     THashMap<Long, Double> uDistTo;
     THashMap<Long, Long> uEdgeTo;
+    THashMap<Long, Long> uNodeTo;
     THashMap<Long, Double> vDistTo;
     THashMap<Long, Long> vEdgeTo;
+    THashMap<Long, Long> vNodeTo;
     PriorityQueue<DijkstraEntry> uPq;
     PriorityQueue<DijkstraEntry> vPq;
     long start, end;
@@ -45,31 +47,41 @@ public class BiAStar {
             ie.printStackTrace();
         }
 
-        Map<Long, Set<double[]>> graph = myGraph.getGraph();
+        MyGraph graph = myGraph;
 
-        size = graph.size();
+//        Map<Long, Set<double[]>> graph = myGraph.getGraph();
+
+        size = graph.getGraph().size();
 
         uDistTo = new THashMap<>(size);
         uEdgeTo = new THashMap<>(size);
+        uNodeTo = new THashMap<>(size);
         vDistTo = new THashMap<>(size);
         vEdgeTo = new THashMap<>(size);
+        vNodeTo = new THashMap<>(size);
 
     }
 
     public ArrayList<Long> search(long start, long end){
+
+        System.out.println("From " + start + " to " + end);
+
         explored = 0;
 
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
         Calendar cal = Calendar.getInstance();
 
-        System.out.println(sdf.format(cal.getTime()));
-        cal = Calendar.getInstance();
-        System.out.println(sdf.format(cal.getTime()));
+//        System.out.println(sdf.format(cal.getTime()));
+//        cal = Calendar.getInstance();
+//        System.out.println(sdf.format(cal.getTime()));
 
         uDistTo.clear();
         uEdgeTo.clear();
+        uNodeTo.clear();
         vDistTo.clear();
         vEdgeTo.clear(); //.clear() to retain size
+        vNodeTo.clear();
+
 
 
 //        timerStart();
@@ -122,13 +134,15 @@ public class BiAStar {
                     }
                 }
                 if (vRelaxed.contains(v1)) {
-                    System.out.println("truth");
+//                    System.out.println("truth");
                     if((uDistTo.get(v1) + vDistTo.get(v1)) < bestSeen){
                         overlapNode = v1;
                     } else {
                         overlapNode = bestPathNode;
                     }
-                    break OUTER;
+                    long endTime = System.nanoTime();
+                    System.out.println("Inner Bi-AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
+                    return getRouteAsWays();
                 }
             }
             pollTimeStart = System.nanoTime();
@@ -149,13 +163,15 @@ public class BiAStar {
                 totalContainsTime += (containsTimeEnd - containsTimeStart);
                 containsTimeStart = System.nanoTime();
                 if (uRelaxed.contains(v2)) { //FINAL TERMINATION
-                    System.out.println("truth");
+//                    System.out.println("truth");
                     if((uDistTo.get(v2) + vDistTo.get(v2)) < bestSeen){
                         overlapNode = v2;
                     } else {
                         overlapNode = bestPathNode;
                     }
-                    break OUTER;
+                    long endTime = System.nanoTime();
+                    System.out.println("Inner Bi-AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
+                    return getRouteAsWays();
                 }
                 containsTimeEnd = System.nanoTime();
                 totalContainsTime += (containsTimeEnd - containsTimeStart);
@@ -163,7 +179,8 @@ public class BiAStar {
         }
         long endTime = System.nanoTime();
         System.out.println("Inner Bi-AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
-        return getRoute();
+        System.out.println("No route found.");
+        return new ArrayList<>();
     }
 
     private void relax(Long x, double[] edge, boolean u){
@@ -171,13 +188,15 @@ public class BiAStar {
         explored++;
         long w = (long) edge[0];
         double weight = edge[1];
+        double wayId = edge[2];
         if(u){
             uRelaxed.add(x);
             double distToX = uDistTo.getOrDefault(x, Double.MAX_VALUE);
             if (uDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
                 relaxPutTimeStart = System.nanoTime();
                 uDistTo.put(w, distToX + weight);
-                uEdgeTo.put(w, x); //should be 'nodeBefore'
+                uNodeTo.put(w, x); //should be 'nodeBefore'
+                uEdgeTo.put(w, (long) wayId); //should be 'nodeBefore'
                 relaxPutTimeEnd = System.nanoTime();
                 totalRelaxPutTime += (relaxPutTimeEnd - relaxPutTimeStart);
                 arelaxTimeStart = System.nanoTime();
@@ -191,7 +210,8 @@ public class BiAStar {
             if (vDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
                 relaxPutTimeStart = System.nanoTime();
                 vDistTo.put(w, distToX + weight);
-                vEdgeTo.put(w, x); //should be 'nodeBefore'
+                vNodeTo.put(w, x); //should be 'nodeBefore'
+                vEdgeTo.put(w, (long) wayId); //should be 'nodeBefore'
                 relaxPutTimeEnd = System.nanoTime();
                 totalRelaxPutTime += (relaxPutTimeEnd - relaxPutTimeStart);
                 arelaxTimeStart = System.nanoTime();
@@ -282,18 +302,18 @@ public class BiAStar {
             System.out.println(landmarks.get(x));
         }
 
-        landmarks.clear();
+//        landmarks.clear();
 
-        landmarks.add(Long.parseLong("27103812"));
-        landmarks.add(Long.parseLong("299818750"));
-        landmarks.add(Long.parseLong("312674444"));
-        landmarks.add(Long.parseLong("273662"));
-        landmarks.add(Long.parseLong("14644591"));
-        landmarks.add(Long.parseLong("27210725"));
-        landmarks.add(Long.parseLong("817576914"));
-        landmarks.add(Long.parseLong("262840382"));
-        landmarks.add(Long.parseLong("344881575"));
-        landmarks.add(Long.parseLong("1795462073"));
+//        landmarks.add(Long.parseLong("27103812"));
+//        landmarks.add(Long.parseLong("299818750"));
+//        landmarks.add(Long.parseLong("312674444"));
+//        landmarks.add(Long.parseLong("273662"));
+//        landmarks.add(Long.parseLong("14644591"));
+//        landmarks.add(Long.parseLong("27210725"));
+//        landmarks.add(Long.parseLong("817576914"));
+//        landmarks.add(Long.parseLong("262840382"));
+//        landmarks.add(Long.parseLong("344881575"));
+//        landmarks.add(Long.parseLong("1795462073"));
 
 //        landmarks.add(Long.parseLong("1997249188"));
 //        landmarks.add(Long.parseLong("420592228"));
@@ -372,6 +392,37 @@ public class BiAStar {
             node = vEdgeTo.get(node);
             route.add(node);
         }
+        return route;
+    }
+
+    public ArrayList<Long> getRouteAsWays(){
+        long node = overlapNode;
+        ArrayList<Long> route = new ArrayList<>();
+        try{
+//            System.out.println("GETROUTEASWAYS");
+            long way = 0;
+            while(node != start && node != end){
+//            System.out.println(node + ",");
+                way = uEdgeTo.get(node);
+                node = uNodeTo.get(node);
+//            System.out.println(way);
+                route.add(way);
+            }
+
+            Collections.reverse(route);
+            node = overlapNode;
+            while(node != start && node != end){
+//            System.out.println(node + ".");
+                way = vEdgeTo.get(node);
+                node = vNodeTo.get(node);
+//            System.out.println(way);
+                route.add(way);
+            }
+
+        }catch(NullPointerException n){
+            System.out.println("Null: " + node);
+        }
+//        System.out.println(route.size());
         return route;
     }
 

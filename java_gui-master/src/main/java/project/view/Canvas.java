@@ -53,6 +53,8 @@ class Canvas extends JPanel
 	private DouglasPeucker doug;
 	private double dougTolerance;
 
+	private BufferedImage start, end;
+
 	/**
 	 * The default constructor should NEVER be called. It has been made private
 	 * so that no other class can create a Canvas except by initialising it
@@ -89,6 +91,17 @@ class Canvas extends JPanel
 		layers = new HashMap<Integer, Tile[][]>();
 		imageEdge = model.getImageEdge();
 
+		try{
+			String filename = "res/icon/start.png";
+			File inputfile = new File(filename);
+			start = ImageIO.read(inputfile);
+			filename = "res/icon/finish.png";
+			inputfile = new File(filename);
+			end = ImageIO.read(inputfile);
+		}catch(IOException e){
+			System.out.println("Failed image load.");
+		}
+
 		xDimension = model.getMap().getTileWidth();
 		yDimension = model.getMap().getTileHeight();
 		this.scale = model.getScale().doubleValue();
@@ -121,30 +134,17 @@ class Canvas extends JPanel
 	{
 		super.paintComponent(g);
 
-		// Using g or g2, draw on the full size "canvas":
-		Graphics2D g2 = (Graphics2D) g;
-
-//		Graphics g = this.getGraphics();
-
-//		g.fillRect(0, 0, (int) paneX, (int) paneY);
-
-//		System.out.println();
-
 		centre = model.getCentre();
 		scale = model.getScale().doubleValue();
 		zoom = model.getZ().doubleValue();
 		topLeft = new Point2D.Double((centre.getX() - (((paneX / 2) * zoom) / scale)), (centre.getY() + (((paneY / 2) * zoom) / scale)));
 		bottomRight = new Point2D.Double((centre.getX() + (((paneX / 2) * zoom) / scale)), (centre.getY() - (((paneY / 2) * zoom) / scale)));
-//		System.out.println(topLeft.getX() + ", " + topLeft.getY() + "   " + bottomRight.getX() + ", " + bottomRight.getY());
-//		System.out.println("EDGE " + (topLeft.getY() - bottomRight.getY()));
+
 
 		Tile t;
-		Point2D.Double p, o;
-
-//		System.out.println("ayyy");
+		Point2D.Double p, tl;
 
 		boolean flag = true;											//would it be more efficient to declare this outside the method? Ask generally!!!
-
 
 		level = model.getLevel();
 		modifier = (int) Math.pow(2, level - 1);
@@ -160,11 +160,10 @@ class Canvas extends JPanel
 					t = tileGrid[x][y];
 //					System.out.println(topLeft + " " + bottomRight);
 					p = geoToCanvas(t.getTopLeft());
-					o = geoToCanvas(topLeft);
 //					System.out.println(p);
-					g.drawImage(t.getImage(), (int) ((p.getX() - o.getX()) / zoom), (int) ((p.getY() - o.getY()) / zoom), (int) (imageEdge / (zoom / modifier)), (int) (imageEdge / (zoom / modifier)), null);
+					g.drawImage(t.getImage(), (int) p.getX(), (int) p.getY(), (int) (imageEdge / (zoom / modifier)), (int) (imageEdge / (zoom / modifier)), null);
 					g.setColor(Color.RED);
-					g.drawRect((int) ((p.getX() - o.getX()) / zoom), (int) ((p.getY() - o.getY())/zoom), (int) (imageEdge / (zoom / modifier)), (int) (imageEdge / (zoom / modifier)));
+					g.drawRect((int) p.getX(), (int) p.getY(), (int) (imageEdge / (zoom / modifier)), (int) (imageEdge / (zoom / modifier)));
 //					System.out.println(o.getX() + ", " + o.getY() + "    " + p.getX() + ", " + p.getY());
 				}
 			}
@@ -174,10 +173,15 @@ class Canvas extends JPanel
 		g.drawString(String.valueOf(centre.getX()) + " " + String.valueOf(centre.getY()), 50, 100);
 		g.drawString(String.valueOf(dougTolerance), 50, 150);
 
-		drawRoute(model.getRoute(), (Graphics2D) g);
+		drawMarkers((Graphics2D) g);
 
+		if(model.hasRoute){
+			drawRoute(model.getRoute(), (Graphics2D) g);
+		}
 
-		//
+		g.setColor(Color.RED);
+		((Graphics2D) g).setStroke(new BasicStroke(6));
+
 		// The ViewPort is the part of the canvas that is displayed.
 		// By scrolling the ViewPort, you move it across the full size canvas,
 		// showing only the ViewPort sized window of the canvas at any one time.
@@ -206,82 +210,57 @@ class Canvas extends JPanel
 		return model.getDimensions();
 	}
 
-	public void updateRegion(){
-		int x = model.getX();
-		int y = model.getY();
-		int z = 1;
-//		BufferedImage bi = ImageIO.read(new File("draw/".concat(model.getRegion()).concat("/").concat(z).concat("/").concat()))
-		try {
-			System.out.println("draw/" + model.getRegion() + "/" + z + "/" + x + "-" + y + ".png");
-			long startTime = System.nanoTime();
-			image = ImageIO.read(new File("draw/" + model.getRegion() + "/" + z + "/" + x + "-" + y));
-			long endTime = System.nanoTime();
-			System.out.println("Load: " + (((float) endTime - (float)startTime) / 1000000000));
-		} catch (IOException e) {
-			e.printStackTrace();
-			return;
-		}
-	}
-
-	public void update() {
-//		System.out.println("UPDATE!");
-
-		//use a grid of Tile objects - iterate through on each update, loading in any needed or 'nearly' needed, removing those not needed.
-
-
-
-//		System.out.println("ahh");
-
-////		System.out.println(topLeft.getX() + ", " + x + "  |  " + topLeft.getY() + ", " + y);
-//
-//
-//
-//
-
-//
-//		double imageOrigX = origin.getX() + (500 * (x + 1));
-//		double imageOrigY = origin.getY() + (500 * (y + 1));
-//		double paneOrigX = (topLeft.getX() - origin.getX()) * scale;
-//		double paneOrigY = (origin.getY() - topLeft.getY()) * scale;
-//
-////		System.out.println(imageOrigX + " " + imageOrigY);
-//		g.drawImage(tileGrid[x][y], (int) (paneOrigX - imageOrigX), (int) (paneOrigY - imageOrigY), 500, 500, null);
-//
-//		System.out.println((paneOrigX - imageOrigX) + "    " + (paneOrigY - imageOrigY));
-
-	}
-
 	public void drawRoute(ArrayList<Point2D.Double> route, Graphics2D g){
 
 //		route = doug.simplify(route, dougTolerance);
-
-		Point2D o = geoToCanvas(topLeft);
-		Path2D path = new Path2D.Double();
-		Point2D first = geoToCanvas(route.get(0));
-		path.moveTo((int) Math.round((first.getX() - o.getX()) / zoom), (int) Math.round((first.getY()  - o.getY()) / zoom));
-		for(Point2D.Double point : route){
-			point = geoToCanvas(point);
-			path.lineTo((int) Math.round((point.getX() - o.getX()) / zoom), (int) Math.round((point.getY()  - o.getY()) / zoom));
+		if(route.size() > 0){
+//			System.out.println("Drawing route.");
+			Path2D path = new Path2D.Double();
+			Point2D first = geoToCanvas(route.get(0));
+			path.moveTo((int) first.getX(), (int) first.getY());
+			for(Point2D.Double point : route){
+				point = geoToCanvas(point);
+				path.lineTo((int) point.getX(), (int) point.getY());
+			}
+			g.setColor(Color.RED.darker());
+			g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+			g.draw(path);
+			g.setColor(Color.RED);
+			g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+			g.draw(path);
 		}
-		g.setColor(Color.RED.darker());
-		g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-		g.draw(path);
-		g.setColor(Color.RED);
-		g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-		g.draw(path);
+	}
 
+	public void drawMarkers(Graphics2D g){
+		boolean first = true;
+		for(double[] m : model.getMarkers()){
+			Point2D marker = geoToCanvas(m);
+			System.out.println(marker);
+			if(first){
+				g.drawImage(start, (int) marker.getX() - (start.getWidth() / 2), (int) marker.getY() - start.getHeight(), start.getWidth(), start.getHeight(), null, null);
+				first = false;
+			} else {
+				g.drawImage(end, (int) marker.getX() - (end.getWidth() / 2), (int) marker.getY() - end.getHeight(), end.getWidth(), end.getHeight(), null, null);
+			}
+		}
 	}
 
 	public Point2D.Double geoToCanvas(Point2D geoCoord){
-//		System.out.println(scale);
-		Double x = origin.getX() + (Math.abs(geoCoord.getX() - origin.getX()) * scale);
-		Double y = origin.getY() + (Math.abs(geoCoord.getY() - origin.getY()) * scale);
-//		System.out.println("Here" + (origin.getY() + Math.abs(geoCoord.getY() - origin.getY()) * scale));
+		Double x = (geoCoord.getX() - topLeft.getX()) * (scale / zoom);
+		Double y = (topLeft.getY() - geoCoord.getY()) * (scale / zoom);
 		return new Point2D.Double(x, y);
 	}
 
-	public Point2D.Double canvasToGeo(Point2D canvasCoord){
-		return new Point2D.Double(-1, -1);
+	public Point2D.Double geoToCanvas(double[] geoCoord){
+		Double x = (geoCoord[1] - topLeft.getX()) * (scale / zoom);
+		Double y = (topLeft.getY() - geoCoord[0]) * (scale / zoom);
+		return new Point2D.Double(x, y);
+	}
+
+	public double[] canvasToGeo(int x, int y) {
+		double geoX = topLeft.getX() + (x / (scale / zoom));
+		double geoY = topLeft.getY() - (y / (scale / zoom));
+		return new double[]{geoX, geoY};
 	}
 
 	public void upDoug(){
@@ -291,5 +270,10 @@ class Canvas extends JPanel
 	public void downDoug(){
 		dougTolerance /= 1.25;
 	}
+
+	public double[] getClickCoordinate(int x, int y){
+		return canvasToGeo(x, y);
+	}
+
 
 }

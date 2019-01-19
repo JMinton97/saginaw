@@ -52,7 +52,7 @@ public class BiDijkstra {
 
     }
 
-    public ArrayList<Long> compute(Long startNode, Long endNode){
+    public ArrayList<Long> search(Long startNode, Long endNode){
 
         overlapNode = null;
 

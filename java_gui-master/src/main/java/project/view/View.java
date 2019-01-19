@@ -93,19 +93,12 @@ public class View extends JFrame
 		pack();
 		setBounds(0, 0, 700, 800);
 
-		updateRegion();
-
 		canvas.grabFocus();
 	}
 
 	public void adaptToNewImage()
 	{
 //		setCanvasSize();
-	}
-
-	public void updateRegion() {
-		canvas.update();
-//		repaint();
 	}
 
 	/**
@@ -138,5 +131,9 @@ public class View extends JFrame
 
 	public void downDoug(){
 		canvas.downDoug();
+	}
+
+	public double[] getClickCoordinate(int x, int y){
+		return canvas.getClickCoordinate(x, y);
 	}
 }

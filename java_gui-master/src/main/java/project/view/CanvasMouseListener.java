@@ -54,14 +54,20 @@ class CanvasMouseListener implements MouseInputListener
 //			}
 //			g.setColor(col);
 
-			controller.moveMap(x2 - x1, y2 - y1);
-//			view.getCanvas().repaint();
+//			controller.moveMap(x2 - x1, y2 - y1);
+			view.getCanvas().repaint();
 		}
 	}
 
 	@Override
 	public void mouseClicked(MouseEvent e)
 	{
+		if(e.getButton() == 3){
+			double[] loc = view.getClickCoordinate(e.getX(), e.getY());
+			System.out.println(loc[0] + " " + loc[1]);
+			model.addMarker(loc);
+			view.repaint();
+		}
 	}
 
 	@Override
@@ -84,20 +90,6 @@ class CanvasMouseListener implements MouseInputListener
 		mouseDown = false;
 		x2 = e.getX();
 		y2 = e.getY();
-//		if (x1 <= x2)
-//		{
-//			if (y1 <= y2)
-//				controller.addRect(new Rectangle(x1, y1, x2 - x1, y2 - y1));
-//			else
-//				controller.addRect(new Rectangle(x1, y2, x2 - x1, y1 - y2));
-//		}
-//		else
-//		{
-//			if (y1 <= y2)
-//				controller.addRect(new Rectangle(x2, y1, x1 - x2, y2 - y1));
-//			else
-//				controller.addRect(new Rectangle(x2, y2, x1 - x2, y1 - y2));
-//		}
 
 		controller.moveMap(x2 - x1, y2 - y1);
 	}
