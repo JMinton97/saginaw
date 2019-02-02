@@ -158,9 +158,14 @@ public class Controller
 	};
 
 	public void moveMap(int x, int y){
-		model.move(x, y);
+		model.moveMap(x, y);
 //		view.updateRegion();
 	}
+
+//	public void moveRoute(int x, int y){
+//        double[] loc = view.getClickCoordinate(e.getX(), e.getY());
+//	    model.addPivot(loc);
+//	}
 
 	public void zoomOut(){
 		model.zoomOut();
@@ -170,6 +175,10 @@ public class Controller
 	public void zoomIn(){
 		model.zoomIn();
 //		view.updateRegion();
+	}
+
+	public void clearMarkers(){
+		model.clearMarkers();
 	}
 
 	public void upDoug(){

@@ -44,8 +44,6 @@ public class MyGraph {
     Set<long[]> edges = new HashSet<>();
     int noOfEdges;
 
-
-
     public MyGraph(File file, String region) throws IOException {
 
         filePrefix = "files//".concat(region + "//");
@@ -63,30 +61,47 @@ public class MyGraph {
 
 //        File fwdGraphDir = new File(filePrefix.concat("fwdGraph.ser"));
 //        File bckGraphDir = new File(filePrefix.concat("bckGraph.ser"));
-        File graphDir = new File(filePrefix.concat("graph.ser"));
+        File fwdGraphDir = new File(filePrefix.concat("fwdGraph.ser"));
+        File bckGraphDir = new File(filePrefix.concat("bckGraph.ser"));
         File treeDir = new File(filePrefix.concat("tree.ser"));
-        if(graphDir.exists()){
+        if(fwdGraphDir.exists()){
             System.out.println("Found graph.");
             timerStart();
-            FileInputStream fileIn = new FileInputStream(graphDir);
+            FileInputStream fileIn = new FileInputStream(fwdGraphDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
-                graph = (Pair<Map, Map>) objectIn.readObject();
+                fwdGraph = (Map<Long, Set<double[]>>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
-            FileInputStream treeIn = new FileInputStream(treeDir);
-            FSTObjectInput treeObjectIn = new FSTObjectInput(treeIn);
+            fileIn = new FileInputStream(bckGraphDir);
+            objectIn = new FSTObjectInput(fileIn);
             try {
-                tree = (Tree) treeObjectIn.readObject();
+                bckGraph = (Map<Long, Set<double[]>>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
 
             timerEnd("Read graph");
-            fwdGraph = graph.getKey();
-            bckGraph = graph.getValue();
-//            graph = new Pair<>(fwdGraph, bckGraph);
+
+            if(treeDir.exists()){
+                System.out.println("Found tree.");
+                FileInputStream treeIn = new FileInputStream(treeDir);
+                FSTObjectInput treeObjectIn = new FSTObjectInput(treeIn);
+                try {
+                    tree = (Tree) treeObjectIn.readObject();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                makeTree();
+                timerStart();
+                FileOutputStream fileOut = new FileOutputStream(treeDir);
+                FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
+                objectOut.writeObject(tree);
+                objectOut.close();
+                timerEnd("Writing tree");
+            }
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
             Calendar cal = Calendar.getInstance();
             System.out.println(sdf.format(cal.getTime()));
@@ -97,15 +112,28 @@ public class MyGraph {
             graph = makeDijkstraGraph(mapRoads, mapRoads.size());
 
             timerStart();
-            FileOutputStream fileOut = new FileOutputStream(graphDir);
+            FileOutputStream fileOut = new FileOutputStream(fwdGraphDir);
             FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
-            objectOut.writeObject(graph);
+            objectOut.writeObject(fwdGraph);
             objectOut.close();
+
+            fileOut = new FileOutputStream(bckGraphDir);
+            objectOut = new FSTObjectOutput(fileOut);
+            objectOut.writeObject(bckGraph);
+            objectOut.close();
+
+            timerEnd("Writing graph");
+
+            makeTree();
+
+            timerStart();
             fileOut = new FileOutputStream(treeDir);
             objectOut = new FSTObjectOutput(fileOut);
             objectOut.writeObject(tree);
             objectOut.close();
-            timerEnd("Writing graph");
+            timerEnd("Writing tree");
+
+
         }
     }
 
@@ -211,34 +239,78 @@ public class MyGraph {
             }
         }
         timerEnd("Creating graph");
-        makeTree();
         return new Pair<>(fwdGraph, bckGraph);
     }
 
     private void makeTree(){
-        tree = new Tree();
+
+        long median = 0;
+        long sort = 0;
+        long insert = 0;
+        long remove = 0;
+
+        timerStart();
+        tree = new Tree(40);
         ArrayList<Long> nodes = new ArrayList<>();
         nodes.addAll(fwdGraph.keySet());
+        System.out.println("done");
         Random rand = new Random();
         boolean vertical = true;
-        while(!nodes.isEmpty()){
-//            System.out.println(nodes.size());
-            ArrayList<Pair<Long, Integer>> medians = new ArrayList<>();
-            for(int i = 0; i < 10; i++){
-                int r = rand.nextInt((nodes.size()));
-                medians.add(new Pair<>(nodes.get(r), r));
-            }
-            if(vertical){
-                Collections.sort(medians, new SortByLat());
-
+        int counter = 0;
+        int sizeStart = nodes.size();
+        int size = sizeStart;
+        ArrayList<Pair<Long, Integer>> medians = new ArrayList<>();
+        TREE: while(!nodes.isEmpty()){
+            if(size < 21){
+                for(long n : nodes){
+                    tree.insert(n, dictionary.get(n));
+                    break TREE;
+                }
             } else {
-                Collections.sort(medians, new SortByLong());
-            }
-            vertical = !vertical;
-            tree.insert(medians.get(5).getKey(), dictionary.get(medians.get(5).getKey()));
+//                System.out.println();
+                if((counter % 1000) == 0){
+                    System.out.println(((double) counter / (double) sizeStart) * 100);
+                    System.out.println();
+                    System.out.println("Median  " + median);
+                    System.out.println("Sort    " + sort);
+                    System.out.println("Insert  " + insert);
+                    System.out.println("Remove  " + remove);
+                }
+//            System.out.println(nodes.size());
+                timerStart();
+                for(int i = 0; i <= 20; i++){
+//                    System.out.println(size);
+                    int r = rand.nextInt((size--));
+                    medians.add(new Pair<>(nodes.remove(r), r));
+                }
+                median = timerEnd(median);
+                timerStart();
+                if(vertical){
+                    Collections.sort(medians, new SortByLat());
+
+                } else {
+                    Collections.sort(medians, new SortByLong());
+                }
+                sort = timerEnd(sort);
+                vertical = !vertical;
+                timerStart();
+                tree.insert(medians.get(10).getKey(), dictionary.get(medians.get(10).getKey()));
+                for(int x = 1; x < 5; x++){
+                    tree.insert(medians.get(10 + x).getKey(), dictionary.get(medians.get(10 + x).getKey()));
+                    tree.insert(medians.get(10 - x).getKey(), dictionary.get(medians.get(10 - x).getKey()));
+                }
+                insert = timerEnd(insert);
 //            System.out.println(medians.get(5).getValue());
-            nodes.remove((int) medians.get(5).getValue());
+//            timerStart();
+//            nodes.remove((int) medians.get(2).getValue());
+//            remove = timerEnd(remove);
+//            size--;
+                medians.clear();
+//            System.out.println(medians.size());
+                counter = counter + 21;
+            }
         }
+        timerEnd("Making tree");
     }
 
 //    public void print(){ //print graph contents
@@ -531,6 +603,11 @@ public class MyGraph {
         System.out.println(string + " time: " + (((float) endTime - (float)startTime) / 1000000000));
     }
 
+    private long timerEnd(long timer){
+        endTime = System.nanoTime();
+        return timer + (endTime - startTime);
+    }
+
     public BTreeMap<Long, double[]> getDictionary(){
         return dictionary;
     }
@@ -547,7 +624,7 @@ public class MyGraph {
     }
 
     public long findClosest(double[] loc){
-        return tree.nearest(loc);
+        return tree.nearest(loc, dictionary);
     }
 
     class SortByLong implements Comparator<Pair<Long, Integer>>
@@ -564,5 +641,9 @@ public class MyGraph {
         {
             return (int) (dictionary.get(a.getKey())[1] - dictionary.get(b.getKey())[1]);
         }
+    }
+
+    public String getFilePrefix(){
+        return filePrefix;
     }
 }

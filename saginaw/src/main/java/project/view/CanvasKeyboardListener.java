@@ -40,6 +40,8 @@ public class CanvasKeyboardListener implements KeyListener {
             controller.downDoug();
         } else if(e.getKeyCode() == (KeyEvent.VK_K)){
             controller.randomRoute();
+        } else if(e.getKeyCode() == (KeyEvent.VK_X)){
+            controller.clearMarkers();
         }
         this.view.repaint();
     }

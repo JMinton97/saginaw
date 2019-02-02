@@ -2,7 +2,6 @@ package project.view;
 
 import project.controller.Controller;
 import project.map.DouglasPeucker;
-import project.map.MyNode;
 import project.model.Model;
 
 import javax.imageio.ImageIO;
@@ -16,7 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.awt.event.MouseEvent;
 
 /**
  * User: Alan P. Sexton Date: 20/06/13 Time: 18:00
@@ -46,8 +45,8 @@ class Canvas extends JPanel
 	private double zoom;
 	private double oX, oY;
 	private double imageEdge;
-	private double paneX = 800;
-	private double paneY = 800;
+	private int paneX = 800;
+	private int paneY = 700;
 	private int xDimension, yDimension;
 	private int level, modifier;
 	private DouglasPeucker doug;
@@ -91,6 +90,8 @@ class Canvas extends JPanel
 		layers = new HashMap<Integer, Tile[][]>();
 		imageEdge = model.getImageEdge();
 
+		image = new BufferedImage(paneX, paneY, 1);
+
 		try{
 			String filename = "res/icon/start.png";
 			File inputfile = new File(filename);
@@ -127,12 +128,14 @@ class Canvas extends JPanel
 	/**
 	 * The method that is called to paint the contents of this component
 	 *
-	 * @param g
+	 * @param gOld
 	 *            The <code>Graphics</code> object used to do the actual drawing
 	 */
-	protected void paintComponent(Graphics g)
+	protected void paintComponent(Graphics gOld)
 	{
-		super.paintComponent(g);
+		super.paintComponent(gOld);
+
+		Graphics g = image.getGraphics();
 
 		centre = model.getCentre();
 		scale = model.getScale().doubleValue();
@@ -196,6 +199,8 @@ class Canvas extends JPanel
 			// paint the intermediate images
 			mouseListener.paint(g);
 		}
+
+		gOld.drawImage(image, 0, 0, null);
 	}
 
 	/**
@@ -211,8 +216,8 @@ class Canvas extends JPanel
 	}
 
 	public void drawRoute(ArrayList<Point2D.Double> route, Graphics2D g){
-		route = doug.simplify(route, dougTolerance);
-
+//		route = doug.simplify(route, dougTolerance);
+//		long startTime = System.nanoTime();
 		if(route.size() > 0){
 			Path2D path = new Path2D.Double();
 			Point2D first = geoToCanvas(route.get(0));
@@ -228,6 +233,9 @@ class Canvas extends JPanel
 			g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 			g.draw(path);
 		}
+		long endTime = System.nanoTime();
+//		System.out.println("drawRoute: " + (((float) endTime - (float)startTime) / 1000000000));
+//		System.out.print(System.nanoTime());
 	}
 
 	public void drawMarkers(Graphics2D g){
@@ -273,5 +281,8 @@ class Canvas extends JPanel
 		return canvasToGeo(x, y);
 	}
 
-
+	public boolean clickedRoute(MouseEvent e){
+//		System.out.println("color " + ((BufferedImage) createImage(700, 800)).getRGB(1, 1));
+		return (image.getRGB(e.getX(), e.getY()) == Color.RED.darker().getRGB()) || (image.getRGB(e.getX(), e.getY()) == Color.RED.getRGB());
+	}
 }

@@ -95,10 +95,15 @@ public class DijkstraLandmarks {
     private void relax(Long v, double[] edge, int index){
         explored++;
         long w = (long) edge[0];
-        System.out.println(w);
+//        System.out.println(w);
         double weight = edge[1];
         double distToV = ((double[]) (distTo.get(v)))[index];
         double[] distToW = (double[]) distTo.get(w);
+        System.out.println();
+        System.out.println(v);
+        System.out.println(w);
+//        System.out.println(index);
+        System.out.println(distToW[index]);
         if (distToW[index] > (distToV + weight)){
             putTimeStart = System.nanoTime();
             distToW[index] = distToV + weight;

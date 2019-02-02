@@ -37,21 +37,23 @@ public class BiAStar {
     private double maxDist; //how far from the nodes we have explored - have we covered minimum distance yet?
     public double bestSeen;
     public int explored, size;
+    public String filePrefix;
 
     public BiAStar(MyGraph myGraph) {
         this.myGraph = myGraph;
         landmarks = new ArrayList<>();
+
+        filePrefix = myGraph.getFilePrefix();
+
         try {
             Precomputation();
         } catch (IOException ie) {
             ie.printStackTrace();
         }
 
-        MyGraph graph = myGraph;
-
 //        Map<Long, Set<double[]>> graph = myGraph.getGraph();
 
-        size = graph.getGraph().size();
+        size = myGraph.getGraph().size();
 
         uDistTo = new THashMap<>(size);
         uEdgeTo = new THashMap<>(size);
@@ -64,7 +66,7 @@ public class BiAStar {
 
     public ArrayList<Long> search(long start, long end){
 
-        System.out.println("From " + start + " to " + end);
+//        System.out.println("From " + start + " to " + end);
 
         explored = 0;
 
@@ -141,7 +143,7 @@ public class BiAStar {
                         overlapNode = bestPathNode;
                     }
                     long endTime = System.nanoTime();
-                    System.out.println("Inner Bi-AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
+//                    System.out.println("Inner Bi-AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
                     return getRouteAsWays();
                 }
             }
@@ -243,7 +245,7 @@ public class BiAStar {
         GenerateLandmarks();
         DijkstraLandmarks dj;
 
-        File dfDir = new File("files//astar//distancesFrom.ser");
+        File dfDir = new File(filePrefix.concat("distancesFrom.ser"));
         if(dfDir.exists()){
             System.out.println("Found distancesFrom.");
             FileInputStream fileIn = new FileInputStream(dfDir);
@@ -267,7 +269,7 @@ public class BiAStar {
         }
         System.out.println("Done first bit");
 
-        File dtDir = new File("files//astar//distancesTo.ser");
+        File dtDir = new File(filePrefix.concat("distancesTo.ser"));
         if(dtDir.exists()){
             System.out.println("Found distancesTo.");
             FileInputStream fileIn = new FileInputStream(dtDir);
@@ -297,14 +299,15 @@ public class BiAStar {
         Random random = new Random();
         List<Long> nodes = new ArrayList<>(graph.keySet());
 
-        for(int x = 0; x < 5; x++){
-            landmarks.add(nodes.get(random.nextInt(size)));
-            System.out.println(landmarks.get(x));
-        }
+//        for(int x = 0; x < 5; x++){
+//            landmarks.add(nodes.get(random.nextInt(size)));
+//            System.out.println(landmarks.get(x));
+//        }
+//
+        landmarks.clear();
 
-//        landmarks.clear();
 
-//        landmarks.add(Long.parseLong("27103812"));
+        landmarks.add(Long.parseLong("27103812"));
 //        landmarks.add(Long.parseLong("299818750"));
 //        landmarks.add(Long.parseLong("312674444"));
 //        landmarks.add(Long.parseLong("273662"));
@@ -314,6 +317,22 @@ public class BiAStar {
 //        landmarks.add(Long.parseLong("262840382"));
 //        landmarks.add(Long.parseLong("344881575"));
 //        landmarks.add(Long.parseLong("1795462073"));
+
+
+//        landmarks.add(Long.parseLong("260093216"));
+//        landmarks.add(Long.parseLong("1886093447"));
+//        landmarks.add(Long.parseLong("4254105731"));
+//        landmarks.add(Long.parseLong("1491252547"));
+//        landmarks.add(Long.parseLong("296030988"));
+//        landmarks.add(Long.parseLong("20956464"));
+//        landmarks.add(Long.parseLong("306247928"));
+//////        landmarks.add(Long.parseLong("262840382"));
+//////        landmarks.add(Long.parseLong("344881575"));
+//////        landmarks.add(Long.parseLong("1795462073"));
+
+
+
+
 
 //        landmarks.add(Long.parseLong("1997249188"));
 //        landmarks.add(Long.parseLong("420592228"));

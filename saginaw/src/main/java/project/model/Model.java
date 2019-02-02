@@ -32,7 +32,7 @@ public class Model {
 	private BufferedImage image = null;
 	private MyMap2 map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
-	private String region = "wales";
+	private String region = "england";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
 	private BigDecimal zoom, baseScale;
@@ -42,6 +42,7 @@ public class Model {
 	private double geomXD, geomYD;
 	private int imageEdge = 1024;
 	private ArrayList<double[]> markers;
+	private ArrayList<Boolean> flags;
 
 	private BiDijkstra bdijk;
 	private BiAStar bstar;
@@ -50,6 +51,7 @@ public class Model {
 	private ArrayList<Point2D.Double> routeNodes;
 
 	public boolean hasRoute;
+	public boolean pivoted;
 
 	public Model() {
 		x = 1;
@@ -68,6 +70,10 @@ public class Model {
 		}
 //		bdijk = new BiDijkstra(graph, graph.getDictionary());
 		bstar = new BiAStar(graph);
+
+		routeNodes = new ArrayList<>();
+		flags = new ArrayList<>();
+		pivoted = false;
 
 //		Long src = Long.parseLong("1349207723"); //wales
 		Long src, dst;
@@ -222,7 +228,7 @@ public class Model {
 	//		setImage(bi);
 	}
 
-	public void move(double xD, double yD) {
+	public void moveMap(double xD, double yD) {
 		xD = (zoom.multiply(zoom)).multiply(BigDecimal.valueOf(xD)).doubleValue();
 		yD = (zoom.multiply(zoom)).multiply(BigDecimal.valueOf(yD)).doubleValue();
 		double baseScaleZoom = (baseScale.multiply(zoom)).doubleValue();
@@ -372,11 +378,32 @@ public class Model {
 	}
 
 	public void addMarker(double[] location){
-		if(markers.size() > 1){
-			markers.clear();
-		}
+//		if(markers.size() > 1){
+//			markers.clear();
+//		}
 		markers.add(new double[]{location[1], location[0]});
+		flags.add(false);
 		findRoute();
+	}
+
+	public void addPivot(double[] location){
+		if(pivoted){
+			markers.set(1, new double[]{location[1], location[0]});
+		} else {
+			markers.add(1, new double[]{location[1], location[0]});
+		}
+		pivoted = true;
+		flags.set(0, false);
+		flags.set(1, false);
+        long startTime = System.nanoTime();
+		findRoute();
+        long endTime = System.nanoTime();
+        System.out.println("findRoute time: " + (((float) endTime - (float)startTime) / 1000000000));
+	}
+
+	public void clearMarkers(){
+		markers.clear();
+		flags.clear();
 	}
 
 	public ArrayList<double[]> getMarkers() {
@@ -384,15 +411,31 @@ public class Model {
 	}
 
 	public void findRoute() {
+	    long startTime, endTime;
 		if(markers.size() > 1){
 			hasRoute = true;
-			long src = graph.findClosest(markers.get(0));
-			long dst = graph.findClosest(markers.get(1));
-			routeWays = bstar.search(src, dst);
 			routeNodes = new ArrayList<>();
-			System.out.println("ROUTE LENGTH" + routeWays.size());
-			for(Long w : routeWays){
-				routeNodes.addAll(graph.refsToNodes(graph.wayToNodes(w)));
+			for(int x = 0; x < markers.size() - 1; x++){
+				if(!flags.get(x)){
+					System.out.println(markers.get(x)[0] + " " + markers.get(x)[1]);
+					startTime = System.nanoTime();
+					long src = graph.findClosest(markers.get(x));
+					long dst = graph.findClosest(markers.get(x + 1));
+					endTime = System.nanoTime();
+                    System.out.println("	closest time: " + (((float) endTime - (float)startTime) / 1000000000));
+                    startTime = System.nanoTime();
+					routeWays = bstar.search(src, dst);
+                    endTime = System.nanoTime();
+                    System.out.println("	search time: " + (((float) endTime - (float)startTime) / 1000000000));
+//					System.out.println("ROUTE LENGTH" + routeWays.size());
+					startTime = System.nanoTime();
+					for(Long w : routeWays){
+						routeNodes.addAll(graph.refsToNodes(graph.wayToNodes(w)));
+					}
+					flags.set(x, true);
+					endTime = System.nanoTime();
+					System.out.println("	adding time: " + (((float) endTime - (float)startTime) / 1000000000));
+				}
 			}
 		}
 	}

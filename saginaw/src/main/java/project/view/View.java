@@ -26,7 +26,7 @@ public class View extends JFrame
 
 	public View(Model model, Controller controller)
 	{
-		super("Basic Java GUI Application");
+		super("Saginaw v0.1");
 		controller.addView(this);
 
 		// We will use the default BorderLayout, with a scrolled panel in

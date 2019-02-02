@@ -49,7 +49,7 @@ public class TestRun {
             System.out.println("Making graph time: " + (((float) endTime - (float)startTime) / 1000000000));
 
             startTime = System.nanoTime();
-            System.out.println(graph.findClosest(new double[]{53.274129, -3.880885}));
+            System.out.println(graph.findClosest(new double[]{-1.934183, 52.442150}));
             endTime = System.nanoTime();
             System.out.println("Finding nearest time: " + (((float) endTime - (float)startTime) / 1000000000));
 
