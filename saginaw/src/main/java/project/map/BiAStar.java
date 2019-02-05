@@ -172,7 +172,8 @@ public class BiAStar {
                         overlapNode = bestPathNode;
                     }
                     long endTime = System.nanoTime();
-                    System.out.println("Inner Bi-AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
+//                    System.out.println("Inner Bi-AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
+//                    System.out.println("Done");
                     return getRouteAsWays();
                 }
                 containsTimeEnd = System.nanoTime();
@@ -180,12 +181,13 @@ public class BiAStar {
             }
         }
         long endTime = System.nanoTime();
-        System.out.println("Inner Bi-AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
+//        System.out.println("Inner Bi-AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
         System.out.println("No route found.");
         return new ArrayList<>();
     }
 
     private void relax(Long x, double[] edge, boolean u){
+//        System.out.println("Relaxing " + x);
         relaxTimeStart = System.nanoTime();
         explored++;
         long w = (long) edge[0];
@@ -293,10 +295,12 @@ public class BiAStar {
     }
 
     public void GenerateLandmarks(){
-        Map<Long, HashSet<double[]>> graph = myGraph.getFwdGraph();
-        int size = graph.size();
+        Map<Long, ArrayList<double[]>> fwdGraph = myGraph.getFwdGraph();
+        Map<Long, ArrayList<double[]>> bckGraph = myGraph.getBckGraph();
+        int size = fwdGraph.size();
         Random random = new Random();
-        List<Long> nodes = new ArrayList<>(graph.keySet());
+        List<Long> fwdNodes = new ArrayList<>(fwdGraph.keySet());
+        List<Long> bckNodes = new ArrayList<>(bckGraph.keySet());
 
         if(myGraph.getRegion().equals("england")){
             landmarks.add(Long.parseLong("27103812"));
@@ -309,7 +313,7 @@ public class BiAStar {
             landmarks.add(Long.parseLong("262840382"));
             landmarks.add(Long.parseLong("344881575"));
             landmarks.add(Long.parseLong("25276649"));
-        } else if(myGraph.getRegion().equals("wales")){
+        } else if(myGraph.getRegion().equals("wwales")){
             landmarks.add(Long.parseLong("260093216"));
             landmarks.add(Long.parseLong("1886093447"));
             landmarks.add(Long.parseLong("4254105731"));
@@ -332,8 +336,15 @@ public class BiAStar {
             landmarks.add(Long.parseLong("600118738"));
             landmarks.add(Long.parseLong("268366322"));
         } else {
-            for(int x = 0; x < 5; x++){
-                landmarks.add(nodes.get(random.nextInt(size)));
+            for(int x = 0; x < 10; x++){
+                boolean exitFlag = false;
+                while(!exitFlag){
+                    long node = fwdNodes.get(random.nextInt(size));
+                    if(bckNodes.contains(node)){
+                        landmarks.add(node);
+                        exitFlag = true;
+                    }
+                }
                 System.out.println(landmarks.get(x));
             }
         }
@@ -344,6 +355,7 @@ public class BiAStar {
         double maxBackward = 0;
 //        double[] dTU, dFU, dTV, dFV;
 
+//        System.out.println(u);
         double[] forDTU = (double[]) distancesTo.get(u);
         double[] forDFU = (double[]) distancesFrom.get(u);
         double[] forDTV = (double[]) distancesTo.get(end);

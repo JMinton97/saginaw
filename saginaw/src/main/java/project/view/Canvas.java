@@ -118,7 +118,7 @@ class Canvas extends JPanel
 				}
 			}
 			layers.put(l, tileGrid);
-			System.out.println();
+//			System.out.println();
 		}
 
 		doug = new DouglasPeucker();
@@ -143,6 +143,9 @@ class Canvas extends JPanel
 		topLeft = new Point2D.Double((centre.getX() - (((paneX / 2) * zoom) / scale)), (centre.getY() + (((paneY / 2) * zoom) / scale)));
 		bottomRight = new Point2D.Double((centre.getX() + (((paneX / 2) * zoom) / scale)), (centre.getY() - (((paneY / 2) * zoom) / scale)));
 
+		g.setColor(Color.BLACK);
+		g.fillRect(0, 0, paneX, paneY);
+
 
 		Tile t;
 		Point2D.Double p, tl;
@@ -165,8 +168,8 @@ class Canvas extends JPanel
 					p = geoToCanvas(t.getTopLeft());
 //					System.out.println(p);
 					g.drawImage(t.getImage(), (int) p.getX(), (int) p.getY(), (int) (imageEdge / (zoom / modifier)), (int) (imageEdge / (zoom / modifier)), null);
-					g.setColor(Color.RED);
-					g.drawRect((int) p.getX(), (int) p.getY(), (int) (imageEdge / (zoom / modifier)), (int) (imageEdge / (zoom / modifier)));
+//					g.setColor(Color.RED);
+//					g.drawRect((int) p.getX(), (int) p.getY(), (int) (imageEdge / (zoom / modifier)), (int) (imageEdge / (zoom / modifier)));
 //					System.out.println(o.getX() + ", " + o.getY() + "    " + p.getX() + ", " + p.getY());
 				}
 			}

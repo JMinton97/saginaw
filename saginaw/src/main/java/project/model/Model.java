@@ -32,7 +32,7 @@ public class Model {
 	private BufferedImage image = null;
 	private MyMap2 map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
-	private String region = "england";
+	private String region = "birmingham";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
 	private BigDecimal zoom, baseScale;
@@ -400,10 +400,7 @@ public class Model {
 		pivoted = true;
 		flags.set(0, false);
 		flags.set(1, false);
-        long startTime = System.nanoTime();
 		findRoute();
-        long endTime = System.nanoTime();
-        System.out.println("findRoute time: " + (((float) endTime - (float)startTime) / 1000000000));
 	}
 
 	public void clearMarkers(){
@@ -431,7 +428,6 @@ public class Model {
 						 src = graph.findClosest(markers.get(x));
 						 closestNodes.put(markers.get(x), src);
 					} else {
-						System.out.println("truuuuuuuuuuuuuth");
 						 src = closestNodes.get(markers.get(x));
 					}
 					if(closestNodes.get(markers.get(x + 1)) == null){

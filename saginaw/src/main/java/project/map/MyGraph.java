@@ -31,8 +31,8 @@ public class MyGraph {
     private static ConcurrentMap<Long, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a list of ways each one is part of
     private static boolean parsingNodes;
 //    private static HashSet<Long> junctions;
-    private static Map<Long, HashSet<double[]>> fwdGraph;
-    private static Map<Long, HashSet<double[]>> bckGraph;
+    private static Map<Long, ArrayList<double[]>> fwdGraph;
+    private static Map<Long, ArrayList<double[]>> bckGraph;
     private Pair<Map, Map> graph;
     private Tree tree;
 
@@ -72,14 +72,14 @@ public class MyGraph {
             FileInputStream fileIn = new FileInputStream(fwdGraphDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
-                fwdGraph = (Map<Long, HashSet<double[]>>) objectIn.readObject();
+                fwdGraph = (Map<Long, ArrayList<double[]>>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
             fileIn = new FileInputStream(bckGraphDir);
             objectIn = new FSTObjectInput(fileIn);
             try {
-                bckGraph = (Map<Long, HashSet<double[]>>) objectIn.readObject();
+                bckGraph = (Map<Long, ArrayList<double[]>>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -223,10 +223,10 @@ public class MyGraph {
                     System.out.println("Something ain't right here");
                 }
                 if(!fwdGraph.containsKey(fstVert)){
-                    fwdGraph.put(fstVert, new HashSet<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
+                    fwdGraph.put(fstVert, new ArrayList<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
                 }
                 if(!bckGraph.containsKey(lstVert)){
-                    bckGraph.put(lstVert, new HashSet<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
+                    bckGraph.put(lstVert, new ArrayList<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
                 }
                 double length = lengthOfEdge(wayNodes);
 //                    double length = 0;
@@ -560,29 +560,29 @@ public class MyGraph {
         mapRoads.put(id, nodes);
     }
 
-    public Map<Long, HashSet<double[]>> getFwdGraph() {
+    public Map<Long, ArrayList<double[]>> getFwdGraph() {
         return fwdGraph;
     }
 
-    public Map<Long, HashSet<double[]>> getBckGraph() {
+    public Map<Long, ArrayList<double[]>> getBckGraph() {
         return bckGraph;
     }
 
-    public HashSet<double[]> fwdAdj(Long v){
-        HashSet x = fwdGraph.get(v);
+    public ArrayList<double[]> fwdAdj(Long v){
+        ArrayList x = fwdGraph.get(v);
         if(fwdGraph.get(v) != null){
             return x;
         } else {
-            return new HashSet<>();
+            return new ArrayList<>();
         }
     }
 
-    public HashSet<double[]> bckAdj(Long v){
-        HashSet x = bckGraph.get(v);
+    public ArrayList<double[]> bckAdj(Long v){
+        ArrayList x = bckGraph.get(v);
         if(bckGraph.get(v) != null){
             return x;
         } else {
-            return new HashSet<>();
+            return new ArrayList<>();
         }
     }
     public ArrayList<Point2D.Double> refsToNodes(ArrayList<Long> refs){

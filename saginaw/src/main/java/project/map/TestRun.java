@@ -11,7 +11,7 @@ public class TestRun {
 
     public static void main(String[] args) throws InterruptedException{
         long startTime, endTime;
-        String region = "england";
+        String region = "birmingham";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 

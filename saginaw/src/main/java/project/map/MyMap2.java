@@ -87,7 +87,12 @@ public class MyMap2 {
             westMost = -5.3;
             southMost = 42.3;   //FRANCE
             eastMost = 8.4;
-        }
+        } else if (region == "birmingham") {
+        northMost = 52.620580;
+        westMost = -2.240133;
+        southMost = 52.336874;   //BIRMINGHAM
+        eastMost = -1.655798;
+    }
 
         counter = 0;
 
@@ -260,6 +265,12 @@ public class MyMap2 {
         System.out.println("This many ways stored: " + subTileWays.size());
 
         for(MyWay w : subTileWays.values()){
+            if(w.getType() == WayType.CITY){
+                drawWay(w, mapGraphics, false, axis, tileNodes);
+            }
+        } //URBAN AREAS
+
+        for(MyWay w : subTileWays.values()){
             if(w.getType() == WayType.GREEN){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
@@ -271,17 +282,19 @@ public class MyMap2 {
             }
         } //FORESTS
 
+
+
         for(MyWay w : subTileWays.values()){
             if(w.getType() == WayType.WATERWAY){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
-        } //RAILS
+        } //RIVERS
 
         for(MyWay w : subTileWays.values()){
             if(w.getType() == WayType.WATERBODY){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
-        } //WATERBODIES
+        } //LAKES
 
         for(MyWay w : subTileWays.values()){
             if(w.getType() == WayType.RAILWAY){
@@ -384,6 +397,14 @@ public class MyMap2 {
                 mapGraphics.setStroke(new BasicStroke(4));
                 inColor = new Color(153, 204, 255);
                 outColor = new Color(102, 178, 255);
+                drawArea(mapGraphics, wayNodes, bound, inColor, outColor, dictionary);
+                break;
+
+            case CITY:
+                System.out.println("DRAW CITY");
+                mapGraphics.setStroke(new BasicStroke(4));
+                inColor = new Color(181, 162, 185);
+                outColor = new Color(92, 86, 88);
                 drawArea(mapGraphics, wayNodes, bound, inColor, outColor, dictionary);
                 break;
         }
@@ -538,7 +559,7 @@ public class MyMap2 {
             if(level == 0){
                 return true;
             } else if(level == 1){
-                    return type.equals(RoadType.ROAD);
+                return type.equals(RoadType.ROAD);
             } else {
                 return true;
             }
@@ -633,12 +654,10 @@ public class MyMap2 {
         protected void parseWays(List<Way> ways) {
             if (!parsingNodes) {
 //                System.out.println("Parsing ways.");
-                long lastRef = 0;
                 for (Way w : ways) {
-                    lastRef += w.getId();
-                    long lastNodeRef = 0;
-                    for (Long nodeRef : w.getRefsList()) {
-                        lastNodeRef += nodeRef;
+                    long lastRef = 0;
+                    WAY: for (Long ref : w.getRefsList()) {
+                        lastRef += ref;
                         if (tileNodes.containsKey(lastRef)) {
 //                            if(w.getId() == Long.parseLong("22815916")){
 //                                System.out.println("found ref at x " + bX1 + " y " + bY1);
@@ -716,6 +735,12 @@ public class MyMap2 {
                                         (key.equals("route") && value.equals("bicycle"))){
                                     MyWay tempWay = buildMyWay(w);
                                     tempWay.setType(WayType.CYCLE);
+                                    tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
+                                }
+                                if(key.equals("landuse") && (value.equals("residential") || value.equals("retail") || value.equals("school"))){
+                                    MyWay tempWay = buildMyWay(w);
+                                    tempWay.setType(WayType.CITY);
+//                                    System.out.println("CITY: " + w.getId());
                                     tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
                             }
