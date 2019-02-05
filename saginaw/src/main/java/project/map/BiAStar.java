@@ -53,7 +53,7 @@ public class BiAStar {
 
 //        Map<Long, Set<double[]>> graph = myGraph.getGraph();
 
-        size = myGraph.getGraph().size();
+        size = myGraph.getFwdGraph().size();
 
         uDistTo = new THashMap<>(size);
         uEdgeTo = new THashMap<>(size);
@@ -239,7 +239,6 @@ public class BiAStar {
     }
 
     public void Precomputation() throws IOException {
-        Map<Long, Set<double[]>> graph = myGraph.getGraph();
         distancesTo = new Long2ObjectOpenHashMap<double[]>(); //need to compute
         distancesFrom = new Long2ObjectOpenHashMap<double[]>();
         GenerateLandmarks();
@@ -294,63 +293,56 @@ public class BiAStar {
     }
 
     public void GenerateLandmarks(){
-        Map<Long, Set<double[]>> graph = myGraph.getGraph();
+        Map<Long, HashSet<double[]>> graph = myGraph.getFwdGraph();
         int size = graph.size();
         Random random = new Random();
         List<Long> nodes = new ArrayList<>(graph.keySet());
 
-//        for(int x = 0; x < 5; x++){
-//            landmarks.add(nodes.get(random.nextInt(size)));
-//            System.out.println(landmarks.get(x));
-//        }
-//
-        landmarks.clear();
-
-
-        landmarks.add(Long.parseLong("27103812"));
-//        landmarks.add(Long.parseLong("299818750"));
-//        landmarks.add(Long.parseLong("312674444"));
-//        landmarks.add(Long.parseLong("273662"));
-//        landmarks.add(Long.parseLong("14644591"));
-//        landmarks.add(Long.parseLong("27210725"));
-//        landmarks.add(Long.parseLong("817576914"));
-//        landmarks.add(Long.parseLong("262840382"));
-//        landmarks.add(Long.parseLong("344881575"));
-//        landmarks.add(Long.parseLong("1795462073"));
-
-
-//        landmarks.add(Long.parseLong("260093216"));
-//        landmarks.add(Long.parseLong("1886093447"));
-//        landmarks.add(Long.parseLong("4254105731"));
-//        landmarks.add(Long.parseLong("1491252547"));
-//        landmarks.add(Long.parseLong("296030988"));
-//        landmarks.add(Long.parseLong("20956464"));
-//        landmarks.add(Long.parseLong("306247928"));
-//////        landmarks.add(Long.parseLong("262840382"));
-//////        landmarks.add(Long.parseLong("344881575"));
-//////        landmarks.add(Long.parseLong("1795462073"));
-
-
-
-
-
-//        landmarks.add(Long.parseLong("1997249188"));
-//        landmarks.add(Long.parseLong("420592228"));
-//        landmarks.add(Long.parseLong("1203772336"));
-//        landmarks.add(Long.parseLong("292093917"));
-//        landmarks.add(Long.parseLong("629419387"));
-//        landmarks.add(Long.parseLong("1161458782"));
-//        landmarks.add(Long.parseLong("702241324"));
-//        landmarks.add(Long.parseLong("31898581"));
-//        landmarks.add(Long.parseLong("600118738"));
-//        landmarks.add(Long.parseLong("268366322"));
-
+        if(myGraph.getRegion().equals("england")){
+            landmarks.add(Long.parseLong("27103812"));
+            landmarks.add(Long.parseLong("299818750"));
+            landmarks.add(Long.parseLong("312674444"));
+            landmarks.add(Long.parseLong("424430268"));
+            landmarks.add(Long.parseLong("29833172"));
+            landmarks.add(Long.parseLong("27210725"));
+            landmarks.add(Long.parseLong("817576914"));
+            landmarks.add(Long.parseLong("262840382"));
+            landmarks.add(Long.parseLong("344881575"));
+            landmarks.add(Long.parseLong("25276649"));
+        } else if(myGraph.getRegion().equals("wales")){
+            landmarks.add(Long.parseLong("260093216"));
+            landmarks.add(Long.parseLong("1886093447"));
+            landmarks.add(Long.parseLong("4254105731"));
+            landmarks.add(Long.parseLong("1491252547"));
+            landmarks.add(Long.parseLong("296030988"));
+            landmarks.add(Long.parseLong("20956464"));
+            landmarks.add(Long.parseLong("306247928"));
+    ////        landmarks.add(Long.parseLong("262840382"));
+    ////        landmarks.add(Long.parseLong("344881575"));
+    ////        landmarks.add(Long.parseLong("1795462073"));
+        } else if(myGraph.getRegion().equals("france")){
+            landmarks.add(Long.parseLong("1997249188"));
+            landmarks.add(Long.parseLong("420592228"));
+            landmarks.add(Long.parseLong("1203772336"));
+            landmarks.add(Long.parseLong("292093917"));
+            landmarks.add(Long.parseLong("629419387"));
+            landmarks.add(Long.parseLong("1161458782"));
+            landmarks.add(Long.parseLong("702241324"));
+            landmarks.add(Long.parseLong("31898581"));
+            landmarks.add(Long.parseLong("600118738"));
+            landmarks.add(Long.parseLong("268366322"));
+        } else {
+            for(int x = 0; x < 5; x++){
+                landmarks.add(nodes.get(random.nextInt(size)));
+                System.out.println(landmarks.get(x));
+            }
+        }
     }
 
     public double lowerBound(long u, boolean forwards){
         double maxForward = 0;
         double maxBackward = 0;
-        double[] dTU, dFU, dTV, dFV;
+//        double[] dTU, dFU, dTV, dFV;
 
         double[] forDTU = (double[]) distancesTo.get(u);
         double[] forDFU = (double[]) distancesFrom.get(u);

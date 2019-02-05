@@ -17,11 +17,7 @@ public class DijkstraLandmarks {
     long pollTimeStart, pollTimeEnd, totalPollTime, addTimeStart, addTimeEnd, totalAddTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, putTimeStart, putTimeEnd, totalPutTime;
     Long2ObjectOpenHashMap distTo;
 
-
-//    THashMap<Long, double[]> distTo;
-//    THashMap<Long, long[]> edgeTo;
     PriorityQueue<DijkstraEntry> pq;
-    long startNode, endNode;
     public int explored;
     ArrayList<Long> landmarks;
 
@@ -37,9 +33,27 @@ public class DijkstraLandmarks {
             initDistance[x] = Double.MAX_VALUE;
         }
 
-        for(long vert : graph.getGraph().keySet()){
+        for(long vert : graph.getFwdGraph().keySet()){
+//            if(vert == Long.parseLong("749671001")){
+//                System.out.println("here");
+//            }
+            if(vert == Long.parseLong("694020801")){
+                System.out.println("here");
+            }
             distTo.put(vert, initDistance.clone());
         }
+
+        for(long vert : graph.getBckGraph().keySet()){
+//            if(vert == Long.parseLong("749671001")){
+//                System.out.println("here");
+//            }
+            if(vert == Long.parseLong("694020801")){
+                System.out.println("here");
+            }
+            distTo.put(vert, initDistance.clone());
+        }
+
+//        System.exit(0);
 
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 
@@ -72,6 +86,7 @@ public class DijkstraLandmarks {
         while(!pq.isEmpty()){
 //            System.out.println("get");
             long v = pq.poll().getNode();
+//            System.out.println(v);
             if(forwards){
                 for (double[] e : graph.fwdAdj(v)){
 //                System.out.println("relax");
@@ -99,11 +114,11 @@ public class DijkstraLandmarks {
         double weight = edge[1];
         double distToV = ((double[]) (distTo.get(v)))[index];
         double[] distToW = (double[]) distTo.get(w);
-        System.out.println();
-        System.out.println(v);
-        System.out.println(w);
+//        System.out.println();
+//        System.out.println(v);
+//        System.out.println(w);
 //        System.out.println(index);
-        System.out.println(distToW[index]);
+//        System.out.println(distToW[index]);
         if (distToW[index] > (distToV + weight)){
             putTimeStart = System.nanoTime();
             distToW[index] = distToV + weight;

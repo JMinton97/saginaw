@@ -29,14 +29,16 @@ public class BiDijkstra {
     BTreeMap<Long, double[]> dictionary;
 
     public BiDijkstra(MyGraph graph, BTreeMap<Long, double[]> dictionary) {
-        System.out.println("SIZE " + graph.getGraph().size());
-        uDistTo = new THashMap<>(graph.getGraph().size());
-        uEdgeTo = new THashMap<>(graph.getGraph().size());
-        uNodeTo = new THashMap<>(graph.getGraph().size());
+        int size = graph.getFwdGraph().size();
 
-        vDistTo = new THashMap<>(graph.getGraph().size());
-        vEdgeTo = new THashMap<>(graph.getGraph().size());
-        vNodeTo = new THashMap<>(graph.getGraph().size());
+        System.out.println("SIZE " + size);
+        uDistTo = new THashMap<>(size);
+        uEdgeTo = new THashMap<>(size);
+        uNodeTo = new THashMap<>(size);
+
+        vDistTo = new THashMap<>(size);
+        vEdgeTo = new THashMap<>(size);
+        vNodeTo = new THashMap<>(size);
 
         this.graph = graph;
         this.dictionary = dictionary;

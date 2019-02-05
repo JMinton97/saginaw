@@ -31,20 +31,22 @@ public class MyGraph {
     private static ConcurrentMap<Long, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a list of ways each one is part of
     private static boolean parsingNodes;
 //    private static HashSet<Long> junctions;
-    private static Map<Long, Set<double[]>> fwdGraph;
-    private static Map<Long, Set<double[]>> bckGraph;
+    private static Map<Long, HashSet<double[]>> fwdGraph;
+    private static Map<Long, HashSet<double[]>> bckGraph;
     private Pair<Map, Map> graph;
     private Tree tree;
 
     private long startTime;
     private long endTime;
 
-    private String filePrefix;
+    private String filePrefix, region;
 
     Set<long[]> edges = new HashSet<>();
     int noOfEdges;
 
     public MyGraph(File file, String region) throws IOException {
+
+        this.region = region;
 
         filePrefix = "files//".concat(region + "//");
 
@@ -70,14 +72,14 @@ public class MyGraph {
             FileInputStream fileIn = new FileInputStream(fwdGraphDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
-                fwdGraph = (Map<Long, Set<double[]>>) objectIn.readObject();
+                fwdGraph = (Map<Long, HashSet<double[]>>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
             fileIn = new FileInputStream(bckGraphDir);
             objectIn = new FSTObjectInput(fileIn);
             try {
-                bckGraph = (Map<Long, Set<double[]>>) objectIn.readObject();
+                bckGraph = (Map<Long, HashSet<double[]>>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -250,7 +252,7 @@ public class MyGraph {
         long remove = 0;
 
         timerStart();
-        tree = new Tree(40);
+        tree = new Tree(120);
         ArrayList<Long> nodes = new ArrayList<>();
         nodes.addAll(fwdGraph.keySet());
         System.out.println("done");
@@ -295,6 +297,7 @@ public class MyGraph {
                 vertical = !vertical;
                 timerStart();
                 tree.insert(medians.get(10).getKey(), dictionary.get(medians.get(10).getKey()));
+//                System.out.println(dictionary.get(medians.get(10).getKey())[0] + " " + dictionary.get(medians.get(10).getKey())[1]);
                 for(int x = 1; x < 5; x++){
                     tree.insert(medians.get(10 + x).getKey(), dictionary.get(medians.get(10 + x).getKey()));
                     tree.insert(medians.get(10 - x).getKey(), dictionary.get(medians.get(10 - x).getKey()));
@@ -408,6 +411,7 @@ public class MyGraph {
                         tempDense[1] = parseLat(lastLat);
                         tempDense[2] = lastId;
                         dictionary.put(lastId, tempDense);
+//                        System.out.println(tempDense[0] + " " + tempDense[1]);
 //                        counter++;
 //                        System.out.println(counter);
                     }
@@ -450,16 +454,16 @@ public class MyGraph {
                                 (key.equals("route") && value.equals("bicycle"))){
                             addWay(w, oneWay, lastRef);
                         } else if(key.equals("highway")){
-                            if(value.matches("motorway|motorway_link")){
-                                addWay(w, oneWay, lastRef);
-                            } else if (value.matches("trunk|trunk_link")){
-                                addWay(w, oneWay, lastRef);
-                            } else if (value.matches("primary|primary_link")){
+                            if (value.matches("primary|primary_link")){
                                 addWay(w, oneWay, lastRef);
                             } else if (value.matches("secondary|secondary_link")){
                                 addWay(w, oneWay, lastRef);
                             } else if (value.matches("tertiary|unclassified|residential|service|tertiary_link|road")){
                                 addWay(w, oneWay, lastRef);
+//                            } else if(value.matches("motorway|motorway_link")){
+//                                addWay(w, oneWay, lastRef);
+//                            } else if (value.matches("trunk|trunk_link")) {
+//                                addWay(w, oneWay, lastRef);
                             }
                         }
                     }
@@ -556,22 +560,35 @@ public class MyGraph {
         mapRoads.put(id, nodes);
     }
 
-    public Map<Long, Set<double[]>> getGraph() {
+    public Map<Long, HashSet<double[]>> getFwdGraph() {
         return fwdGraph;
     }
 
-    public Set<double[]> fwdAdj(Long v){
-        return fwdGraph.get(v);
+    public Map<Long, HashSet<double[]>> getBckGraph() {
+        return bckGraph;
     }
 
-    public Set<double[]> bckAdj(Long v){
-        return bckGraph.get(v);
+    public HashSet<double[]> fwdAdj(Long v){
+        HashSet x = fwdGraph.get(v);
+        if(fwdGraph.get(v) != null){
+            return x;
+        } else {
+            return new HashSet<>();
+        }
     }
 
+    public HashSet<double[]> bckAdj(Long v){
+        HashSet x = bckGraph.get(v);
+        if(bckGraph.get(v) != null){
+            return x;
+        } else {
+            return new HashSet<>();
+        }
+    }
     public ArrayList<Point2D.Double> refsToNodes(ArrayList<Long> refs){
         ArrayList<Point2D.Double> nodes = new ArrayList<>();
         for(Long ref : refs){
-            nodes.add(new Point2D.Double(dictionary.get(ref)[1], dictionary.get(ref)[0]));
+            nodes.add(new Point2D.Double(dictionary.get(ref)[0], dictionary.get(ref)[1]));
         }
         return nodes;
     }
@@ -645,5 +662,9 @@ public class MyGraph {
 
     public String getFilePrefix(){
         return filePrefix;
+    }
+
+    public String getRegion(){
+        return region;
     }
 }

@@ -53,7 +53,7 @@ public class TestRun {
             endTime = System.nanoTime();
             System.out.println("Finding nearest time: " + (((float) endTime - (float)startTime) / 1000000000));
 
-            System.exit(0);
+//            System.exit(0);
 
             src = Long.parseLong("1349207723"); //wales
             dst = Long.parseLong("707151082");

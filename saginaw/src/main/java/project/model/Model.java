@@ -49,6 +49,7 @@ public class Model {
 	private MyGraph graph;
 	private ArrayList<Long> routeWays;
 	private ArrayList<Point2D.Double> routeNodes;
+	private HashMap<double[], Long> closestNodes;
 
 	public boolean hasRoute;
 	public boolean pivoted;
@@ -89,6 +90,9 @@ public class Model {
 //		System.out.println("Distance: " + bstar.getDist());
 		centreCoord = map.getCentre();
 		origin = map.getOrigin();
+
+		closestNodes = new HashMap<>();
+
 	}
 
 	public BufferedImage getImage() {
@@ -266,7 +270,7 @@ public class Model {
 
 	public void findRandomRoute(){
 		Random generator = new Random();
-		Object[] keys = graph.getGraph().keySet().toArray();
+		Object[] keys = graph.getFwdGraph().keySet().toArray();
 		Object randomSrc = keys[generator.nextInt(keys.length)];
 		Object randomDst = keys[generator.nextInt(keys.length)];
 		System.out.println(randomSrc + "    " + randomDst);
@@ -381,16 +385,17 @@ public class Model {
 //		if(markers.size() > 1){
 //			markers.clear();
 //		}
-		markers.add(new double[]{location[1], location[0]});
+//		System.out.println(location[0] + " " + location[1]);
+		markers.add(location);
 		flags.add(false);
 		findRoute();
 	}
 
 	public void addPivot(double[] location){
 		if(pivoted){
-			markers.set(1, new double[]{location[1], location[0]});
+			markers.set(1, location);
 		} else {
-			markers.add(1, new double[]{location[1], location[0]});
+			markers.add(1, location);
 		}
 		pivoted = true;
 		flags.set(0, false);
@@ -404,6 +409,8 @@ public class Model {
 	public void clearMarkers(){
 		markers.clear();
 		flags.clear();
+		pivoted = false;
+		hasRoute = false;
 	}
 
 	public ArrayList<double[]> getMarkers() {
@@ -417,17 +424,31 @@ public class Model {
 			routeNodes = new ArrayList<>();
 			for(int x = 0; x < markers.size() - 1; x++){
 				if(!flags.get(x)){
-					System.out.println(markers.get(x)[0] + " " + markers.get(x)[1]);
+//					System.out.println(markers.get(x)[0] + " " + markers.get(x)[1]);
 					startTime = System.nanoTime();
-					long src = graph.findClosest(markers.get(x));
-					long dst = graph.findClosest(markers.get(x + 1));
+					long src, dst;
+					if(closestNodes.get(markers.get(x)) == null){
+						 src = graph.findClosest(markers.get(x));
+						 closestNodes.put(markers.get(x), src);
+					} else {
+						System.out.println("truuuuuuuuuuuuuth");
+						 src = closestNodes.get(markers.get(x));
+					}
+					if(closestNodes.get(markers.get(x + 1)) == null){
+						dst = graph.findClosest(markers.get(x + 1));
+						closestNodes.put(markers.get(x + 1), dst);
+					} else {
+						dst = closestNodes.get(markers.get(x + 1));
+					}
+//					System.out.println(src);
+//					System.out.println(dst);
 					endTime = System.nanoTime();
                     System.out.println("	closest time: " + (((float) endTime - (float)startTime) / 1000000000));
                     startTime = System.nanoTime();
 					routeWays = bstar.search(src, dst);
                     endTime = System.nanoTime();
                     System.out.println("	search time: " + (((float) endTime - (float)startTime) / 1000000000));
-//					System.out.println("ROUTE LENGTH" + routeWays.size());
+					System.out.println("ROUTE LENGTH" + routeWays.size());
 					startTime = System.nanoTime();
 					for(Long w : routeWays){
 						routeNodes.addAll(graph.refsToNodes(graph.wayToNodes(w)));

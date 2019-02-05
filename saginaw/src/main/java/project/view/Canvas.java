@@ -241,7 +241,9 @@ class Canvas extends JPanel
 	public void drawMarkers(Graphics2D g){
 		boolean first = true;
 		for(double[] m : model.getMarkers()){
+//			System.out.println(m[0] + m[1]);
 			Point2D marker = geoToCanvas(m);
+//			System.out.println(marker.getX() + " " + marker.getY());
 			if(first){
 				g.drawImage(start, (int) marker.getX() - (start.getWidth() / 2), (int) marker.getY() - start.getHeight(), start.getWidth(), start.getHeight(), null, null);
 				first = false;
@@ -258,8 +260,8 @@ class Canvas extends JPanel
 	}
 
 	public Point2D.Double geoToCanvas(double[] geoCoord){
-		Double x = (geoCoord[1] - topLeft.getX()) * (scale / zoom);
-		Double y = (topLeft.getY() - geoCoord[0]) * (scale / zoom);
+		Double x = (geoCoord[0] - topLeft.getX()) * (scale / zoom);
+		Double y = (topLeft.getY() - geoCoord[1]) * (scale / zoom);
 		return new Point2D.Double(x, y);
 	}
 

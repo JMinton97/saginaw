@@ -102,6 +102,7 @@ public class Tree implements Serializable{
     }
 
     public long nearest(double[] point, BTreeMap<Long, double[]> dictionary){
+//        System.out.println("Nearest to " + point[0] + " " + point[1]);
         nearestId = 0;
         if(root == null){
             return -1;                      //reserved?
@@ -117,6 +118,7 @@ public class Tree implements Serializable{
 //            System.out.println("Trying " + node.getPoint()[0] + "," + node.getPoint()[1]);
             if(node.isLeaf()){
 //                System.out.println("true");
+                System.out.println("LEAF SIZE: " + node.getIds().size());
                 Pair<Long, Double> leafClosest = node.findClosest(p, dictionary);
 //                System.out.println(d);
                 if (minDist > leafClosest.getValue()) {
