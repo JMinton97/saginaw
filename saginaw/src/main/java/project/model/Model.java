@@ -1,6 +1,9 @@
 package project.model;
 
 import project.map.*;
+import project.search.BiAStar;
+import project.search.ConcurrentBiAStar;
+import project.search.Searcher;
 import project.utils.ImageFile;
 import project.utils.UnsupportedImageTypeException;
 
@@ -32,7 +35,7 @@ public class Model {
 	private BufferedImage image = null;
 	private MyMap2 map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
-	private String region = "birmingham";
+	private String region = "england";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
 	private BigDecimal zoom, baseScale;
@@ -44,8 +47,8 @@ public class Model {
 	private ArrayList<double[]> markers;
 	private ArrayList<Boolean> flags;
 
-	private BiDijkstra bdijk;
-	private BiAStar bstar;
+//	private BiDijkstra bdijk;
+	private Searcher searcher;
 	private MyGraph graph;
 	private ArrayList<Long> routeWays;
 	private ArrayList<Point2D.Double> routeNodes;
@@ -69,8 +72,8 @@ public class Model {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-//		bdijk = new BiDijkstra(graph, graph.getDictionary());
-		bstar = new BiAStar(graph);
+
+		searcher = new ConcurrentBiAStar(graph);
 
 		routeNodes = new ArrayList<>();
 		flags = new ArrayList<>();
@@ -245,25 +248,16 @@ public class Model {
 			geomYD = origin.getY();
 		}
 		centreCoord.setLocation(geomXD, geomYD);
-
-//		x = x + (xD * z);
-//		y = y + (yD * z);
-//		if(x < 1){
-//			x = 1;
-//		}
-//		if(y < 1){
-//			y = 1;
-//		}
 	}
 
 	public void findRoute(long src, long dst){
-		routeWays = bstar.search(src, dst);
-		System.out.println("Distance: " + bdijk.getDist());
+		routeWays = searcher.search(src, dst);
+		System.out.println("Distance: " + searcher.getDist());
 		routeNodes = new ArrayList<>();
 		for(Long w : routeWays){
 //			System.out.println(w);
 //			System.out.println(graph.wayToNodes(w));
-			routeNodes.addAll(graph.refsToNodes(graph.wayToNodes(w)));
+			routeNodes.addAll(graph.refsToNodes(graph.wayToRefs(w)));
 //			System.out.println();
 		}
 	}
@@ -274,13 +268,13 @@ public class Model {
 		Object randomSrc = keys[generator.nextInt(keys.length)];
 		Object randomDst = keys[generator.nextInt(keys.length)];
 		System.out.println(randomSrc + "    " + randomDst);
-		routeWays = bstar.search((Long) randomSrc, (Long) randomDst);
-		System.out.println("Distance: " + bstar.getDist());
+		routeWays = searcher.search((Long) randomSrc, (Long) randomDst);
+		System.out.println("Distance: " + searcher.getDist());
 		routeNodes = new ArrayList<>();
 		for(Long w : routeWays){
 //			System.out.println(w);
 //			System.out.println(graph.wayToNodes(w));
-			routeNodes.addAll(graph.refsToNodes(graph.wayToNodes(w)));
+			routeNodes.addAll(graph.refsToNodes(graph.wayToRefs(w)));
 //			System.out.println();
 		}
 	}
@@ -295,36 +289,29 @@ public class Model {
 								if(zoom.compareTo(BigDecimal.valueOf(63.99)) > 0){
 									level = 6;
 									zoom = zoom.subtract(BigDecimal.valueOf(12.8));
-									return;
 								} else {
 									level = 6;
 									zoom = zoom.subtract(BigDecimal.valueOf(6.4));
-									return;
 								}
 							} else {
 								level = 5;
 								zoom = zoom.subtract(BigDecimal.valueOf(3.2));
-								return;
 							}
 						} else {
 							level = 4;
 							zoom = zoom.subtract(BigDecimal.valueOf(1.6));
-							return;
 						}
 					} else {
 						level = 3;
 						zoom = zoom.subtract(BigDecimal.valueOf(0.8));
-						return;
 					}
 				} else {
 					level = 2;
 					zoom = zoom.subtract(BigDecimal.valueOf(0.4));
-					return;
 				}
 			} else {
 				level = 1;
 				zoom = zoom.subtract(BigDecimal.valueOf(0.2));
-				return;
 			}
 		}
 	}
@@ -339,36 +326,29 @@ public class Model {
 								if(zoom.compareTo(BigDecimal.valueOf(63.99)) > 0){
 									level = 6;
 									zoom = zoom.add(BigDecimal.valueOf(12.8));
-									return;
 								} else {
 									level = 6;
 									zoom = zoom.add(BigDecimal.valueOf(6.4));
-									return;
 								}
 							} else {
 								level = 5;
 								zoom = zoom.add(BigDecimal.valueOf(3.2));
-								return;
 							}
 						} else {
 							level = 4;
 							zoom = zoom.add(BigDecimal.valueOf(1.6));
-							return;
 						}
 					} else {
 						level = 3;
 						zoom = zoom.add(BigDecimal.valueOf(0.8));
-						return;
 					}
 				} else {
 					level = 2;
 					zoom = zoom.add(BigDecimal.valueOf(0.4));
-					return;
 				}
 			} else {
 				level = 1;
 				zoom = zoom.add(BigDecimal.valueOf(0.2));
-				return;
 			}
 		}
 	}
@@ -415,45 +395,83 @@ public class Model {
 	}
 
 	public void findRoute() {
-	    long startTime, endTime;
-		if(markers.size() > 1){
-			hasRoute = true;
-			routeNodes = new ArrayList<>();
-			for(int x = 0; x < markers.size() - 1; x++){
-				if(!flags.get(x)){
+
+
+		Runnable search = () -> {
+			long startTime, endTime;
+			if (markers.size() > 1) {
+				hasRoute = true;
+				routeNodes = new ArrayList<>();
+				for (int x = 0; x < markers.size() - 1; x++) {
+					if (!flags.get(x)) {
 //					System.out.println(markers.get(x)[0] + " " + markers.get(x)[1]);
-					startTime = System.nanoTime();
-					long src, dst;
-					if(closestNodes.get(markers.get(x)) == null){
-						 src = graph.findClosest(markers.get(x));
-						 closestNodes.put(markers.get(x), src);
-					} else {
-						 src = closestNodes.get(markers.get(x));
+						startTime = System.nanoTime();
+						long src, dst;
+						if (closestNodes.get(markers.get(x)) == null) {
+							src = graph.findClosest(markers.get(x));
+							closestNodes.put(markers.get(x), src);
+						} else {
+							src = closestNodes.get(markers.get(x));
+						}
+						if (closestNodes.get(markers.get(x + 1)) == null) {
+							dst = graph.findClosest(markers.get(x + 1));
+							closestNodes.put(markers.get(x + 1), dst);
+						} else {
+							dst = closestNodes.get(markers.get(x + 1));
+						}
+						System.out.println(src);
+						System.out.println(dst);
+						endTime = System.nanoTime();
+						System.out.println("	closest time: " + (((float) endTime - (float) startTime) / 1000000000));
+						startTime = System.nanoTime();
+						routeWays = searcher.search(src, dst);
+						endTime = System.nanoTime();
+						System.out.println("	search time: " + (((float) endTime - (float) startTime) / 1000000000));
+						System.out.println("ROUTE LENGTH" + routeWays.size());
+						startTime = System.nanoTime();
+						long wayToRefsTime = 0, refsToNodesTime = 0, addAllTime = 0, wayToNodesTime = 0;
+
+						Runnable way = () -> {
+							for (Long w : routeWays) {
+								ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
+								routeNodes.addAll(p);
+							}
+						};
+
+						Thread wayThread = new Thread(way);
+						wayThread.start();
+
+//						startTime = System.nanoTime();
+
+//						endTime = System.nanoTime();
+//						wayToNodesTime += endTime - startTime;
+
+//						startTime = System.nanoTime();
+//						ArrayList<Long> n = graph.wayToRefs(w);
+//						endTime = System.nanoTime();
+//						wayToRefsTime += endTime - startTime;
+//						startTime = System.nanoTime();
+//						p = graph.refsToNodes(n);
+//						endTime = System.nanoTime();
+//						refsToNodesTime += endTime - startTime;
+
+//						startTime = System.nanoTime();
+
+//						endTime = System.nanoTime();
+//						addAllTime += endTime - startTime;
+
+//					System.out.println(wayToRefsTime / 10000);
+//					System.out.println(refsToNodesTime / 10000);
+//					System.out.println(addAllTime / 10000);
+//					System.out.println(wayToNodesTime / 10000);
+						flags.set(x, true);
+						endTime = System.nanoTime();
+						System.out.println("	adding time: " + (((float) endTime - (float) startTime) / 1000000000));
 					}
-					if(closestNodes.get(markers.get(x + 1)) == null){
-						dst = graph.findClosest(markers.get(x + 1));
-						closestNodes.put(markers.get(x + 1), dst);
-					} else {
-						dst = closestNodes.get(markers.get(x + 1));
-					}
-//					System.out.println(src);
-//					System.out.println(dst);
-					endTime = System.nanoTime();
-                    System.out.println("	closest time: " + (((float) endTime - (float)startTime) / 1000000000));
-                    startTime = System.nanoTime();
-					routeWays = bstar.search(src, dst);
-                    endTime = System.nanoTime();
-                    System.out.println("	search time: " + (((float) endTime - (float)startTime) / 1000000000));
-					System.out.println("ROUTE LENGTH" + routeWays.size());
-					startTime = System.nanoTime();
-					for(Long w : routeWays){
-						routeNodes.addAll(graph.refsToNodes(graph.wayToNodes(w)));
-					}
-					flags.set(x, true);
-					endTime = System.nanoTime();
-					System.out.println("	adding time: " + (((float) endTime - (float)startTime) / 1000000000));
 				}
 			}
-		}
+		};
+		Thread searchThread = new Thread(search);
+		searchThread.start();
 	}
 }

@@ -460,10 +460,10 @@ public class MyGraph {
                                 addWay(w, oneWay, lastRef);
                             } else if (value.matches("tertiary|unclassified|residential|service|tertiary_link|road")){
                                 addWay(w, oneWay, lastRef);
-//                            } else if(value.matches("motorway|motorway_link")){
-//                                addWay(w, oneWay, lastRef);
-//                            } else if (value.matches("trunk|trunk_link")) {
-//                                addWay(w, oneWay, lastRef);
+                            } else if(value.matches("motorway|motorway_link")){
+                                addWay(w, oneWay, lastRef);
+                            } else if (value.matches("trunk|trunk_link")) {
+                                addWay(w, oneWay, lastRef);
                             }
                         }
                     }
@@ -593,7 +593,7 @@ public class MyGraph {
         return nodes;
     }
 
-    public ArrayList<Long> wayToNodes(long wayId){
+    public ArrayList<Long> wayToRefs(long wayId){
         ArrayList<Long> returnNodes = new ArrayList<>();
 //        System.out.println(mapRoads.containsKey(wayId));
         long[] nodes = mapRoads.get(wayId);
@@ -601,6 +601,27 @@ public class MyGraph {
             returnNodes.add(nodes[i]);
         }
         return returnNodes;
+    }
+
+
+    public ArrayList<Point2D.Double> wayToNodes(long wayId){
+        ArrayList<Point2D.Double> points = new ArrayList<>();
+        long[] ids = mapRoads.get(wayId);
+        for(int i = 0; i < ids.length; i++){
+            double[] point = dictionary.get(ids[i]);
+            points.add(new Point2D.Double(point[0], point[1]));
+        }
+        return points;
+    }
+
+    public ArrayList<Point2D.Double> wayToFirstNodes(long wayId){
+        ArrayList<Point2D.Double> points = new ArrayList<>();
+        long[] ids = mapRoads.get(wayId);
+        for(int i = 0; i < 1; i++){
+            double[] point = dictionary.get(ids[i]);
+            points.add(new Point2D.Double(point[0], point[1]));
+        }
+        return points;
     }
 
     public ArrayList<Long> nodesToRefs(ArrayList<MyNode> nodes){

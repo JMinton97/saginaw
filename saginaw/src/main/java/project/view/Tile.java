@@ -48,7 +48,7 @@ public class Tile {
             System.out.println("Couldn't load " + "/" + z + "/" + x + "-" + y + ".png");
             image = new BufferedImage((int) imageEdge, (int) imageEdge, 1);
             Graphics g = image.getGraphics();
-            g.setColor(Color.cyan);
+            g.setColor(new Color(153, 204, 255));
             g.fillRect(0, 0, (int) imageEdge, (int) imageEdge);
         }
     }

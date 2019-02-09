@@ -1,7 +1,8 @@
 package project.view;
 
 import project.controller.Controller;
-import project.map.DouglasPeucker;
+import project.douglas.DouglasPeucker;
+import project.map.Place;
 import project.model.Model;
 
 import javax.imageio.ImageIO;
@@ -31,6 +32,7 @@ class Canvas extends JPanel
 	private View				view;
 
 	private CanvasMouseListener	mouseListener;
+	private CanvasMouseWheelListener mouseWheelListener;
 	private CanvasKeyboardListener keyListener;
 
 	private BufferedImage image;
@@ -45,8 +47,8 @@ class Canvas extends JPanel
 	private double zoom;
 	private double oX, oY;
 	private double imageEdge;
-	private int paneX = 800;
-	private int paneY = 700;
+	private int paneX = 1200;
+	private int paneY = 800;
 	private int xDimension, yDimension;
 	private int level, modifier;
 	private DouglasPeucker doug;
@@ -82,8 +84,10 @@ class Canvas extends JPanel
 		this.model = model;
 		mouseListener = new CanvasMouseListener(this.model, this.view,
 				controller);
+		mouseWheelListener = new CanvasMouseWheelListener(this.model, this.view, controller);
 		keyListener = new CanvasKeyboardListener(view, controller);
 		addMouseListener(mouseListener);
+		addMouseWheelListener(mouseWheelListener);
 		addKeyListener(keyListener);
 		this.setSize((int) paneX, (int) paneY);
 		origin = model.getOrigin();
@@ -203,6 +207,8 @@ class Canvas extends JPanel
 			mouseListener.paint(g);
 		}
 
+		drawPlaces((Graphics2D) g);
+
 		gOld.drawImage(image, 0, 0, null);
 	}
 
@@ -254,6 +260,24 @@ class Canvas extends JPanel
 				g.drawImage(end, (int) marker.getX() - (end.getWidth() / 2), (int) marker.getY() - end.getHeight(), end.getWidth(), end.getHeight(), null, null);
 			}
 		}
+	}
+
+	public void drawPlaces(Graphics2D g){
+		System.out.println(zoom);
+		g.setFont(new Font("Ubuntu", Font.BOLD, 10));
+		g.setColor(Color.BLACK);
+		if(zoom <= 32) {
+			for (Place p : model.getMap().getTowns()) {
+				Point2D loc = geoToCanvas(p.getLocation());
+				g.drawString(p.getName(), (int) loc.getX(), (int) loc.getY());
+			}
+		} else {
+			for(Place p : model.getMap().getCities()){
+				Point2D loc = geoToCanvas(p.getLocation());
+				g.drawString(p.getName(), (int) loc.getX(), (int) loc.getY());
+			}
+		}
+
 	}
 
 	public Point2D.Double geoToCanvas(Point2D geoCoord){

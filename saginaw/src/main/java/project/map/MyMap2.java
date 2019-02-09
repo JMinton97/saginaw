@@ -31,6 +31,8 @@ public class MyMap2 {
     private double spaceModifierY;
     private static double interval;
     private static boolean parsingNodes;
+    private static boolean parsingPlaces;
+    private static boolean parsingWays;
     private static int counter;
     private static int linesDrawn, maxEdge;
     public static int bX1, bX2, bY1, bY2;
@@ -41,6 +43,8 @@ public class MyMap2 {
     private int scale;
     private double height, width;
     private Point2D.Double centre, origin;
+    private static ArrayList<Place> cities;
+    private static ArrayList<Place> towns;
 
     private static File file;
     public static double[][][] bounds;
@@ -124,6 +128,21 @@ public class MyMap2 {
         yDimension = (int) Math.ceil((scale * height) / maxEdge) + 1;
         System.out.println("SIZE " + xDimension + " " + yDimension);
 
+        FileInputStream fis = null;
+        ObjectInputStream in = null;
+        try {
+            fis = new FileInputStream("files/" + region + "/towns.ser");
+            in = new ObjectInputStream(fis);
+            towns = (ArrayList<Place>) in.readObject();
+            in.close();
+            fis = new FileInputStream("files/" + region + "/cities.ser");
+            in = new ObjectInputStream(fis);
+            cities = (ArrayList<Place>) in.readObject();
+            in.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
     }
 
     public void draw() throws IOException{
@@ -137,7 +156,32 @@ public class MyMap2 {
 
         tileNodes = new HashMap<>();
         tileWays = new HashMap[j][j];
+        towns = new ArrayList<>();
+        cities = new ArrayList<>();
 
+        parsingPlaces = true;
+        parsingWays = false;
+        parsingNodes = false;
+        InputStream placeInput = new FileInputStream(file);
+        BlockReaderAdapter placeBrad = new TestBinaryParser();
+        BlockInputStream placeReader = new BlockInputStream(placeInput, placeBrad);
+
+        placeReader.process();
+
+        FileOutputStream fos = null;
+        ObjectOutputStream out = null;
+        try {
+            fos = new FileOutputStream("files/" + region + "/towns.ser");
+            out = new ObjectOutputStream(fos);
+            out.writeObject(towns);
+            out.close();
+            fos = new FileOutputStream("files/" + region + "/cities.ser");
+            out = new ObjectOutputStream(fos);
+            out.writeObject(cities);
+            out.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
 
         InputStream input = new FileInputStream(file);
         BlockReaderAdapter brad = new TestBinaryParser();
@@ -178,6 +222,8 @@ public class MyMap2 {
                 System.out.println("bX1: " + bX1 + " bX2: " + bX2 + " bY1: " + bY1 + " bY2: " + bY2);
                 tileNodes.clear();
                 parsingNodes = true;
+                parsingPlaces = false;
+                parsingWays = false;
                 input = new FileInputStream(file);
                 brad = new TestBinaryParser();
                 reader = new BlockInputStream(input, brad);
@@ -192,6 +238,8 @@ public class MyMap2 {
                         }
                     }
                     parsingNodes = false;                                   //or just have a jxj array of hashmaps and put it into the appropriate one.
+                    parsingWays = true;
+                    parsingPlaces = false;
                     input = new FileInputStream(file);
                     brad = new TestBinaryParser();
                     reader = new BlockInputStream(input, brad);
@@ -275,6 +323,12 @@ public class MyMap2 {
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
         } //GREENS
+
+        for(MyWay w : subTileWays.values()){
+            if(w.getType() == WayType.MOOR){
+                drawWay(w, mapGraphics, false, axis, tileNodes);
+            }
+        } //MOORS
 
         for(MyWay w : subTileWays.values()){
             if(w.getType() == WayType.TREE){
@@ -401,10 +455,16 @@ public class MyMap2 {
                 break;
 
             case CITY:
-                System.out.println("DRAW CITY");
                 mapGraphics.setStroke(new BasicStroke(4));
-                inColor = new Color(181, 162, 185);
-                outColor = new Color(92, 86, 88);
+                inColor = new Color(185, 179, 177);
+                outColor = inColor;
+                drawArea(mapGraphics, wayNodes, bound, inColor, outColor, dictionary);
+                break;
+
+            case MOOR:
+                mapGraphics.setStroke(new BasicStroke(4));
+                inColor = new Color(143, 185, 106);
+                outColor = inColor;
                 drawArea(mapGraphics, wayNodes, bound, inColor, outColor, dictionary);
                 break;
         }
@@ -523,6 +583,9 @@ public class MyMap2 {
                                     System.out.println(filename + " doesn't exist.");
                                     emptyCount++;
                                     images[x - jumpX][y - jumpY] = new BufferedImage((maxEdge / z), (maxEdge/z), 1);
+                                    Graphics2D g = images[x - jumpX][y - jumpY].createGraphics();
+                                    g.setPaint(new Color(153, 204, 255));
+                                    g.fillRect(0, 0, maxEdge, maxEdge);
                                 }
                             }
                         }
@@ -639,6 +702,56 @@ public class MyMap2 {
                     }
                 }
             }
+            if(parsingPlaces){
+                long lastId = 0;
+                long lastLat = 0;
+                long lastLon = 0;
+                int tagCounter = 0;
+                String key;
+                String value;
+                String name = "";
+                List<Integer> keysVals = nodes.getKeysValsList();
+                boolean exitFlag, saveCity, saveTown;
+
+                for (int i = 0; i < nodes.getIdCount(); i++) {
+                    lastId += nodes.getId(i);
+                    lastLat += nodes.getLat(i);
+                    lastLon += nodes.getLon(i);
+//                    System.out.println(lastId);
+                    exitFlag = false;
+                    saveTown = false;
+                    saveCity = false;
+                    do{
+                        if(keysVals.get(tagCounter) != 0){
+                            key = getStringById(keysVals.get(tagCounter));
+                            value = getStringById(keysVals.get(tagCounter + 1));
+                            if(key.equals("name")){
+                                name = value;
+                            }
+                            if(key.equals("place") && value.equals("town")){
+                                saveTown = true;
+                            }
+                            if(key.equals("place") && value.equals("city")){
+                                saveCity = true;
+                            }
+                            tagCounter += 2;
+                        } else {
+                            tagCounter += 1;
+                            exitFlag = true;
+                        }
+                    }while(exitFlag == false);
+                    if(saveTown){
+                        towns.add(new Place(name, parseLon(lastLon), parseLat(lastLat)));
+                        System.out.println(name);
+                    }
+                    if(saveCity){
+                        cities.add(new Place(name, parseLon(lastLon), parseLat(lastLat)));
+                        System.out.println(name);
+                    }
+//                    System.out.println(getStringById(nodes.getKeysValsList().get(i)));
+//                    System.out.println("------------------------");
+                }
+            }
         }
 
         @Override
@@ -652,7 +765,7 @@ public class MyMap2 {
 
         @Override
         protected void parseWays(List<Way> ways) {
-            if (!parsingNodes) {
+            if (parsingWays) {
 //                System.out.println("Parsing ways.");
                 for (Way w : ways) {
                     long lastRef = 0;
@@ -714,6 +827,11 @@ public class MyMap2 {
                                     tempWay.setType(WayType.GREEN);
                                     tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
+                                if((key.equals("natural") && (value.equals("moor") || value.equals("heath")))){
+                                    MyWay tempWay = buildMyWay(w);
+                                    tempWay.setType(WayType.MOOR);
+                                    tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
+                                }
                                 if(key.equals("waterway") && (value.matches("river|stream|canal"))){
                                     MyWay tempWay = buildMyWay(w);
                                     tempWay.setType(WayType.WATERWAY);
@@ -737,7 +855,7 @@ public class MyMap2 {
                                     tempWay.setType(WayType.CYCLE);
                                     tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
-                                if(key.equals("landuse") && (value.equals("residential") || value.equals("retail") || value.equals("school"))){
+                                if(key.equals("landuse") && (value.equals("residential") || value.equals("retail") || value.equals("school") || value.equals("industrial"))){
                                     MyWay tempWay = buildMyWay(w);
                                     tempWay.setType(WayType.CITY);
 //                                    System.out.println("CITY: " + w.getId());
@@ -811,5 +929,13 @@ public class MyMap2 {
     private void timerEnd(String string){
         endTime = System.nanoTime();
         System.out.println(string + " time: " + (((float) endTime - (float)startTime) / 1000000000));
+    }
+
+    public ArrayList<Place> getCities() {
+        return cities;
+    }
+
+    public ArrayList<Place> getTowns() {
+        return towns;
     }
 }

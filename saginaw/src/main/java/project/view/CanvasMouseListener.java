@@ -144,4 +144,6 @@ class CanvasMouseListener implements MouseInputListener
 	public void mouseMoved(MouseEvent e)
 	{
 	}
+
+
 }

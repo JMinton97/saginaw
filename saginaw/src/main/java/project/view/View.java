@@ -91,7 +91,7 @@ public class View extends JFrame
 		getContentPane().add(toolBar, BorderLayout.NORTH);
 
 		pack();
-		setBounds(0, 0, 700, 800);
+		setBounds(0, 0, 1200, 800);
 
 		canvas.grabFocus();
 	}

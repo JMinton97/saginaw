@@ -1,17 +1,17 @@
 package project.map;
 
-import sun.tools.java.Environment;
+import project.search.BiAStar;
+import project.search.ConcurrentBiAStar;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 
 public class TestRun {
 
 
     public static void main(String[] args) throws InterruptedException{
         long startTime, endTime;
-        String region = "birmingham";
+        String region = "wales";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 
@@ -39,25 +39,23 @@ public class TestRun {
 //            map2.draw();
 //            endTime = System.nanoTime();
 //            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
-//
-//            System.exit(0);
 
 
             startTime = System.nanoTime();
             graph = new MyGraph(f, region);
             endTime = System.nanoTime();
             System.out.println("Making graph time: " + (((float) endTime - (float)startTime) / 1000000000));
-
-            startTime = System.nanoTime();
-            System.out.println(graph.findClosest(new double[]{-1.934183, 52.442150}));
-            endTime = System.nanoTime();
-            System.out.println("Finding nearest time: " + (((float) endTime - (float)startTime) / 1000000000));
-
+//
 //            System.exit(0);
 
-            src = Long.parseLong("1349207723"); //wales
-            dst = Long.parseLong("707151082");
+//            startTime = System.nanoTime();
+//            System.out.println(graph.findClosest(new double[]{-1.934183, 52.442150}));
+//            endTime = System.nanoTime();
+//            System.out.println("Finding nearest time: " + (((float) endTime - (float)startTime) / 1000000000));
 
+//            src = Long.parseLong("1349207723"); //wales
+//            dst = Long.parseLong("707151082");
+//
             src = Long.parseLong("154401978"); //wales middle
             dst = Long.parseLong("411081397");
 
@@ -75,8 +73,8 @@ public class TestRun {
 //            dst = Long.parseLong("513499");
 //
 //
-//            src = Long.parseLong("548050322"); //exeter to spalding
-//            dst = Long.parseLong("550385409");
+            src = Long.parseLong("548050322"); //exeter to spalding
+            dst = Long.parseLong("550385409");
 
 //            src = Long.parseLong("548050322"); //brum
 //            dst = Long.parseLong("280150290");
@@ -100,8 +98,18 @@ public class TestRun {
 //            System.out.println("Distance: " + astar.getDistTo().get(dst));
 //            System.out.println("Explored: " + astar.explored);
 //
-//            System.out.println();
+            System.out.println();
+            ConcurrentBiAStar cbdijk = new ConcurrentBiAStar(graph);
+            startTime = System.nanoTime();
+            cbdijk.search(src, dst);
+            endTime = System.nanoTime();
+            System.out.println("Concurrent A-Star full time: " + (((float) endTime - (float)startTime) / 1000000000));
+            System.out.println(cbdijk.getDist());
 
+            System.exit(0);
+
+//            while(1 > 0){
+//            }
 
             BiAStar biastar = new BiAStar(graph);
             System.out.println("Search");
