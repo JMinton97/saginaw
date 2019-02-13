@@ -1,9 +1,8 @@
 package project.model;
 
+import javafx.util.Pair;
 import project.map.*;
-import project.search.BiAStar;
-import project.search.ConcurrentBiAStar;
-import project.search.Searcher;
+import project.search.*;
 import project.utils.ImageFile;
 import project.utils.UnsupportedImageTypeException;
 
@@ -14,6 +13,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.*;
 
 /**
@@ -46,13 +47,15 @@ public class Model {
 	private int imageEdge = 1024;
 	private ArrayList<double[]> markers;
 	private ArrayList<Boolean> flags;
+	public double[] pivot;
+	private double modZoom;
 
-//	private BiDijkstra bdijk;
-	private Searcher searcher;
+	private ConcurrentBiAStar searcher;
 	private MyGraph graph;
 	private ArrayList<Long> routeWays;
 	private ArrayList<Point2D.Double> routeNodes;
 	private HashMap<double[], Long> closestNodes;
+	private ALTPreProcess preProcess;
 
 	public boolean hasRoute;
 	public boolean pivoted;
@@ -61,8 +64,9 @@ public class Model {
 		x = 1;
 		y = 1;
 		baseScale = BigDecimal.valueOf(40000);
-		zoom = BigDecimal.valueOf(32);
-		level = 6;
+		zoom = BigDecimal.valueOf(2);
+		modZoom = Math.pow(2, zoom.doubleValue());
+		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));
 		markers = new ArrayList<>();
 
 		File f = new File(mapDir.concat(region).concat(".osm.pbf"));
@@ -73,7 +77,15 @@ public class Model {
 			e.printStackTrace();
 		}
 
-		searcher = new ConcurrentBiAStar(graph);
+		try{
+			preProcess = new ALTPreProcess(graph, region);
+		} catch(IOException e){
+			System.out.println("IO error in ALTPreProcess.");
+			System.exit(0);
+		}
+
+
+		searcher = new ConcurrentBiAStar(graph, preProcess);
 
 		routeNodes = new ArrayList<>();
 		flags = new ArrayList<>();
@@ -110,8 +122,8 @@ public class Model {
 		return y;
 	}
 
-	public BigDecimal getZ() {
-		return zoom;
+	public double getZ() {
+		return modZoom;
 	}
 
 	public int getLevel(){
@@ -236,9 +248,11 @@ public class Model {
 	}
 
 	public void moveMap(double xD, double yD) {
-		xD = (zoom.multiply(zoom)).multiply(BigDecimal.valueOf(xD)).doubleValue();
-		yD = (zoom.multiply(zoom)).multiply(BigDecimal.valueOf(yD)).doubleValue();
-		double baseScaleZoom = (baseScale.multiply(zoom)).doubleValue();
+		xD = modZoom * modZoom * xD;
+		yD = modZoom * modZoom * yD;
+//		xD = (zoom.multiply(zoom)).multiply(BigDecimal.valueOf(xD)).doubleValue();
+//		yD = (zoom.multiply(zoom)).multiply(BigDecimal.valueOf(yD)).doubleValue();
+		double baseScaleZoom = baseScale.doubleValue() * modZoom;
 		geomXD = (xD / baseScaleZoom) + centreCoord.getX();
 		geomYD = (yD / baseScaleZoom) + centreCoord.getY();
 		if(geomXD < origin.getX()){
@@ -280,77 +294,44 @@ public class Model {
 	}
 
 	public void zoomIn() {
-		if(zoom.compareTo(BigDecimal.valueOf(0.20)) > 0){
-			if(zoom.compareTo(BigDecimal.valueOf(1.99)) > 0){
-				if(zoom.compareTo(BigDecimal.valueOf(3.99)) > 0){
-					if(zoom.compareTo(BigDecimal.valueOf(7.99)) > 0){
-						if(zoom.compareTo(BigDecimal.valueOf(15.99)) > 0){
-							if(zoom.compareTo(BigDecimal.valueOf(31.99)) > 0){
-								if(zoom.compareTo(BigDecimal.valueOf(63.99)) > 0){
-									level = 6;
-									zoom = zoom.subtract(BigDecimal.valueOf(12.8));
-								} else {
-									level = 6;
-									zoom = zoom.subtract(BigDecimal.valueOf(6.4));
-								}
-							} else {
-								level = 5;
-								zoom = zoom.subtract(BigDecimal.valueOf(3.2));
-							}
-						} else {
-							level = 4;
-							zoom = zoom.subtract(BigDecimal.valueOf(1.6));
-						}
-					} else {
-						level = 3;
-						zoom = zoom.subtract(BigDecimal.valueOf(0.8));
-					}
-				} else {
-					level = 2;
-					zoom = zoom.subtract(BigDecimal.valueOf(0.4));
-				}
-			} else {
-				level = 1;
-				zoom = zoom.subtract(BigDecimal.valueOf(0.2));
-			}
+		System.out.println("Zoom in from " + modZoom);
+		MathContext mc = new MathContext(2, RoundingMode.HALF_UP);
+		if(zoom.compareTo(BigDecimal.valueOf(0.2)) > 0){
+//			zoom = zoom.subtract(BigDecimal.valueOf(0.1 * zoom.doubleValue()));
+			zoom = zoom.subtract(BigDecimal.valueOf(0.1), mc);
 		}
+		modZoom = Math.pow(2, zoom.doubleValue());
+		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));
+	}
+
+	public void zoomIn(double[] zoomPoint) {
+
+		MathContext mc = new MathContext(2, RoundingMode.HALF_UP);
+		if(zoom.compareTo(BigDecimal.valueOf(0.2)) > 0){
+//			zoom = zoom.subtract(BigDecimal.valueOf(0.1 * zoom.doubleValue()));
+			zoom = zoom.subtract(BigDecimal.valueOf(0.1), mc);
+		}
+		modZoom = Math.pow(2, zoom.doubleValue());
+		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));
+
+//		double xDif = zoomPoint[0] - centreCoord.getX();
+//		double yDif = zoomPoint[1] - centreCoord.getY();
+
+//		centreCoord.x += xDif/(0.1 * zoom.doubleValue());
+//		centreCoord.y += yDif/(0.1 * zoom.doubleValue());
 	}
 
 	public void zoomOut() {
-		if(zoom.compareTo(BigDecimal.valueOf(0.19)) > 0){
-			if(zoom.compareTo(BigDecimal.valueOf(1.99)) > 0){
-				if(zoom.compareTo(BigDecimal.valueOf(3.99)) > 0){
-					if(zoom.compareTo(BigDecimal.valueOf(7.99)) > 0){
-						if(zoom.compareTo(BigDecimal.valueOf(15.99)) > 0){
-							if(zoom.compareTo(BigDecimal.valueOf(31.99)) > 0){
-								if(zoom.compareTo(BigDecimal.valueOf(63.99)) > 0){
-									level = 6;
-									zoom = zoom.add(BigDecimal.valueOf(12.8));
-								} else {
-									level = 6;
-									zoom = zoom.add(BigDecimal.valueOf(6.4));
-								}
-							} else {
-								level = 5;
-								zoom = zoom.add(BigDecimal.valueOf(3.2));
-							}
-						} else {
-							level = 4;
-							zoom = zoom.add(BigDecimal.valueOf(1.6));
-						}
-					} else {
-						level = 3;
-						zoom = zoom.add(BigDecimal.valueOf(0.8));
-					}
-				} else {
-					level = 2;
-					zoom = zoom.add(BigDecimal.valueOf(0.4));
-				}
-			} else {
-				level = 1;
-				zoom = zoom.add(BigDecimal.valueOf(0.2));
-			}
+		System.out.println("Zoom out from " + modZoom);
+		if(zoom.add(BigDecimal.valueOf(0.1)).compareTo(BigDecimal.valueOf(9)) < 0){
+//			zoom = zoom.subtract(BigDecimal.valueOf(0.1 * zoom.doubleValue()));
+			zoom = zoom.add(BigDecimal.valueOf(0.1));
 		}
+//		zoom = zoom.add(BigDecimal.valueOf(0.1 * zoom.doubleValue()));
+
+		System.out.println("Model zoom: " + zoom);
+		modZoom = Math.pow(2, zoom.doubleValue());
+		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));
 	}
 
 	public int getImageEdge(){
@@ -383,6 +364,12 @@ public class Model {
 		findRoute();
 	}
 
+	public void addPivotAlternate(double[] location){
+		pivot = location;
+		pivoted = true;
+		findRouteAlternate();
+	}
+
 	public void clearMarkers(){
 		markers.clear();
 		flags.clear();
@@ -394,84 +381,140 @@ public class Model {
 		return markers;
 	}
 
-	public void findRoute() {
 
+	public void findRouteAlternate() {
+		if(markers.size() > 1){
+			if(pivoted){
 
-		Runnable search = () -> {
-			long startTime, endTime;
-			if (markers.size() > 1) {
+				ConcurrentBiAStar searcherA = new ConcurrentBiAStar(graph, preProcess, (ConcurrentBiAStar) searcher, true);
+				ConcurrentBiAStar searcherB = new ConcurrentBiAStar(graph, preProcess, (ConcurrentBiAStar) searcher, false);
+				long src, dst, pvt;
+				if(closestNodes.get(markers.get(0)) == null){
+					src = graph.findClosest(markers.get(0));
+				}else{
+					src = closestNodes.get(markers.get(0));
+				}
+				if(closestNodes.get(markers.get(1)) == null){
+					dst = graph.findClosest(markers.get(1));
+				}else{
+					dst = closestNodes.get(markers.get(1));
+				}
+				if(closestNodes.get(pivot) == null){
+					pvt = graph.findClosest(pivot);
+				}else{
+					pvt = closestNodes.get(pivot);
+				}
+				routeWays.clear();
+				routeWays.addAll(searcherA.continueSearch(src, pvt));
+				routeWays.addAll(searcherB.continueSearch(pvt, dst));
+				for (Long w : routeWays) {
+					System.out.println("add");
+					ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
+					routeNodes.addAll(p);
+				}
+				System.out.println(routeNodes.size());
 				hasRoute = true;
-				routeNodes = new ArrayList<>();
-				for (int x = 0; x < markers.size() - 1; x++) {
-					if (!flags.get(x)) {
+			}else{
+				System.out.println("search");
+				long src, dst;
+				if(closestNodes.get(markers.get(0)) == null){
+					src = graph.findClosest(markers.get(0));
+				}else{
+					src = closestNodes.get(markers.get(0));
+				}
+				if(closestNodes.get(markers.get(1)) == null){
+					dst = graph.findClosest(markers.get(1));
+				}else{
+					dst = closestNodes.get(markers.get(1));
+				}
+				routeWays = searcher.search(src, dst);
+				for (Long w : routeWays) {
+					System.out.println("add");
+					ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
+					routeNodes.addAll(p);
+				}
+				System.out.println(routeNodes.size());
+				hasRoute = true;
+			}
+		}
+	}
+
+	public void findRoute() {
+		ArrayList<Thread> routeThreads = new ArrayList<>();
+		ArrayList<ConcurrentBiAStar> routeFinders = new ArrayList<>();
+		routeWays = new ArrayList<>();
+		long startTime, endTime;
+		if (markers.size() > 1) {
+			hasRoute = true;
+			routeNodes = new ArrayList<>();
+			for (int x = 0; x < markers.size() - 1; x++) {
+				if (!flags.get(x)) {
 //					System.out.println(markers.get(x)[0] + " " + markers.get(x)[1]);
-						startTime = System.nanoTime();
-						long src, dst;
-						if (closestNodes.get(markers.get(x)) == null) {
-							src = graph.findClosest(markers.get(x));
-							closestNodes.put(markers.get(x), src);
-						} else {
-							src = closestNodes.get(markers.get(x));
-						}
-						if (closestNodes.get(markers.get(x + 1)) == null) {
-							dst = graph.findClosest(markers.get(x + 1));
-							closestNodes.put(markers.get(x + 1), dst);
-						} else {
-							dst = closestNodes.get(markers.get(x + 1));
-						}
-						System.out.println(src);
-						System.out.println(dst);
-						endTime = System.nanoTime();
-						System.out.println("	closest time: " + (((float) endTime - (float) startTime) / 1000000000));
-						startTime = System.nanoTime();
-						routeWays = searcher.search(src, dst);
-						endTime = System.nanoTime();
-						System.out.println("	search time: " + (((float) endTime - (float) startTime) / 1000000000));
-						System.out.println("ROUTE LENGTH" + routeWays.size());
-						startTime = System.nanoTime();
-						long wayToRefsTime = 0, refsToNodesTime = 0, addAllTime = 0, wayToNodesTime = 0;
-
-						Runnable way = () -> {
-							for (Long w : routeWays) {
-								ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
-								routeNodes.addAll(p);
-							}
-						};
-
-						Thread wayThread = new Thread(way);
-						wayThread.start();
-
-//						startTime = System.nanoTime();
-
-//						endTime = System.nanoTime();
-//						wayToNodesTime += endTime - startTime;
-
-//						startTime = System.nanoTime();
-//						ArrayList<Long> n = graph.wayToRefs(w);
-//						endTime = System.nanoTime();
-//						wayToRefsTime += endTime - startTime;
-//						startTime = System.nanoTime();
-//						p = graph.refsToNodes(n);
-//						endTime = System.nanoTime();
-//						refsToNodesTime += endTime - startTime;
-
-//						startTime = System.nanoTime();
-
-//						endTime = System.nanoTime();
-//						addAllTime += endTime - startTime;
-
-//					System.out.println(wayToRefsTime / 10000);
-//					System.out.println(refsToNodesTime / 10000);
-//					System.out.println(addAllTime / 10000);
-//					System.out.println(wayToNodesTime / 10000);
-						flags.set(x, true);
-						endTime = System.nanoTime();
-						System.out.println("	adding time: " + (((float) endTime - (float) startTime) / 1000000000));
+					startTime = System.nanoTime();
+					long src, dst;
+					if (closestNodes.get(markers.get(x)) == null) {
+						src = graph.findClosest(markers.get(x));
+						closestNodes.put(markers.get(x), src);
+					} else {
+						src = closestNodes.get(markers.get(x));
 					}
+					if (closestNodes.get(markers.get(x + 1)) == null) {
+						dst = graph.findClosest(markers.get(x + 1));
+						closestNodes.put(markers.get(x + 1), dst);
+					} else {
+						dst = closestNodes.get(markers.get(x + 1));
+					}
+					System.out.println(src);
+					System.out.println(dst);
+					System.out.println("Found src and dst.");
+					endTime = System.nanoTime();
+//					System.out.println("	closest time: " + (((float) endTime - (float) startTime) / 1000000000));
+//					startTime = System.nanoTime();
+
+					routeFinders.add(new ConcurrentBiAStar(graph, preProcess));
+					Pair<Thread, Thread> threads = routeFinders.get(x).searchWithThreads(src, dst);
+					threads.getValue().start();
+					threads.getKey().start();
+					System.out.println("Started threads.");
+					routeThreads.add(threads.getKey());
+					routeThreads.add(threads.getValue());
 				}
 			}
-		};
-		Thread searchThread = new Thread(search);
-		searchThread.start();
+			System.out.println("Started all threads.");
+			boolean done;
+			do {
+				done = true;
+//				try {
+//					Thread.sleep(100);
+//				} catch (InterruptedException e) {
+//					e.printStackTrace();
+//				}
+				for (Thread t : routeThreads) {
+//					System.out.println(t.getId());
+					done = done && !t.isAlive();
+//					System.out.println(t.isInterrupted());
+				}
+			}while(!done);
+
+			int j = 0;
+
+			for (ConcurrentBiAStar c : routeFinders) {
+				ArrayList<Long> ways = c.getRouteAsWays();
+				c = null;
+				if(ways == null){
+					System.out.println("Error at segment " + j);
+				} else {
+					routeWays.addAll(ways);
+				}
+				j++;
+			}
+
+			for (Long w : routeWays) {
+//				System.out.println("way");
+				ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
+				routeNodes.addAll(p);
+			}
+
+		}
 	}
 }

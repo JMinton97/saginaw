@@ -4,14 +4,19 @@ package project.search;
 import gnu.trove.map.hash.THashMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
+import project.map.MyGraph;
 
 
 import java.util.*;
 
-public class Dijkstra {
+public class Dijkstra implements Searcher {
     long pollTimeStart, pollTimeEnd, totalPollTime, addTimeStart, addTimeEnd, totalAddTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, putTimeStart, putTimeEnd, totalPutTime;
     THashMap<Long, Double> distTo;
     THashMap<Long, Long> edgeTo;
+
+    public long src, dst;
+
+    private MyGraph graph;
 
     Long2DoubleOpenHashMap distTo2;
     Long2LongOpenHashMap edgeTo2;
@@ -20,7 +25,7 @@ public class Dijkstra {
     long startNode, endNode;
     public int explored;
 
-    public Dijkstra(project.map.MyGraph graph, long startNode){
+    public Dijkstra(project.map.MyGraph graph, long startNode) {
         distTo = new THashMap<>();
         edgeTo = new THashMap<>();
 
@@ -29,7 +34,7 @@ public class Dijkstra {
 
         pq = new PriorityQueue();
 
-        for(long vert : graph.getFwdGraph().keySet()){
+        for (long vert : graph.getFwdGraph().keySet()) {
             distTo2.put(vert, Double.MAX_VALUE);
         }
         distTo2.put(startNode, 0.0);
@@ -39,15 +44,26 @@ public class Dijkstra {
 
         pq.add(new DijkstraEntry(startNode, 0.0));
 
-        while(!pq.isEmpty()){
+        while (!pq.isEmpty()) {
             long v = pq.poll().getNode();
-            for (double[] e : graph.fwdAdj(v)){
+            for (double[] e : graph.fwdAdj(v)) {
                 relax(v, e);
             }
         }
     }
 
-    public Dijkstra(project.map.MyGraph graph, long startNode, long endNode){
+    public Dijkstra(project.map.MyGraph graph){
+        this.graph = graph;
+    }
+
+
+    public ArrayList<Long> search(long src, long dst){
+
+        explored = 0;
+
+        this.dst = dst;
+        this.src = src;
+
         distTo = new THashMap<>();
         edgeTo = new THashMap<>();
 
@@ -56,8 +72,8 @@ public class Dijkstra {
 
         pq = new PriorityQueue();
 
-        this.startNode = startNode;
-        this.endNode = endNode;
+        this.startNode = src;
+        this.endNode = dst;
 
         for(long vert : graph.getFwdGraph().keySet()){
             distTo2.put(vert, Double.MAX_VALUE);
@@ -71,6 +87,7 @@ public class Dijkstra {
 
         long startTime = System.nanoTime();
         OUTER: while(!pq.isEmpty()){
+            explored++;
             pollTimeStart = System.nanoTime();
             long v = pq.poll().getNode();
             pollTimeEnd = System.nanoTime();
@@ -78,17 +95,20 @@ public class Dijkstra {
             for (double[] e : graph.fwdAdj(v)){
                 relax(v, e);
                 if(v == endNode){
-                    System.out.println("Dijkstra terminate.");
-                    break OUTER;
+                    long endTime = System.nanoTime();
+//                    System.out.println("Dijkstra time: " + (((float) endTime - (float)startTime) / 1000000000));
+                    return getRoute();
                 }
             }
         }
+        System.out.println("No route found.");
         long endTime = System.nanoTime();
-        System.out.println("Dijkstra time: " + (((float) endTime - (float)startTime) / 1000000000));
+//        System.out.println("Dijkstra time: " + (((float) endTime - (float)startTime) / 1000000000));
+        return new ArrayList<>();
     }
 
+
     private void relax(long v, double[] edge){
-        explored++;
         relaxTimeStart = System.nanoTime();
         long w = (long) edge[0];
         double weight = edge[1];
@@ -136,14 +156,19 @@ public class Dijkstra {
         return route;
     }
 
-    public double getDistance(long x){
-        return distTo2.get(x);
+
+    public double getDist(){
+        return distTo2.get(dst);
     }
 
     public void clear(){
         distTo2.clear();
         edgeTo2.clear();
         pq.clear();
+    }
+
+    public int getExplored(){
+        return explored;
     }
 }
 

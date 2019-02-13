@@ -22,14 +22,14 @@ public class ConcurrentBiDijkstra implements Searcher {
     private double maxDist; //how far from the nodes we have explored - have we covered minimum distance yet?
     public double bestSeen;
     public long bestPathNode;
-    public int explored;
+    public int exploredA, exploredB;
     private long startNode, endNode;
     private MyGraph graph;
 
     public ConcurrentBiDijkstra(MyGraph graph) {
         int size = graph.getFwdGraph().size();
 
-        System.out.println("SIZE " + size);
+//        System.out.println("SIZE " + size);
         uDistTo = new THashMap<>(size);
         uEdgeTo = new THashMap<>(size);
         uNodeTo = new THashMap<>(size);
@@ -53,6 +53,9 @@ public class ConcurrentBiDijkstra implements Searcher {
 
     public ArrayList<Long> search(long startNode, long endNode){
 
+        exploredA = 0;
+        exploredB = 0;
+
         overlapNode = null;
 
         uDistTo.clear();
@@ -64,8 +67,8 @@ public class ConcurrentBiDijkstra implements Searcher {
         uDistTo.put(startNode, 0.0);
         vDistTo.put(endNode, 0.0);
 
-        System.out.println(uDistTo.size());
-        System.out.println(vDistTo.size());
+//        System.out.println(uDistTo.size());
+//        System.out.println(vDistTo.size());
 
         uEdgeTo.clear();
         vEdgeTo.clear();
@@ -73,8 +76,8 @@ public class ConcurrentBiDijkstra implements Searcher {
         uNodeTo.clear();
         vNodeTo.clear();
 
-        System.out.println(uNodeTo.size());
-        System.out.println(uEdgeTo.size());
+//        System.out.println(uNodeTo.size());
+//        System.out.println(uEdgeTo.size());
 
         uPq = new PriorityQueue<>(new DistanceComparator());
         vPq = new PriorityQueue<>(new DistanceComparator());
@@ -97,6 +100,7 @@ public class ConcurrentBiDijkstra implements Searcher {
 
         Runnable s = () -> {
             while(!uPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+                exploredA++;
 //                System.out.println("Running a");
                 long v1 = uPq.poll().getNode();
                 for (double[] e : graph.fwdAdj(v1)){
@@ -110,12 +114,12 @@ public class ConcurrentBiDijkstra implements Searcher {
                             }
                         }
                         if (vRelaxed.contains(v1)) {
-                            System.out.println("truth");
+//                            System.out.println("truth");
                             if ((uDistTo.get(v1) + vDistTo.get(v1)) < bestSeen) {
-                                System.out.println("A1");
+//                                System.out.println("A1");
                                 overlapNode = v1;
                             } else {
-                                System.out.println("B1");
+//                                System.out.println("B1");
                                 overlapNode = bestPathNode;
                             }
                             Thread.currentThread().interrupt();
@@ -127,6 +131,7 @@ public class ConcurrentBiDijkstra implements Searcher {
 
         Runnable t = () -> {
             while(!vPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+                exploredB++;
 //                System.out.println("Running b");
                 long v2 = vPq.poll().getNode();
                 for (double[] e : graph.bckAdj(v2)) {
@@ -140,12 +145,12 @@ public class ConcurrentBiDijkstra implements Searcher {
                             }
                         }
                         if (uRelaxed.contains(v2)) { //FINAL TERMINATION
-                            System.out.println("truth");
+//                            System.out.println("truth");
                             if ((uDistTo.get(v2) + vDistTo.get(v2)) < bestSeen) {
-                                System.out.println("A2");
+//                                System.out.println("A2");
                                 overlapNode = v2;
                             } else {
-                                System.out.println("B2");
+//                                System.out.println("B2");
                                 overlapNode = bestPathNode;
                             }
                             Thread.currentThread().interrupt();
@@ -172,8 +177,8 @@ public class ConcurrentBiDijkstra implements Searcher {
         }
 
         long endTime = System.nanoTime();
-        System.out.println("OVERLAP: " + overlapNode);
-        System.out.println("BiDijkstra time: " + (((float) endTime - (float) startTime) / 1000000000));
+//        System.out.println("OVERLAP: " + overlapNode);
+//        System.out.println("BiDijkstra time: " + (((float) endTime - (float) startTime) / 1000000000));
 
         return getRouteAsWays();
 
@@ -181,7 +186,6 @@ public class ConcurrentBiDijkstra implements Searcher {
 
     private void relax(Long x, double[] edge, boolean u){
         relaxTimeStart = System.nanoTime();
-        explored++;
         long w = (long) edge[0];
         double weight = edge[1];
         double wayId = edge[2];
@@ -275,7 +279,7 @@ public class ConcurrentBiDijkstra implements Searcher {
         long node = overlapNode;
         ArrayList<Long> route = new ArrayList<>();
         try{
-            System.out.println("GETROUTEASWAYS");
+//            System.out.println("GETROUTEASWAYS");
             long way = 0;
             while(node != startNode && node != endNode){
 //            System.out.println(node + ",");
@@ -322,5 +326,9 @@ public class ConcurrentBiDijkstra implements Searcher {
         uPq.clear();
         vRelaxed.clear();
         uRelaxed.clear();
+    }
+
+    public int getExplored(){
+        return exploredA + exploredB;
     }
 }

@@ -18,7 +18,7 @@ public class Tile {
     private double scale;
     private double imageEdge;
     private BufferedImage image;
-    private long lastAccess;
+    private long lastView;
     private String region;
 
     public Tile(int x, int y, int z, double scale, double imageEdge, String region){
@@ -60,6 +60,19 @@ public class Tile {
         return image;
     }
 
+    public void check(Canvas canvas){
+//        System.out.println((System.nanoTime() - lastView)/100000000);
+        if(!overlaps(canvas.getTopLeft(), canvas.getBottomRight())){
+            if((System.nanoTime() - lastView)/1000000000 > 5){
+                if(image != null){
+                    image = null;
+                    System.out.println("Removed image.");
+                }
+            }
+        }
+    }
+
+
     public boolean overlaps(Point2D viewTopLeft, Point2D viewBottomRight){
 
 //        System.out.println(viewTopLeft + " v " + topLeft + "    " + viewBottomRight + " v " + bottomRight);
@@ -78,6 +91,7 @@ public class Tile {
         if((viewTopLeft.getX() <= bottomRight.getX()) && (viewBottomRight.getX() >= topLeft.getX()) && //add some tolerances for .99999s
                 (viewTopLeft.getY() >= bottomRight.getY()) && (viewBottomRight.getY() <= topLeft.getY())){
 //            System.out.println("#####" + viewTopLeft.getX() + ", " + viewTopLeft.getY() + "   " + topLeft.getX() + ", " + topLeft.getY());
+            lastView = System.nanoTime();
             return true;
         } else {
             return false;

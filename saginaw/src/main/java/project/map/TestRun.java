@@ -1,12 +1,15 @@
 package project.map;
 
-import project.search.BiAStar;
-import project.search.ConcurrentBiAStar;
+import project.search.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Random;
 
 public class TestRun {
+
+    public long startTime, endTime;
 
 
     public static void main(String[] args) throws InterruptedException{
@@ -56,8 +59,8 @@ public class TestRun {
 //            src = Long.parseLong("1349207723"); //wales
 //            dst = Long.parseLong("707151082");
 //
-            src = Long.parseLong("154401978"); //wales middle
-            dst = Long.parseLong("411081397");
+//            src = Long.parseLong("154401978"); //wales middle
+//            dst = Long.parseLong("411081397");
 
 //            src = Long.parseLong("312711672"); //
 //            dst = Long.parseLong("2940631595");
@@ -79,8 +82,8 @@ public class TestRun {
 //            src = Long.parseLong("548050322"); //brum
 //            dst = Long.parseLong("280150290");
 
-//            src = Long.parseLong("370459811"); //wolverton to sheffield
-//            dst = Long.parseLong("1014466202");
+            src = Long.parseLong("370459811"); //wolverton to sheffield
+            dst = Long.parseLong("1014466202");
 
 //            src = Long.parseLong("1014654504"); //north to south
 //            dst = Long.parseLong("1620423227");
@@ -97,49 +100,135 @@ public class TestRun {
 //
 //            System.out.println("Distance: " + astar.getDistTo().get(dst));
 //            System.out.println("Explored: " + astar.explored);
-//
+
+            ALTPreProcess altPreProcess = new ALTPreProcess(graph, region);
+
+            src = Long.parseLong("1488735936");
+            dst = Long.parseLong("1490759079");
+            long pvt = Long.parseLong("307371102");
+
+            System.out.println("src" + graph.getFwdGraph().containsKey(src));
+            System.out.println(graph.getFwdGraph().containsKey(dst));
+            System.out.println(graph.getFwdGraph().containsKey(pvt));
+
+            ConcurrentBiAStar concurrentBiAStar = new ConcurrentBiAStar(graph, altPreProcess);
+            concurrentBiAStar.search(src, dst);
+
+//            System.exit(0);
+
+            ConcurrentBiAStar aCon = new ConcurrentBiAStar(graph, altPreProcess, concurrentBiAStar, true);
+            ConcurrentBiAStar bCon = new ConcurrentBiAStar(graph, altPreProcess, concurrentBiAStar, false);
+
             System.out.println();
-            ConcurrentBiAStar cbdijk = new ConcurrentBiAStar(graph);
-            startTime = System.nanoTime();
-            cbdijk.search(src, dst);
-            endTime = System.nanoTime();
-            System.out.println("Concurrent A-Star full time: " + (((float) endTime - (float)startTime) / 1000000000));
-            System.out.println(cbdijk.getDist());
+
+            aCon.continueSearch(src, pvt);
+
+            System.out.println();
+
+            bCon.continueSearch(pvt, dst);
+
+            System.out.println("A: " + aCon.getDist());
+            System.out.println("B: " + bCon.getDist());
 
             System.exit(0);
 
-//            while(1 > 0){
-//            }
+            Dijkstra dijkstra = new Dijkstra(graph);
+            BiDijkstra biDijkstra = new BiDijkstra(graph);
+            AStar aStar = new AStar(graph, altPreProcess);
+            BiAStar biAStar = new BiAStar(graph, altPreProcess);
+            ConcurrentBiDijkstra concurrentBiDijkstra = new ConcurrentBiDijkstra(graph);
+//            ConcurrentBiAStar concurrentBiAStar = new ConcurrentBiAStar(graph, altPreProcess);
 
-            BiAStar biastar = new BiAStar(graph);
-            System.out.println("Search");
-            startTime = System.nanoTime();
-            biastar.search(src, dst);
-            endTime = System.nanoTime();
-            System.out.println("BiAStar 1 full time: " + (((float) endTime - (float)startTime) / 1000000000));
-            System.out.println("Distance: " + biastar.getDist());
-            System.out.println("Explored: " + biastar.explored);
-
-            startTime = System.nanoTime();
-            biastar.search(src, dst);
-            endTime = System.nanoTime();
-            System.out.println("BiAStar 2 full time: " + (((float) endTime - (float)startTime) / 1000000000));
-            System.out.println("Distance: " + biastar.getDist());
-            System.out.println("Explored: " + biastar.explored);
-
-            startTime = System.nanoTime();
-            biastar.search(src, dst);
-            endTime = System.nanoTime();
-            System.out.println("BiAStar 3 full time: " + (((float) endTime - (float)startTime) / 1000000000));
-            System.out.println("Distance: " + biastar.getDist());
-            System.out.println("Explored: " + biastar.explored);
+            long avgDijkstra = 0, avgBiDijkstra = 0, avgAStar = 0, avgBiAStar = 0, avgConcurrentBiDijkstra = 0, avgConcurrentBiAStar = 0;
+            long avgDijkstraEpS = 0, avgBiDijkstraEpS = 0, avgAStarEpS = 0, avgBiAStarEpS = 0, avgConcurrentBiDijkstraEpS = 0, avgConcurrentBiAStarEpS = 0;
 
 
+            for(int x = 1; x < 11; x++){
+                Random generator = new Random();
+                Object[] keys = graph.getFwdGraph().keySet().toArray();
+                Long randomSrc = (Long) keys[generator.nextInt(keys.length)];
+                Long randomDst = (Long) keys[generator.nextInt(keys.length)];
+                System.out.println(randomSrc + "    " + randomDst);
+
+                startTime = System.nanoTime();
+                dijkstra.search(randomSrc, randomDst);
+                endTime = System.nanoTime();
+                avgDijkstra += ((float) endTime - (float) startTime) / 100000000;
+                avgDijkstraEpS += dijkstra.getExplored() / (((float) endTime - (float) startTime) / 100000000);
+                System.out.println("Dijkstra:               " + ((float) endTime - (float) startTime) / 100000000);
+                System.out.println("Explored: " + dijkstra.getExplored());
+//                System.out.println(dijkstra.getDist());
+
+                startTime = System.nanoTime();
+                biDijkstra.search(randomSrc, randomDst);
+                endTime = System.nanoTime();
+                avgBiDijkstra += ((float) endTime - (float) startTime) / 100000000;
+                avgBiDijkstraEpS += biDijkstra.getExplored() / (((float) endTime - (float) startTime) / 100000000);
+                System.out.println("BiDijkstra:             " + ((float) endTime - (float) startTime) / 100000000);
+                System.out.println("Explored: " + biDijkstra.getExplored());
+//                System.out.println(biDijkstra.getDist());
+
+                startTime = System.nanoTime();
+                concurrentBiDijkstra.search(randomSrc, randomDst);
+                endTime = System.nanoTime();
+                avgConcurrentBiDijkstra += ((float) endTime - (float) startTime) / 100000000;
+                avgConcurrentBiDijkstraEpS += concurrentBiDijkstra.getExplored() / (((float) endTime - (float) startTime) / 100000000);
+                System.out.println("ConcurrentBiDijkstra:   " + ((float) endTime - (float) startTime) / 100000000);
+                System.out.println("Explored: " + concurrentBiDijkstra.getExplored());
+//                System.out.println(concurrentBiDijkstra.getDist());
+
+                startTime = System.nanoTime();
+                aStar.search(randomSrc, randomDst);
+                endTime = System.nanoTime();
+                avgAStar += ((float) endTime - (float) startTime) / 100000000;
+                avgAStarEpS += aStar.getExplored() / (((float) endTime - (float) startTime) / 100000000);
+                System.out.println("AStar:                  " + ((float) endTime - (float) startTime) / 100000000);
+                System.out.println("Explored: " + aStar.getExplored());
+//                System.out.println(aStar.getDist());
+
+                startTime = System.nanoTime();
+                biAStar.search(randomSrc, randomDst);
+                endTime = System.nanoTime();
+                avgBiAStar += ((float) endTime - (float) startTime) / 100000000;
+                avgBiAStarEpS += biAStar.getExplored() / (((float) endTime - (float) startTime) / 100000000);
+                System.out.println("BiAStar:                " + ((float) endTime - (float) startTime) / 100000000);
+                System.out.println("Explored: " + biAStar.getExplored());
+//                System.out.println(biAStar.getDist());
 
 
-            biastar.clear();
-            biastar = null;
-            System.out.println("----------------------");
+                startTime = System.nanoTime();
+                concurrentBiAStar.search(randomSrc, randomDst);
+                endTime = System.nanoTime();
+                avgConcurrentBiAStar += ((float) endTime - (float) startTime) / 100000000;
+                avgConcurrentBiAStarEpS += concurrentBiAStar.getExplored() / (((float) endTime - (float) startTime) / 100000000);
+                System.out.println("ConcurrentBiAStar:      " + ((float) endTime - (float) startTime) / 100000000);
+                System.out.println("Explored: " + concurrentBiAStar.getExplored());
+//                System.out.println(concurrentBiAStar.getDist());
+                System.out.println();
+
+
+                System.out.println("Dijkstra:               " + avgDijkstra / x);
+                System.out.println("BiDijkstra:             " + avgBiDijkstra / x);
+                System.out.println("Concurrent BiDijkstra:  " + avgConcurrentBiDijkstra / x);
+                System.out.println("AStar:                  " + avgAStar / x);
+                System.out.println("BiAStar:                " + avgBiAStar / x);
+                System.out.println("ConcurrentBiAStar:      " + avgConcurrentBiAStar / x);
+                System.out.println();
+                System.out.println("Dijkstra EpS:               " + avgDijkstraEpS / x);
+                System.out.println("BiDijkstra EpS:             " + avgBiDijkstraEpS / x);
+                System.out.println("Concurrent BiDijkstra EpS:  " + avgConcurrentBiDijkstraEpS / x);
+                System.out.println("AStar EpS:                  " + avgAStarEpS / x);
+                System.out.println("BiAStar EpS:                " + avgBiAStarEpS / x);
+                System.out.println("ConcurrentBiAStar EpS:      " + avgConcurrentBiAStarEpS / x);
+                System.out.println();
+                System.out.println();
+                System.out.println();
+
+            }
+
+
+
+
 //
 //            AStar astar = new AStar(graph);
 //            startTime = System.nanoTime();

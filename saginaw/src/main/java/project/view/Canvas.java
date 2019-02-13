@@ -112,6 +112,11 @@ class Canvas extends JPanel
 		this.scale = model.getScale().doubleValue();
 		for(int l = 1; l < 512; l *= 2){
 			tileGrid = new Tile[(int) Math.ceil(xDimension / (double) l)][(int) Math.ceil(yDimension / (double) l)];
+			TileManager tm = new TileManager(tileGrid, this);
+			if(l == 1){
+				Thread t = new Thread(tm);
+//				t.start();
+			}
 			System.out.println(l + " is " +  (int) Math.ceil(xDimension / (double) l) + ", " + (int) Math.ceil(yDimension / (double) l));
 			for(int x = 0; x < tileGrid.length; x++){
 				for(int y = 0; y < tileGrid[0].length; y++){
@@ -143,9 +148,11 @@ class Canvas extends JPanel
 
 		centre = model.getCentre();
 		scale = model.getScale().doubleValue();
-		zoom = model.getZ().doubleValue();
+		zoom = model.getZ();
 		topLeft = new Point2D.Double((centre.getX() - (((paneX / 2) * zoom) / scale)), (centre.getY() + (((paneY / 2) * zoom) / scale)));
 		bottomRight = new Point2D.Double((centre.getX() + (((paneX / 2) * zoom) / scale)), (centre.getY() - (((paneY / 2) * zoom) / scale)));
+
+//		System.out.println("Canvas zoom: " + zoom);
 
 		g.setColor(Color.BLACK);
 		g.fillRect(0, 0, paneX, paneY);
@@ -157,7 +164,8 @@ class Canvas extends JPanel
 		boolean flag = true;											//would it be more efficient to declare this outside the method? Ask generally!!!
 
 		level = model.getLevel();
-		modifier = (int) Math.pow(2, level - 1);
+//		System.out.println("Canvas level: " + level);
+		modifier = level;
 
 		tileGrid = layers.get(modifier);
 //		System.out.println("Level = " + level);
@@ -263,7 +271,6 @@ class Canvas extends JPanel
 	}
 
 	public void drawPlaces(Graphics2D g){
-		System.out.println(zoom);
 		g.setFont(new Font("Ubuntu", Font.BOLD, 10));
 		g.setColor(Color.BLACK);
 		if(zoom <= 32) {
@@ -313,5 +320,13 @@ class Canvas extends JPanel
 	public boolean clickedRoute(MouseEvent e){
 //		System.out.println("color " + ((BufferedImage) createImage(700, 800)).getRGB(1, 1));
 		return (image.getRGB(e.getX(), e.getY()) == Color.RED.darker().getRGB()) || (image.getRGB(e.getX(), e.getY()) == Color.RED.getRGB());
+	}
+
+	public Point2D getTopLeft(){
+		return topLeft;
+	}
+
+	public Point2D getBottomRight(){
+		return bottomRight;
 	}
 }

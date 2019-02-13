@@ -2,6 +2,7 @@ package project.search;
 
 import gnu.trove.map.hash.THashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import javafx.util.Pair;
 import org.mapdb.BTreeMap;
 import org.nustaq.serialization.FSTObjectInput;
 import org.nustaq.serialization.FSTObjectOutput;
@@ -22,8 +23,8 @@ public class ConcurrentBiAStar implements Searcher {
     THashMap<Long, Double> vDistTo;
     THashMap<Long, Long> vEdgeTo;
     THashMap<Long, Long> vNodeTo;
-    PriorityQueue<DijkstraEntry> uPq;
-    PriorityQueue<DijkstraEntry> vPq;
+    public PriorityQueue<DijkstraEntry> uPq;
+    public PriorityQueue<DijkstraEntry> vPq;
     long start, end;
     MyGraph myGraph;
     ArrayList<Long> landmarks;
@@ -34,9 +35,10 @@ public class ConcurrentBiAStar implements Searcher {
     public Long overlapNode;
     private double maxDist; //how far from the nodes we have explored - have we covered minimum distance yet?
     public double bestSeen;
-    public int explored, size;
+    public int exploredA, exploredB, size;
     public String filePrefix;
     public long bestPathNode;
+    private boolean fromSrc;
 
     public ConcurrentBiAStar(MyGraph myGraph) {
         this.myGraph = myGraph;
@@ -54,6 +56,29 @@ public class ConcurrentBiAStar implements Searcher {
 
         size = myGraph.getFwdGraph().size();
 
+        System.out.println("SIZE " + size);
+
+        uDistTo = new THashMap<>();
+        uEdgeTo = new THashMap<>();
+        uNodeTo = new THashMap<>();
+        vDistTo = new THashMap<>();
+        vEdgeTo = new THashMap<>();
+        vNodeTo = new THashMap<>();
+
+    }
+
+    public ConcurrentBiAStar(MyGraph myGraph, ALTPreProcess altPreProcess) {
+        this.myGraph = myGraph;
+        landmarks = new ArrayList<>();
+
+        filePrefix = myGraph.getFilePrefix();
+
+        this.landmarks = altPreProcess.landmarks;
+        this.distancesFrom = altPreProcess.distancesFrom;
+        this.distancesTo = altPreProcess.distancesTo;
+
+        size = myGraph.getFwdGraph().size();
+
         uDistTo = new THashMap<>(size);
         uEdgeTo = new THashMap<>(size);
         uNodeTo = new THashMap<>(size);
@@ -67,9 +92,10 @@ public class ConcurrentBiAStar implements Searcher {
 
 //        System.out.println("From " + start + " to " + end);
 
-        explored = 0;
+        exploredA = 0;
+        exploredB = 0;
 
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+//        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
         Calendar cal = Calendar.getInstance();
 
 //        System.out.println(sdf.format(cal.getTime()));
@@ -114,10 +140,10 @@ public class ConcurrentBiAStar implements Searcher {
 //        double minDist = haversineDistance(startNode, endNode, dictionary);
         double uFurthest, vFurthest = 0;
 
-        maxDist = 0;
-
         Runnable s = () -> {
+            long startTime = System.nanoTime();
             while(!uPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+                exploredA++;
                 long v1 = uPq.poll().getNode();
                 for (double[] e : myGraph.fwdAdj(v1)){
                     if(!Thread.currentThread().isInterrupted()) {
@@ -130,7 +156,7 @@ public class ConcurrentBiAStar implements Searcher {
                             }
                         }
                         if (vRelaxed.contains(v1)) {
-                            System.out.println("done");
+//                            System.out.println("done");
                             if ((uDistTo.get(v1) + vDistTo.get(v1)) < bestSeen) {
                                 overlapNode = v1;
                             } else {
@@ -144,7 +170,9 @@ public class ConcurrentBiAStar implements Searcher {
         };
 
         Runnable t = () -> {
+            long startTime = System.nanoTime();
             while(!vPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+                exploredB++;
                 long v2 = vPq.poll().getNode();
                 for (double[] e : myGraph.bckAdj(v2)){
                     if(!Thread.currentThread().isInterrupted()) {
@@ -157,12 +185,336 @@ public class ConcurrentBiAStar implements Searcher {
                             }
                         }
                         if (uRelaxed.contains(v2)) {
-                            System.out.println("done");
+//                            System.out.println("done");
                             if ((uDistTo.get(v2) + vDistTo.get(v2)) < bestSeen) {
                                 overlapNode = v2;
                             } else {
                                 overlapNode = bestPathNode;
                             }
+                            long endTime = System.nanoTime();
+                            System.out.println(Thread.currentThread().getId() + ": " + (((float) endTime - (float) startTime) / 1000000000));
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
+            }
+        };
+
+        Thread sThread = new Thread(s);
+        Thread tThread = new Thread(t);
+
+        sThread.start();
+        tThread.start();
+
+        while(sThread.isAlive() && tThread.isAlive()){
+        }
+        System.out.println(sThread.isAlive());
+        System.out.println(tThread.isAlive());
+        sThread.interrupt();
+        tThread.interrupt();
+
+//        System.out.println("OVERLAP: " + overlapNode);
+
+        if(uPq.isEmpty() || vPq.isEmpty()){
+            System.out.println("No route found!");
+            return new ArrayList<>();
+        }
+
+        long endTime = System.nanoTime();
+
+//        System.out.println("BiDijkstra time: " + (((float) endTime - (float) startTime) / 1000000000));
+
+        return getRouteAsWays();
+    }
+
+    public Pair<Thread, Thread> searchWithThreads(long start, long end){
+
+//        System.out.println("From " + start + " to " + end);
+
+        exploredA = 0;
+        exploredB = 0;
+
+//        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+        Calendar cal = Calendar.getInstance();
+
+//        System.out.println(sdf.format(cal.getTime()));
+//        cal = Calendar.getInstance();
+//        System.out.println(sdf.format(cal.getTime()));
+
+        uDistTo.clear();
+        uEdgeTo.clear();
+        uNodeTo.clear();
+        vDistTo.clear();
+        vEdgeTo.clear(); //.clear() to retain size
+        vNodeTo.clear();
+
+
+
+//        timerStart();
+//        for(Long vert : graph.getGraph().keySet()){
+//            uDistTo.put(vert, Double.MAX_VALUE);
+//        }
+//        for(Long vert : graph.getGraph().keySet()){
+//            vDistTo.put(vert, Double.MAX_VALUE);
+//        }
+//        timerEnd("Filling maps");
+
+        this.start = start;
+        this.end = end;
+
+        uDistTo.put(start, 0.0);
+        vDistTo.put(end, 0.0);
+
+        uPq = new PriorityQueue<>(new DistanceComparator());
+        vPq = new PriorityQueue<>(new DistanceComparator());
+
+        uPq.add(new DijkstraEntry(start, 0.0));
+        vPq.add(new DijkstraEntry(end, 0.0));
+
+        uRelaxed = new HashSet<>();
+        vRelaxed = new HashSet<>();
+
+        bestSeen = Double.MAX_VALUE;
+
+//        double minDist = haversineDistance(startNode, endNode, dictionary);
+        double uFurthest, vFurthest = 0;
+
+        Runnable s = () -> {
+            float startTimeA = System.nanoTime();
+            while(!uPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+                System.out.println(Thread.currentThread().getId());
+                exploredA++;
+                long v1 = uPq.poll().getNode();
+                for (double[] e : myGraph.fwdAdj(v1)){
+                    if(!Thread.currentThread().isInterrupted()) {
+                        relax(v1, e, true);
+                        if (vRelaxed.contains((long) e[0])) {
+                            double competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((long) e[0]));
+                            if (bestSeen > competitor) {
+                                bestSeen = competitor;
+                                bestPathNode = v1;
+                            }
+                        }
+                        if (vRelaxed.contains(v1)) {
+//                            System.out.println("done");
+                            if ((uDistTo.get(v1) + vDistTo.get(v1)) < bestSeen) {
+                                overlapNode = v1;
+                            } else {
+                                overlapNode = bestPathNode;
+                            }
+                            Thread.currentThread().interrupt();
+                            float endTimeA = System.nanoTime();
+                            System.out.println(Thread.currentThread().getId() + ": " + (((float) endTimeA - (float) startTimeA) / 1000000000));
+                            System.out.println("DONE with " + Thread.currentThread().getId());
+                        }
+                    }
+                }
+            }
+        };
+
+        Runnable t = () -> {
+            float startTimeB = System.nanoTime();
+            while(!vPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+                System.out.println(Thread.currentThread().getId());
+                exploredB++;
+                long v2 = vPq.poll().getNode();
+                for (double[] e : myGraph.bckAdj(v2)){
+                    if(!Thread.currentThread().isInterrupted()) {
+                        relax(v2, e, false);
+                        if (uRelaxed.contains((long) e[0])) {
+                            double competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((long) e[0]));
+                            if (bestSeen > competitor) {
+                                bestSeen = competitor;
+                                bestPathNode = v2;
+                            }
+                        }
+                        if (uRelaxed.contains(v2)) {
+//                            System.out.println("done");
+                            if ((uDistTo.get(v2) + vDistTo.get(v2)) < bestSeen) {
+                                overlapNode = v2;
+                            } else {
+                                overlapNode = bestPathNode;
+                            }
+                            Thread.currentThread().interrupt();
+                            float endTimeB = System.nanoTime();
+                            System.out.println(Thread.currentThread().getId() + ": " + (((float) endTimeB - (float) startTimeB) / 1000000000));
+                            System.out.println("DONE with " + Thread.currentThread().getId());
+                        }
+                    }
+                }
+            }
+        };
+
+        Thread sThread = new Thread(s);
+        Thread tThread = new Thread(t);
+        System.out.println("Made threads.");
+        return new Pair(sThread, tThread);
+    }
+
+
+    public ConcurrentBiAStar(MyGraph myGraph, ALTPreProcess altPreProcess, ConcurrentBiAStar previousSearch, boolean fromSrc) {
+
+        this.fromSrc = fromSrc;
+
+        this.myGraph = myGraph;
+        landmarks = new ArrayList<>();
+
+        filePrefix = myGraph.getFilePrefix();
+
+        this.landmarks = altPreProcess.landmarks;
+        this.distancesFrom = altPreProcess.distancesFrom;
+        this.distancesTo = altPreProcess.distancesTo;
+
+        size = myGraph.getFwdGraph().size();
+
+        if(fromSrc){
+            uDistTo = previousSearch.uDistTo;
+            uEdgeTo = previousSearch.uEdgeTo;
+            uNodeTo = previousSearch.uNodeTo;
+            uPq = previousSearch.uPq;
+            uRelaxed = previousSearch.uRelaxed;
+
+//            System.out.println("CONTAINMENT" + uDistTo.containsKey(uPq.poll()));
+
+            vDistTo = new THashMap<>(size);
+            vEdgeTo = new THashMap<>(size);
+            vNodeTo = new THashMap<>(size);
+            vPq = new PriorityQueue<>(new DistanceComparator());
+            vRelaxed = new HashSet<>();
+        } else {
+            uDistTo = new THashMap<>(size);
+            uEdgeTo = new THashMap<>(size);
+            uNodeTo = new THashMap<>(size);
+            uPq = new PriorityQueue<>(new DistanceComparator());
+            uRelaxed = new HashSet<>();
+
+            vDistTo = previousSearch.vDistTo;
+            vEdgeTo = previousSearch.vEdgeTo;
+            vNodeTo = previousSearch.vNodeTo;
+            vPq = previousSearch.vPq;
+            vRelaxed = previousSearch.vRelaxed;
+        }
+
+    }
+
+    public ArrayList<Long> continueSearch(long start, long end){
+
+        System.out.println("FROM " + start + " " + end);
+
+//        System.out.println("From " + start + " to " + end);
+
+        exploredA = 0;
+        exploredB = 0;
+
+//        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+        Calendar cal = Calendar.getInstance();
+
+//        System.out.println(sdf.format(cal.getTime()));
+//        cal = Calendar.getInstance();
+//        System.out.println(sdf.format(cal.getTime()));
+
+//        timerStart();
+//        for(Long vert : graph.getGraph().keySet()){
+//            uDistTo.put(vert, Double.MAX_VALUE);
+//        }
+//        for(Long vert : graph.getGraph().keySet()){
+//            vDistTo.put(vert, Double.MAX_VALUE);
+//        }
+//        timerEnd("Filling maps");
+
+        this.start = start;
+        this.end = end;
+        vPq.add(new DijkstraEntry(end, 0.0));
+        uPq.add(new DijkstraEntry(start, 0.0));
+
+        if(fromSrc){
+            if(uDistTo.containsKey(end)){
+                System.out.println("yup");
+                System.out.println(uDistTo.get(end));
+                overlapNode = end;
+                return getRouteAsWays();
+            } else {
+
+                System.out.println("vPq add " + end);
+            }
+        } else {
+            if(vDistTo.containsKey(start)){
+                System.out.println("yup");
+                System.out.println(vDistTo.get(start));
+                overlapNode = start;
+                return getRouteAsWays();
+            } else {
+
+                System.out.println("uPq add " + start);
+            }
+        }
+
+
+        bestSeen = Double.MAX_VALUE;
+
+//        double minDist = haversineDistance(startNode, endNode, dictionary);
+
+
+        Runnable s = () -> {
+            while(!uPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+                exploredA++;
+                long v1 = uPq.poll().getNode();
+                if(uDistTo.get(v1) == null){
+                    System.out.println("PROBLEM with " + v1);
+                }
+                for (double[] e : myGraph.fwdAdj(v1)){
+                    if(!Thread.currentThread().isInterrupted()) {
+                        relax(v1, e, true);
+                        if (vRelaxed.contains((long) e[0])) {
+                            double competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((long) e[0]));
+                            if (bestSeen > competitor) {
+                                bestSeen = competitor;
+                                bestPathNode = v1;
+                            }
+                        }
+                        if (vRelaxed.contains(v1)) {
+//                            System.out.println("done");
+                            if ((uDistTo.get(v1) + vDistTo.get(v1)) < bestSeen) {
+                                overlapNode = v1;
+                            } else {
+                                overlapNode = bestPathNode;
+                            }                                               //do we need to set distTo for the final node here???
+                            System.out.println("interrupting");
+
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
+            }
+        };
+
+        Runnable t = () -> {
+            while(!vPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+                exploredB++;
+                long v2 = vPq.poll().getNode();
+                if(vDistTo.get(v2) == null){
+                    System.out.println("PROBLEM with " + v2);
+                }
+                for (double[] e : myGraph.bckAdj(v2)){
+                    if(!Thread.currentThread().isInterrupted()) {
+                        relax(v2, e, false);
+                        if (uRelaxed.contains((long) e[0])) {
+                            System.out.println(vDistTo.get(v2));
+                            System.out.println(uDistTo.get((long) e[0]));
+                            double competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((long) e[0]));
+                            if (bestSeen > competitor) {
+                                bestSeen = competitor;
+                                bestPathNode = v2;
+                            }
+                        }
+                        if (uRelaxed.contains(v2)) {
+//                            System.out.println("done");
+                            if ((uDistTo.get(v2) + vDistTo.get(v2)) < bestSeen) {
+                                overlapNode = v2;
+                            } else {
+                                overlapNode = bestPathNode;
+                            }
+                            System.out.println("interrupting");
                             Thread.currentThread().interrupt();
                         }
                     }
@@ -181,16 +533,18 @@ public class ConcurrentBiAStar implements Searcher {
         sThread.interrupt();
         tThread.interrupt();
 
-        System.out.println("OVERLAP: " + overlapNode);
+//        System.out.println("OVERLAP: " + overlapNode);
 
         if(uPq.isEmpty() || vPq.isEmpty()){
             System.out.println("No route found.");
             return new ArrayList<>();
+        } else {
+            System.out.println("Route found!");
         }
 
         long endTime = System.nanoTime();
 
-        System.out.println("BiDijkstra time: " + (((float) endTime - (float) startTime) / 1000000000));
+//        System.out.println("BiDijkstra time: " + (((float) endTime - (float) startTime) / 1000000000));
 
         return getRouteAsWays();
     }
@@ -198,12 +552,12 @@ public class ConcurrentBiAStar implements Searcher {
     private void relax(Long x, double[] edge, boolean u){
 //        System.out.println("Relaxing " + x);
         relaxTimeStart = System.nanoTime();
-        explored++;
         long w = (long) edge[0];
         double weight = edge[1];
         double wayId = edge[2];
         if(u){
             uRelaxed.add(x);
+//            System.out.println("Relax " + x);
             double distToX = uDistTo.getOrDefault(x, Double.MAX_VALUE);
             if (uDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
                 relaxPutTimeStart = System.nanoTime();
@@ -219,6 +573,7 @@ public class ConcurrentBiAStar implements Searcher {
             }
         } else {
             vRelaxed.add(x);
+//            System.out.println("Relax " + x);
             double distToX = vDistTo.getOrDefault(x, Double.MAX_VALUE);
             if (vDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
                 relaxPutTimeStart = System.nanoTime();
@@ -316,12 +671,6 @@ public class ConcurrentBiAStar implements Searcher {
             landmarks.add(Long.parseLong("299818750"));
             landmarks.add(Long.parseLong("526235276"));
             landmarks.add(Long.parseLong("424430268"));
-            landmarks.add(Long.parseLong("29833172"));
-            landmarks.add(Long.parseLong("2712525963"));
-            landmarks.add(Long.parseLong("817576914"));
-            landmarks.add(Long.parseLong("262840382"));
-            landmarks.add(Long.parseLong("344881575"));
-            landmarks.add(Long.parseLong("25276649"));
         } else if(myGraph.getRegion().equals("wwwales")){
             landmarks.add(Long.parseLong("260093216"));
             landmarks.add(Long.parseLong("1886093447"));
@@ -392,6 +741,10 @@ public class ConcurrentBiAStar implements Searcher {
     }
 
     public double getDist() {
+        System.out.println(bestPathNode);
+        System.out.println(overlapNode);
+        System.out.println(uDistTo.get(overlapNode));
+        System.out.println(vDistTo.get(overlapNode));
         return uDistTo.get(overlapNode) + vDistTo.get(overlapNode);
     }
 
@@ -429,6 +782,9 @@ public class ConcurrentBiAStar implements Searcher {
     }
 
     public ArrayList<Long> getRouteAsWays(){
+        if(overlapNode == null){
+            return new ArrayList<>();
+        }
         long node = overlapNode;
         ArrayList<Long> route = new ArrayList<>();
         try{
@@ -481,5 +837,9 @@ public class ConcurrentBiAStar implements Searcher {
         distancesTo.clear();
         distancesFrom.clear();
         myGraph = null;
+    }
+
+    public int getExplored(){
+        return exploredA + exploredB;
     }
 }

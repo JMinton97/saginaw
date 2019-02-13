@@ -11,7 +11,7 @@ import project.map.MyGraph;
 import java.io.*;
 import java.util.*;
 
-public class AStar {
+public class AStar implements Searcher {
     private long pollTimeStart, pollTimeEnd, totalPollTime, addTimeStart, addTimeEnd, totalAddTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, putTimeStart, putTimeEnd, totalPutTime;
     private THashMap<Long, Double> distTo;
     private THashMap<Long, Long> edgeTo;
@@ -22,6 +22,7 @@ public class AStar {
     private ArrayList<Long> landmarks;
     private Long2ObjectOpenHashMap distancesTo;
     private Long2ObjectOpenHashMap distancesFrom;
+    private long src, dst;
 
     public AStar(MyGraph graph){
         this.myGraph = graph;
@@ -33,8 +34,18 @@ public class AStar {
         }
     }
 
-    public ArrayList<Long> search(long start, long end){
-        System.out.println("search");
+    public AStar(MyGraph graph, ALTPreProcess altPreProcess){
+        this.myGraph = graph;
+        landmarks = new ArrayList<>();
+        this.landmarks = altPreProcess.landmarks;
+        this.distancesFrom = altPreProcess.distancesFrom;
+        this.distancesTo = altPreProcess.distancesTo;
+    }
+
+    public ArrayList<Long> search(long src, long dst){
+        this.dst = dst;
+        this.src = src;
+//        System.out.println("search");
         distTo = new THashMap<Long, Double>(myGraph.getFwdGraph().size());
         edgeTo = new THashMap<Long, Long>(myGraph.getFwdGraph().size());
         pq = new PriorityQueue();
@@ -44,36 +55,38 @@ public class AStar {
         for(Long vert : myGraph.getFwdGraph().keySet()){
             distTo.put(vert, Double.MAX_VALUE);
         }
-        distTo.put(start, 0.0);
+        distTo.put(src, 0.0);
 
         Comparator<DijkstraEntry> comparator = new DistanceComparator();
         pq = new PriorityQueue<>(comparator);
 
-        pq.add(new DijkstraEntry(start, 0.0));
+        pq.add(new DijkstraEntry(src, 0.0));
+
+        explored = 0;
 
         long startTime = System.nanoTime();
         OUTER: while(!pq.isEmpty()){
+            explored++;
             pollTimeStart = System.nanoTime();
             long v = pq.poll().getNode();
 //            System.out.println("next is " + v);
             pollTimeEnd = System.nanoTime();
             totalPollTime += (pollTimeEnd - pollTimeStart);
             for (double[] e : myGraph.fwdAdj(v)){
-                relax(v, e, end);
-                if(v == end){
-                    System.out.println("AStar terminate.");
+                relax(v, e, dst);
+                if(v == dst){
+//                    System.out.println("AStar terminate.");
                     break OUTER;
                 }
             }
         }
         long endTime = System.nanoTime();
-        System.out.println("done");
-        System.out.println("Inner AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
+//        System.out.println("done");
+//        System.out.println("Inner AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
         return getRoute();
     }
 
     private void relax(Long v, double[] edge, long t){
-        explored++;
         relaxTimeStart = System.nanoTime();
         long w = (long) edge[0];
         double weight = edge[1];
@@ -221,6 +234,14 @@ public class AStar {
         distancesTo.clear();
         distancesFrom.clear();
         myGraph = null;
+    }
+
+    public double getDist(){
+        return distTo.get(dst);
+    }
+
+    public int getExplored(){
+        return explored;
     }
 
 }

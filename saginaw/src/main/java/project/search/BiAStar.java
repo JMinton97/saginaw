@@ -62,13 +62,33 @@ public class BiAStar implements Searcher {
 
     }
 
-    public ArrayList<Long> search(long start, long end){
+    public BiAStar(MyGraph myGraph, ALTPreProcess altPreProcess) {
+        this.myGraph = myGraph;
+        landmarks = new ArrayList<>();
 
-//        System.out.println("From " + start + " to " + end);
+        filePrefix = myGraph.getFilePrefix();
+
+        landmarks = altPreProcess.landmarks;
+        distancesFrom = altPreProcess.distancesFrom;
+        distancesTo = altPreProcess.distancesTo;
+
+//        Map<Long, Set<double[]>> graph = myGraph.getGraph();
+
+        size = myGraph.getFwdGraph().size();
+
+        uDistTo = new THashMap<>(size);
+        uEdgeTo = new THashMap<>(size);
+        uNodeTo = new THashMap<>(size);
+        vDistTo = new THashMap<>(size);
+        vEdgeTo = new THashMap<>(size);
+        vNodeTo = new THashMap<>(size);
+
+    }
+
+    public ArrayList<Long> search(long start, long end){
 
         explored = 0;
 
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
         Calendar cal = Calendar.getInstance();
 
 //        System.out.println(sdf.format(cal.getTime()));
@@ -117,9 +137,11 @@ public class BiAStar implements Searcher {
         double competitor;
 
         maxDist = 0;
+        explored = 0;
 
         long startTime = System.nanoTime();
         OUTER: while(!(uPq.isEmpty()) && !(vPq.isEmpty())){ //check
+            explored += 2;
             pollTimeStart = System.nanoTime();
             long v1 = uPq.poll().getNode();
             pollTimeEnd = System.nanoTime();
@@ -140,6 +162,7 @@ public class BiAStar implements Searcher {
                     } else {
                         overlapNode = bestPathNode;
                     }
+//                    System.out.println("Explored: " + explored);
                     long endTime = System.nanoTime();
 //                    System.out.println("Inner Bi-AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
                     return getRouteAsWays();
@@ -169,9 +192,9 @@ public class BiAStar implements Searcher {
                     } else {
                         overlapNode = bestPathNode;
                     }
+//                    System.out.println("Explored: " + explored);
                     long endTime = System.nanoTime();
 //                    System.out.println("Inner Bi-AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
-//                    System.out.println("Done");
                     return getRouteAsWays();
                 }
                 containsTimeEnd = System.nanoTime();
@@ -187,7 +210,6 @@ public class BiAStar implements Searcher {
     private void relax(Long x, double[] edge, boolean u){
 //        System.out.println("Relaxing " + x);
         relaxTimeStart = System.nanoTime();
-        explored++;
         long w = (long) edge[0];
         double weight = edge[1];
         double wayId = edge[2];
@@ -302,14 +324,8 @@ public class BiAStar implements Searcher {
 
         if(myGraph.getRegion().equals("england")){
             landmarks.add(Long.parseLong("27103812"));
-            landmarks.add(Long.parseLong("299818750"));
-            landmarks.add(Long.parseLong("526235276"));
             landmarks.add(Long.parseLong("424430268"));
-            landmarks.add(Long.parseLong("29833172"));
-            landmarks.add(Long.parseLong("2712525963"));
-            landmarks.add(Long.parseLong("817576914"));
             landmarks.add(Long.parseLong("262840382"));
-            landmarks.add(Long.parseLong("344881575"));
             landmarks.add(Long.parseLong("25276649"));
         } else if(myGraph.getRegion().equals("wwwales")){
             landmarks.add(Long.parseLong("260093216"));
@@ -470,5 +486,9 @@ public class BiAStar implements Searcher {
         distancesTo.clear();
         distancesFrom.clear();
         myGraph = null;
+    }
+
+    public int getExplored(){
+        return explored;
     }
 }
