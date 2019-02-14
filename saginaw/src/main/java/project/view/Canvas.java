@@ -154,7 +154,7 @@ class Canvas extends JPanel
 
 //		System.out.println("Canvas zoom: " + zoom);
 
-		g.setColor(Color.BLACK);
+		g.setColor(new Color(153, 204, 255));
 		g.fillRect(0, 0, paneX, paneY);
 
 

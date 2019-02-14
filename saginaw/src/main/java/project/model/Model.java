@@ -36,7 +36,7 @@ public class Model {
 	private BufferedImage image = null;
 	private MyMap2 map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
-	private String region = "england";
+	private String region = "wales";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
 	private BigDecimal zoom, baseScale;
@@ -294,44 +294,71 @@ public class Model {
 	}
 
 	public void zoomIn() {
-		System.out.println("Zoom in from " + modZoom);
-		MathContext mc = new MathContext(2, RoundingMode.HALF_UP);
 		if(zoom.compareTo(BigDecimal.valueOf(0.2)) > 0){
-//			zoom = zoom.subtract(BigDecimal.valueOf(0.1 * zoom.doubleValue()));
-			zoom = zoom.subtract(BigDecimal.valueOf(0.1), mc);
+			zoom = zoom.subtract(BigDecimal.valueOf(0.05));
+		}else{
+			System.out.println(false);
 		}
 		modZoom = Math.pow(2, zoom.doubleValue());
 		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));
 	}
 
 	public void zoomIn(double[] zoomPoint) {
+		System.out.println("Zoom in from " + zoom);
+		double xDif = zoomPoint[0] - centreCoord.getX();
+		double yDif = zoomPoint[1] - centreCoord.getY();
 
-		MathContext mc = new MathContext(2, RoundingMode.HALF_UP);
+		double oldZoom = modZoom;
+
 		if(zoom.compareTo(BigDecimal.valueOf(0.2)) > 0){
-//			zoom = zoom.subtract(BigDecimal.valueOf(0.1 * zoom.doubleValue()));
-			zoom = zoom.subtract(BigDecimal.valueOf(0.1), mc);
+			zoom = zoom.subtract(BigDecimal.valueOf(0.05));
+		}else{
+			System.out.println(false);
 		}
+
 		modZoom = Math.pow(2, zoom.doubleValue());
 		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));
 
-//		double xDif = zoomPoint[0] - centreCoord.getX();
-//		double yDif = zoomPoint[1] - centreCoord.getY();
+		double scaleDif = oldZoom - modZoom;
+//
+//		System.out.println("CHANGE " + scaleDif);
+//		System.out.println("FRACTION " + scaleDif / oldZoom);
 
-//		centreCoord.x += xDif/(0.1 * zoom.doubleValue());
-//		centreCoord.y += yDif/(0.1 * zoom.doubleValue());
+		System.out.println(centreCoord.x);
+		centreCoord.x += (xDif * (scaleDif / oldZoom));
+		System.out.println(centreCoord.x);
+		centreCoord.y += (yDif * (scaleDif / oldZoom));
+
+
 	}
 
 	public void zoomOut() {
-		System.out.println("Zoom out from " + modZoom);
-		if(zoom.add(BigDecimal.valueOf(0.1)).compareTo(BigDecimal.valueOf(9)) < 0){
-//			zoom = zoom.subtract(BigDecimal.valueOf(0.1 * zoom.doubleValue()));
-			zoom = zoom.add(BigDecimal.valueOf(0.1));
+		if(zoom.multiply(BigDecimal.valueOf(1.1)).compareTo(BigDecimal.valueOf(9)) < 0){
+			zoom = zoom.add(BigDecimal.valueOf(0.05));
 		}
-//		zoom = zoom.add(BigDecimal.valueOf(0.1 * zoom.doubleValue()));
 
-		System.out.println("Model zoom: " + zoom);
 		modZoom = Math.pow(2, zoom.doubleValue());
 		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));
+	}
+
+	public void zoomOut(double[] zoomPoint) {
+		double xDif = zoomPoint[0] - centreCoord.getX();
+		double yDif = zoomPoint[1] - centreCoord.getY();
+
+		double oldZoom = modZoom;
+		if(zoom.multiply(BigDecimal.valueOf(1.1)).compareTo(BigDecimal.valueOf(9)) < 0){
+			zoom = zoom.add(BigDecimal.valueOf(0.05));
+		}
+
+		modZoom = Math.pow(2, zoom.doubleValue());
+		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));
+
+		double scaleDif = oldZoom - modZoom;
+
+		System.out.println(centreCoord.x);
+		centreCoord.x += (xDif * (scaleDif / oldZoom));
+		System.out.println(centreCoord.x);
+		centreCoord.y += (yDif * (scaleDif / oldZoom));
 	}
 
 	public int getImageEdge(){
@@ -489,10 +516,15 @@ public class Model {
 //				} catch (InterruptedException e) {
 //					e.printStackTrace();
 //				}
-				for (Thread t : routeThreads) {
-//					System.out.println(t.getId());
-					done = done && !t.isAlive();
-//					System.out.println(t.isInterrupted());
+				for(int x = 0; x < routeThreads.size(); x += 2){
+					done = done && !routeThreads.get(x).isAlive();
+					if(!routeThreads.get(x).isAlive()){
+						routeThreads.get(x + 1).interrupt();
+					}
+					done = done && !routeThreads.get(x + 1).isAlive();
+					if(!routeThreads.get(x + 1).isAlive()){
+						routeThreads.get(x).interrupt();
+					}
 				}
 			}while(!done);
 

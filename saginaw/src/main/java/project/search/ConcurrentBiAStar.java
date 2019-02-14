@@ -282,7 +282,7 @@ public class ConcurrentBiAStar implements Searcher {
         Runnable s = () -> {
             float startTimeA = System.nanoTime();
             while(!uPq.isEmpty() && !Thread.currentThread().isInterrupted()){
-                System.out.println(Thread.currentThread().getId());
+//                System.out.println(Thread.currentThread().getId());
                 exploredA++;
                 long v1 = uPq.poll().getNode();
                 for (double[] e : myGraph.fwdAdj(v1)){
@@ -315,7 +315,7 @@ public class ConcurrentBiAStar implements Searcher {
         Runnable t = () -> {
             float startTimeB = System.nanoTime();
             while(!vPq.isEmpty() && !Thread.currentThread().isInterrupted()){
-                System.out.println(Thread.currentThread().getId());
+//                System.out.println(Thread.currentThread().getId());
                 exploredB++;
                 long v2 = vPq.poll().getNode();
                 for (double[] e : myGraph.bckAdj(v2)){
@@ -560,6 +560,7 @@ public class ConcurrentBiAStar implements Searcher {
 //            System.out.println("Relax " + x);
             double distToX = uDistTo.getOrDefault(x, Double.MAX_VALUE);
             if (uDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
+//                System.out.println("true");
                 relaxPutTimeStart = System.nanoTime();
                 uDistTo.put(w, distToX + weight);
                 uNodeTo.put(w, x); //should be 'nodeBefore'
@@ -570,6 +571,8 @@ public class ConcurrentBiAStar implements Searcher {
                 uPq.add(new DijkstraEntry(w, distToX + weight + lowerBound(w, true))); //inefficient?
                 arelaxTimeEnd = System.nanoTime();
                 atotalRelaxTime += (arelaxTimeEnd - arelaxTimeStart);
+            } else {
+//                System.out.println("false");
             }
         } else {
             vRelaxed.add(x);
