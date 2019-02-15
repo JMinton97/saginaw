@@ -1,10 +1,13 @@
 package project.map;
 
+import javafx.util.Pair;
 import project.search.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.PriorityQueue;
 import java.util.Random;
 
 public class TestRun {
@@ -13,6 +16,9 @@ public class TestRun {
 
 
     public static void main(String[] args) throws InterruptedException{
+
+
+
         long startTime, endTime;
         String region = "wales";
         String mapDir = System.getProperty("user.dir").concat("/res/");

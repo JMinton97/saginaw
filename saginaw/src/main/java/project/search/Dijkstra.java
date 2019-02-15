@@ -4,6 +4,7 @@ package project.search;
 import gnu.trove.map.hash.THashMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
+import javafx.util.Pair;
 import project.map.MyGraph;
 
 
@@ -70,8 +71,6 @@ public class Dijkstra implements Searcher {
         distTo2 = new Long2DoubleOpenHashMap();
         edgeTo2 = new Long2LongOpenHashMap();
 
-        pq = new PriorityQueue();
-
         this.startNode = src;
         this.endNode = dst;
 
@@ -88,15 +87,10 @@ public class Dijkstra implements Searcher {
         long startTime = System.nanoTime();
         OUTER: while(!pq.isEmpty()){
             explored++;
-            pollTimeStart = System.nanoTime();
             long v = pq.poll().getNode();
-            pollTimeEnd = System.nanoTime();
-            totalPollTime += (pollTimeEnd - pollTimeStart);
             for (double[] e : graph.fwdAdj(v)){
                 relax(v, e);
                 if(v == endNode){
-                    long endTime = System.nanoTime();
-//                    System.out.println("Dijkstra time: " + (((float) endTime - (float)startTime) / 1000000000));
                     return getRoute();
                 }
             }
@@ -107,25 +101,15 @@ public class Dijkstra implements Searcher {
         return new ArrayList<>();
     }
 
-
     private void relax(long v, double[] edge){
-        relaxTimeStart = System.nanoTime();
         long w = (long) edge[0];
         double weight = edge[1];
         double distToV = distTo2.get(v);
         if (distTo2.get(w) > (distToV + weight)){
-            putTimeStart = System.nanoTime();
             distTo2.put(w, distToV + weight);
             edgeTo2.put(w, v); //should be 'nodeBefore'
-            putTimeEnd = System.nanoTime();
-            totalPutTime += (putTimeEnd - putTimeStart);
-            addTimeStart = System.nanoTime();
             pq.add(new DijkstraEntry(w, distToV + weight)); //inefficient?
-            addTimeEnd = System.nanoTime();
-            totalAddTime += (addTimeEnd - addTimeStart);
         }
-        relaxTimeEnd = System.nanoTime();
-        totalRelaxTime += (relaxTimeEnd - relaxTimeStart);
     }
 
     public Long2DoubleOpenHashMap getDistTo() {

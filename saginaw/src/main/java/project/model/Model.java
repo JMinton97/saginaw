@@ -294,23 +294,26 @@ public class Model {
 	}
 
 	public void zoomIn() {
-		if(zoom.compareTo(BigDecimal.valueOf(0.2)) > 0){
+        System.out.println(zoom);
+		if(zoom.compareTo(BigDecimal.valueOf(0.1)) > 0){
 			zoom = zoom.subtract(BigDecimal.valueOf(0.05));
 		}else{
-			System.out.println(false);
+//			System.out.println(false);
 		}
 		modZoom = Math.pow(2, zoom.doubleValue());
 		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));
 	}
 
 	public void zoomIn(double[] zoomPoint) {
-		System.out.println("Zoom in from " + zoom);
+//		System.out.println("Zoom in from " + zoom);
 		double xDif = zoomPoint[0] - centreCoord.getX();
 		double yDif = zoomPoint[1] - centreCoord.getY();
 
 		double oldZoom = modZoom;
 
-		if(zoom.compareTo(BigDecimal.valueOf(0.2)) > 0){
+        System.out.println(zoom);
+
+		if(zoom.add(BigDecimal.valueOf(1)).compareTo(BigDecimal.valueOf(0.1)) > 0){
 			zoom = zoom.subtract(BigDecimal.valueOf(0.05));
 		}else{
 			System.out.println(false);
@@ -318,15 +321,12 @@ public class Model {
 
 		modZoom = Math.pow(2, zoom.doubleValue());
 		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));
+		if(level < 1){
+		    level = 1;
+        }
 
 		double scaleDif = oldZoom - modZoom;
-//
-//		System.out.println("CHANGE " + scaleDif);
-//		System.out.println("FRACTION " + scaleDif / oldZoom);
-
-		System.out.println(centreCoord.x);
 		centreCoord.x += (xDif * (scaleDif / oldZoom));
-		System.out.println(centreCoord.x);
 		centreCoord.y += (yDif * (scaleDif / oldZoom));
 
 
@@ -353,11 +353,15 @@ public class Model {
 		modZoom = Math.pow(2, zoom.doubleValue());
 		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));
 
+        if(level < 1){
+            level = 1;
+        }
+
 		double scaleDif = oldZoom - modZoom;
 
-		System.out.println(centreCoord.x);
+//		System.out.println(centreCoord.x);
 		centreCoord.x += (xDif * (scaleDif / oldZoom));
-		System.out.println(centreCoord.x);
+//		System.out.println(centreCoord.x);
 		centreCoord.y += (yDif * (scaleDif / oldZoom));
 	}
 
@@ -528,6 +532,8 @@ public class Model {
 				}
 			}while(!done);
 
+			System.out.println("done search");
+
 			int j = 0;
 
 			for (ConcurrentBiAStar c : routeFinders) {
@@ -543,7 +549,7 @@ public class Model {
 
 			for (Long w : routeWays) {
 //				System.out.println("way");
-				ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
+				ArrayList<Point2D.Double> p = graph.wayToNodes(w);
 				routeNodes.addAll(p);
 			}
 

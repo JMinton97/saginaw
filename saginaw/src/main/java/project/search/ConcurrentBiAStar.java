@@ -304,8 +304,8 @@ public class ConcurrentBiAStar implements Searcher {
                             }
                             Thread.currentThread().interrupt();
                             float endTimeA = System.nanoTime();
-                            System.out.println(Thread.currentThread().getId() + ": " + (((float) endTimeA - (float) startTimeA) / 1000000000));
-                            System.out.println("DONE with " + Thread.currentThread().getId());
+//                            System.out.println(Thread.currentThread().getId() + ": " + (((float) endTimeA - (float) startTimeA) / 1000000000));
+//                            System.out.println("DONE with " + Thread.currentThread().getId());
                         }
                     }
                 }
@@ -337,8 +337,8 @@ public class ConcurrentBiAStar implements Searcher {
                             }
                             Thread.currentThread().interrupt();
                             float endTimeB = System.nanoTime();
-                            System.out.println(Thread.currentThread().getId() + ": " + (((float) endTimeB - (float) startTimeB) / 1000000000));
-                            System.out.println("DONE with " + Thread.currentThread().getId());
+//                            System.out.println(Thread.currentThread().getId() + ": " + (((float) endTimeB - (float) startTimeB) / 1000000000));
+//                            System.out.println("DONE with " + Thread.currentThread().getId());
                         }
                     }
                 }
@@ -347,7 +347,7 @@ public class ConcurrentBiAStar implements Searcher {
 
         Thread sThread = new Thread(s);
         Thread tThread = new Thread(t);
-        System.out.println("Made threads.");
+//        System.out.println("Made threads.");
         return new Pair(sThread, tThread);
     }
 

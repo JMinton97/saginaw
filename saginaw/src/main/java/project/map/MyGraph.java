@@ -104,9 +104,10 @@ public class MyGraph {
                 objectOut.close();
                 timerEnd("Writing tree");
             }
-            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-            Calendar cal = Calendar.getInstance();
-            System.out.println(sdf.format(cal.getTime()));
+//            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+//            Calendar cal = Calendar.getInstance();
+//            System.out.println(sdf.format(cal.getTime()));
+            contract(5);
 
         } else {
             System.out.println("No graph found, creating now.");
@@ -233,6 +234,8 @@ public class MyGraph {
                 fwdGraph.get(fstVert).add(new double[]{(double) lstVert, length, way.getKey().doubleValue()});
                 bckGraph.get(lstVert).add(new double[]{(double) fstVert, length, way.getKey().doubleValue()});
 
+                //check if the double[] list ever contains two edges going to same vertex
+
 //                double[] xy = dictionary.get(fstVert);
 //                System.out.println(xy[0] + " " + xy[1]);
 //                if(!tree.contains(xy)){
@@ -243,6 +246,63 @@ public class MyGraph {
         timerEnd("Creating graph");
         return new Pair<>(fwdGraph, bckGraph);
     }
+
+    private void contract(int contractionParameter){
+        Comparator<Pair<Long, Double>> comp = new KeyComparator(); //maybe we can use
+        PriorityQueue<Pair<Long, Double>> heap = new PriorityQueue<>(comp);
+        boolean stopFlag = true;
+
+        Map<Long, ArrayList<double[]>> contractFwdGraph = fwdGraph;
+        Map<Long, ArrayList<double[]>> contractBckGraph = bckGraph;
+
+        while(stopFlag){
+            System.out.println("loop");
+            for(Map.Entry<Long, ArrayList<double[]>> nodeEntry : contractFwdGraph.entrySet()){
+                long node = nodeEntry.getKey();
+                ArrayList<double[]> beforeEdges = contractBckGraph.get(node);
+                ArrayList<double[]> afterEdges = nodeEntry.getValue();
+
+                double shortcutCount = beforeEdges.size() * afterEdges.size();
+
+                int cDegInDegOut = contractionParameter * (beforeEdges.size() + afterEdges.size());
+
+                double maxHop = 2;
+
+                if(shortcutCount < cDegInDegOut){
+                    heap.add(new Pair<>(node, maxHop * shortcutCount / (beforeEdges.size() + afterEdges.size())));
+                }
+            }
+            if(heap.isEmpty()){
+                stopFlag = false;
+            }
+            while(!heap.isEmpty()){
+                long bypassNode = heap.poll().getKey();
+                ArrayList<double[]> beforeEdges = contractBckGraph.get(bypassNode);
+                ArrayList<double[]> afterEdges = contractFwdGraph.get(bypassNode);
+                OUTER: for(double[] beforeEdge : beforeEdges){
+                    INNER: for(double[] afterEdge : afterEdges){
+                        System.out.println("loop");
+                        //add a new combined way key instead of beforeEdge[2]
+                        ArrayList<double[]> existingEdges = fwdGraph.get(beforeEdge[0]);
+                        for(double[] edge : existingEdges){         //checking if the shortcut to be added already exists
+                            if(edge[0] == afterEdge[0]){
+                                if(beforeEdge[1] + afterEdge[1] < edge[1]){
+                                    fwdGraph.get(beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], beforeEdge[2]});
+                                    bckGraph.get(afterEdge[0]).add(new double[]{beforeEdge[1], beforeEdge[1] + afterEdge[1], beforeEdge[2]});   //if shortcut is shorter, add it
+                                    break INNER;
+                                } else {
+                                    break INNER; //otherwise don't add; continue to next shortcut
+                                }
+                            }
+                        }
+                        fwdGraph.get(beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], beforeEdge[2]});   //add shortcut to forward and backward graph
+                        bckGraph.get(afterEdge[0]).add(new double[]{beforeEdge[1], beforeEdge[1] + afterEdge[1], beforeEdge[2]});
+                    }
+                }
+            }
+        }
+    }
+
 
     private void makeTree(){
 
@@ -624,9 +684,9 @@ public class MyGraph {
         return points;
     }
 
-    public ArrayList<Long> nodesToRefs(ArrayList<MyNode> nodes){
+    public ArrayList<Long> nodesToRefs(ArrayList<project.map.MyNode> nodes){
         ArrayList<Long> refs = new ArrayList<>();
-        for(MyNode node : nodes){
+        for(project.map.MyNode node : nodes){
             refs.add(node.getNodeId());
         }
         return refs;
@@ -687,5 +747,17 @@ public class MyGraph {
 
     public String getRegion(){
         return region;
+    }
+
+    public class KeyComparator implements Comparator<Pair<Long, Double>>{
+        public int compare(Pair<Long, Double> x, Pair<Long, Double> y){
+            if(x.getValue() < y.getValue()){
+                return -1;
+            }
+            if(x.getValue() > y.getValue()){
+                return 1;
+            }
+            else return 0;
+        }
     }
 }
