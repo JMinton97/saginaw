@@ -550,6 +550,7 @@ public class Model {
 			for (Long w : routeWays) {
 //				System.out.println("way");
 				ArrayList<Point2D.Double> p = graph.wayToNodes(w);
+				System.out.println(graph.wayToRefs(w));
 				routeNodes.addAll(p);
 			}
 

@@ -252,24 +252,51 @@ public class MyGraph {
         PriorityQueue<Pair<Long, Double>> heap = new PriorityQueue<>(comp);
         boolean stopFlag = true;
 
-        Map<Long, ArrayList<double[]>> contractFwdGraph = fwdGraph;
-        Map<Long, ArrayList<double[]>> contractBckGraph = bckGraph;
+        Map<Long, ArrayList<double[]>> contractFwdGraph = new HashMap<>(fwdGraph);
+        Map<Long, ArrayList<double[]>> contractBckGraph = new HashMap<>(bckGraph);
+
+        int counter = 0;
 
         while(stopFlag){
-            System.out.println("loop");
+            System.out.println("Contract size: " + contractFwdGraph.size());
             for(Map.Entry<Long, ArrayList<double[]>> nodeEntry : contractFwdGraph.entrySet()){
+//                System.out.println(counter++);
                 long node = nodeEntry.getKey();
                 ArrayList<double[]> beforeEdges = contractBckGraph.get(node);
                 ArrayList<double[]> afterEdges = nodeEntry.getValue();
 
-                double shortcutCount = beforeEdges.size() * afterEdges.size();
 
-                int cDegInDegOut = contractionParameter * (beforeEdges.size() + afterEdges.size());
 
-                double maxHop = 2;
+                double shortcutCount = 0;
 
-                if(shortcutCount < cDegInDegOut){
-                    heap.add(new Pair<>(node, maxHop * shortcutCount / (beforeEdges.size() + afterEdges.size())));
+                for(double[] afterEdge : afterEdges){
+                    for(double[] beforeEdge : beforeEdges){
+                        if(beforeEdge[0] != afterEdge[0]){
+                            shortcutCount++;
+                        }
+                    }
+                }
+
+//                if(node == Long.parseLong("469250789")){
+//                    System.out.println("YUP");
+//                    System.out.println(beforeEdges.size());
+//                    System.out.println(afterEdges.size());
+//                    System.out.println((long) beforeEdges.get(0)[0]);
+//                    System.out.println((long) beforeEdges.get(1)[0]);
+//                    System.out.println((long) afterEdges.get(0)[0]);
+//                    System.out.println((long) afterEdges.get(1)[0]);
+//                    System.out.println(shortcutCount);
+//                }
+
+                if(shortcutCount > 0){
+
+                    int cDegInDegOut = contractionParameter * (beforeEdges.size() + afterEdges.size());
+
+                    double maxHop = 2;
+
+                    if(shortcutCount < cDegInDegOut){
+                        heap.add(new Pair<>(node, maxHop * shortcutCount / (beforeEdges.size() + afterEdges.size())));
+                    }
                 }
             }
             if(heap.isEmpty()){
@@ -277,28 +304,60 @@ public class MyGraph {
             }
             while(!heap.isEmpty()){
                 long bypassNode = heap.poll().getKey();
+//                System.out.println(bypassNode);
                 ArrayList<double[]> beforeEdges = contractBckGraph.get(bypassNode);
                 ArrayList<double[]> afterEdges = contractFwdGraph.get(bypassNode);
                 OUTER: for(double[] beforeEdge : beforeEdges){
                     INNER: for(double[] afterEdge : afterEdges){
-                        System.out.println("loop");
+                        if((long) afterEdge[0] == (long) beforeEdge[0]){    //check we're not making an x to x edge
+                            break INNER;
+                        }
+//                        System.out.println("        " + (long) afterEdge[0]);
                         //add a new combined way key instead of beforeEdge[2]
-                        ArrayList<double[]> existingEdges = fwdGraph.get(beforeEdge[0]);
+//                        System.out.println((long) beforeEdge[0]);
+                        ArrayList<double[]> existingEdges = contractFwdGraph.get((long) beforeEdge[0]);
                         for(double[] edge : existingEdges){         //checking if the shortcut to be added already exists
                             if(edge[0] == afterEdge[0]){
                                 if(beforeEdge[1] + afterEdge[1] < edge[1]){
-                                    fwdGraph.get(beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], beforeEdge[2]});
-                                    bckGraph.get(afterEdge[0]).add(new double[]{beforeEdge[1], beforeEdge[1] + afterEdge[1], beforeEdge[2]});   //if shortcut is shorter, add it
+                                    contractFwdGraph.get((long) beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], beforeEdge[2]});
+                                    contractBckGraph.get((long) afterEdge[0]).add(new double[]{beforeEdge[0], beforeEdge[1] + afterEdge[1], beforeEdge[2]});   //if shortcut is shorter, add it
+//                                    System.out.println("Added shorter edge from " + (long) beforeEdge[0] + " to " + (long) afterEdge[0] + " of length " + (beforeEdge[1] + afterEdge[1]));
                                     break INNER;
                                 } else {
                                     break INNER; //otherwise don't add; continue to next shortcut
                                 }
                             }
                         }
-                        fwdGraph.get(beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], beforeEdge[2]});   //add shortcut to forward and backward graph
-                        bckGraph.get(afterEdge[0]).add(new double[]{beforeEdge[1], beforeEdge[1] + afterEdge[1], beforeEdge[2]});
+                        contractFwdGraph.get((long) beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], beforeEdge[2]});   //add shortcut to forward and backward graph
+                        contractBckGraph.get((long) afterEdge[0]).add(new double[]{beforeEdge[0], beforeEdge[1] + afterEdge[1], beforeEdge[2]});
+//                        System.out.println("Added edge from " + (long) beforeEdge[0] + " to " + (long) afterEdge[0] + " of length " + (beforeEdge[1] + afterEdge[1]));
+                    }
+
+                }
+                for(double[] awayEdge : contractFwdGraph.get(bypassNode)){
+                    ArrayList<double[]> cbg = contractBckGraph.get((long) awayEdge[0]);
+                    Iterator it = cbg.iterator();
+                    while(it.hasNext()){
+                        double[] returnEdge = (double[]) it.next();
+                        if(returnEdge[0] == bypassNode){
+                            it.remove();
+                        }
                     }
                 }
+
+                for(double[] awayEdge : contractBckGraph.get(bypassNode)){
+                    ArrayList<double[]> cfg = contractFwdGraph.get((long) awayEdge[0]);
+                    Iterator it = cfg.iterator();
+                    while(it.hasNext()){
+                        double[] returnEdge = (double[]) it.next();
+                        if(returnEdge[0] == bypassNode){
+                            it.remove();
+                        }
+                    }
+                }
+
+                contractFwdGraph.remove(bypassNode);
+                contractBckGraph.remove(bypassNode);
             }
         }
     }
