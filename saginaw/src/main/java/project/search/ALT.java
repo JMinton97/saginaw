@@ -11,7 +11,7 @@ import project.map.MyGraph;
 import java.io.*;
 import java.util.*;
 
-public class AStar implements Searcher {
+public class ALT implements Searcher {
     private long pollTimeStart, pollTimeEnd, totalPollTime, addTimeStart, addTimeEnd, totalAddTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, putTimeStart, putTimeEnd, totalPutTime;
     private THashMap<Long, Double> distTo;
     private THashMap<Long, Long> edgeTo;
@@ -24,7 +24,7 @@ public class AStar implements Searcher {
     private Long2ObjectOpenHashMap distancesFrom;
     private long src, dst;
 
-    public AStar(MyGraph graph){
+    public ALT(MyGraph graph){
         this.myGraph = graph;
         landmarks = new ArrayList<>();
         try {
@@ -34,7 +34,7 @@ public class AStar implements Searcher {
         }
     }
 
-    public AStar(MyGraph graph, ALTPreProcess altPreProcess){
+    public ALT(MyGraph graph, ALTPreProcess altPreProcess){
         this.myGraph = graph;
         landmarks = new ArrayList<>();
         this.landmarks = altPreProcess.landmarks;
@@ -69,20 +69,21 @@ public class AStar implements Searcher {
             explored++;
             pollTimeStart = System.nanoTime();
             long v = pq.poll().getNode();
+//            System.out.println(v);
 //            System.out.println("next is " + v);
             pollTimeEnd = System.nanoTime();
             totalPollTime += (pollTimeEnd - pollTimeStart);
             for (double[] e : myGraph.fwdAdj(v)){
                 relax(v, e, dst);
                 if(v == dst){
-//                    System.out.println("AStar terminate.");
+//                    System.out.println("ALT terminate.");
                     break OUTER;
                 }
             }
         }
         long endTime = System.nanoTime();
 //        System.out.println("done");
-//        System.out.println("Inner AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
+//        System.out.println("Inner ALT time: " + (((float) endTime - (float)startTime) / 1000000000));
         return getRoute();
     }
 
@@ -92,6 +93,10 @@ public class AStar implements Searcher {
         double weight = edge[1];
         double distToV = distTo.get(v);
         if (distTo.get(w) > (distToV + weight)){
+            System.out.println(distTo.get(w) + " > " + (distToV + weight));
+
+            System.out.println(w);
+            System.out.println(v);
             putTimeStart = System.nanoTime();
             distTo.put(w, distToV + weight);
             edgeTo.put(w, v); //should be 'nodeBefore'
@@ -100,6 +105,7 @@ public class AStar implements Searcher {
             addTimeStart = System.nanoTime();
 //            System.out.println("distTo " + distTo.get(w) + " lower bound " + lowerBound(w, t));
             pq.add(new DijkstraEntry(w, distToV + weight + lowerBound(w, t))); //inefficient?
+            System.out.println(lowerBound(w, t));
             addTimeEnd = System.nanoTime();
             totalAddTime += (addTimeEnd - addTimeStart);
         }

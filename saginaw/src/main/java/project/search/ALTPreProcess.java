@@ -35,7 +35,7 @@ public class ALTPreProcess {
 
         File dfDir = new File(filePrefix.concat("distancesFrom.ser"));
         if(dfDir.exists()){
-            System.out.println("Found distancesFrom.");
+//            System.out.println("Found distancesFrom.");
             FileInputStream fileIn = new FileInputStream(dfDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
@@ -55,11 +55,11 @@ public class ALTPreProcess {
             dj.clear();
             distancesFrom = null;
         }
-        System.out.println("Done first bit");
+//        System.out.println("Done first bit");
 
         File dtDir = new File(filePrefix.concat("distancesTo.ser"));
         if(dtDir.exists()){
-            System.out.println("Found distancesTo.");
+//            System.out.println("Found distancesTo.");
             FileInputStream fileIn = new FileInputStream(dtDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
@@ -91,9 +91,16 @@ public class ALTPreProcess {
 
         if(graph.getRegion().equals("england")){
             landmarks.add(Long.parseLong("27103812"));
+            landmarks.add(Long.parseLong("299818750"));
+            landmarks.add(Long.parseLong("526235276"));
             landmarks.add(Long.parseLong("424430268"));
+            landmarks.add(Long.parseLong("29833172"));
+            landmarks.add(Long.parseLong("2712525963"));
+            landmarks.add(Long.parseLong("817576914"));
             landmarks.add(Long.parseLong("262840382"));
+            landmarks.add(Long.parseLong("344881575"));
             landmarks.add(Long.parseLong("25276649"));
+
         } else if(graph.getRegion().equals("wales")){
             landmarks.add(Long.parseLong("260093216"));
             landmarks.add(Long.parseLong("1886093447"));

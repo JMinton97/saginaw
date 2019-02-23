@@ -92,11 +92,11 @@ public class MyMap2 {
             southMost = 42.3;   //FRANCE
             eastMost = 8.4;
         } else if (region == "birmingham") {
-        northMost = 52.620580;
-        westMost = -2.240133;
-        southMost = 52.336874;   //BIRMINGHAM
-        eastMost = -1.655798;
-    }
+            northMost = 52.620580;
+            westMost = -2.240133;
+            southMost = 52.336874;   //BIRMINGHAM
+            eastMost = -1.655798;
+        }
 
         counter = 0;
 

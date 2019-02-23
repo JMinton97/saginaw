@@ -42,7 +42,7 @@ public class Tile {
 
     public void loadImage(){
         try{
-            System.out.println("Loading image.");
+//            System.out.println("Loading image.");
             image = ImageIO.read(new File("draw/" + region + "/" + z + "/" + x + "-" + y + ".png"));
         } catch(IOException e){
             System.out.println("Couldn't load " + "/" + z + "/" + x + "-" + y + ".png");

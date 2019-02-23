@@ -13,8 +13,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.util.*;
 
 /**
@@ -36,7 +34,7 @@ public class Model {
 	private BufferedImage image = null;
 	private MyMap2 map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
-	private String region = "wales";
+	private String region = "england";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
 	private BigDecimal zoom, baseScale;
@@ -50,7 +48,7 @@ public class Model {
 	public double[] pivot;
 	private double modZoom;
 
-	private ConcurrentBiAStar searcher;
+	private ContractionALT searcher;
 	private MyGraph graph;
 	private ArrayList<Long> routeWays;
 	private ArrayList<Point2D.Double> routeNodes;
@@ -85,7 +83,7 @@ public class Model {
 		}
 
 
-		searcher = new ConcurrentBiAStar(graph, preProcess);
+		searcher = new ContractionALT(graph, preProcess);
 
 		routeNodes = new ArrayList<>();
 		flags = new ArrayList<>();
@@ -294,7 +292,7 @@ public class Model {
 	}
 
 	public void zoomIn() {
-        System.out.println(zoom);
+//        System.out.println(zoom);
 		if(zoom.compareTo(BigDecimal.valueOf(0.1)) > 0){
 			zoom = zoom.subtract(BigDecimal.valueOf(0.05));
 		}else{
@@ -311,7 +309,7 @@ public class Model {
 
 		double oldZoom = modZoom;
 
-        System.out.println(zoom);
+//        System.out.println(zoom);
 
 		if(zoom.add(BigDecimal.valueOf(1)).compareTo(BigDecimal.valueOf(0.1)) > 0){
 			zoom = zoom.subtract(BigDecimal.valueOf(0.05));
@@ -398,7 +396,7 @@ public class Model {
 	public void addPivotAlternate(double[] location){
 		pivot = location;
 		pivoted = true;
-		findRouteAlternate();
+//		findRouteAlternate();
 	}
 
 	public void clearMarkers(){
@@ -413,68 +411,69 @@ public class Model {
 	}
 
 
-	public void findRouteAlternate() {
-		if(markers.size() > 1){
-			if(pivoted){
-
-				ConcurrentBiAStar searcherA = new ConcurrentBiAStar(graph, preProcess, (ConcurrentBiAStar) searcher, true);
-				ConcurrentBiAStar searcherB = new ConcurrentBiAStar(graph, preProcess, (ConcurrentBiAStar) searcher, false);
-				long src, dst, pvt;
-				if(closestNodes.get(markers.get(0)) == null){
-					src = graph.findClosest(markers.get(0));
-				}else{
-					src = closestNodes.get(markers.get(0));
-				}
-				if(closestNodes.get(markers.get(1)) == null){
-					dst = graph.findClosest(markers.get(1));
-				}else{
-					dst = closestNodes.get(markers.get(1));
-				}
-				if(closestNodes.get(pivot) == null){
-					pvt = graph.findClosest(pivot);
-				}else{
-					pvt = closestNodes.get(pivot);
-				}
-				routeWays.clear();
-				routeWays.addAll(searcherA.continueSearch(src, pvt));
-				routeWays.addAll(searcherB.continueSearch(pvt, dst));
-				for (Long w : routeWays) {
-					System.out.println("add");
-					ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
-					routeNodes.addAll(p);
-				}
-				System.out.println(routeNodes.size());
-				hasRoute = true;
-			}else{
-				System.out.println("search");
-				long src, dst;
-				if(closestNodes.get(markers.get(0)) == null){
-					src = graph.findClosest(markers.get(0));
-				}else{
-					src = closestNodes.get(markers.get(0));
-				}
-				if(closestNodes.get(markers.get(1)) == null){
-					dst = graph.findClosest(markers.get(1));
-				}else{
-					dst = closestNodes.get(markers.get(1));
-				}
-				routeWays = searcher.search(src, dst);
-				for (Long w : routeWays) {
-					System.out.println("add");
-					ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
-					routeNodes.addAll(p);
-				}
-				System.out.println(routeNodes.size());
-				hasRoute = true;
-			}
-		}
-	}
+//	public void findRouteAlternate() {
+//		if(markers.size() > 1){
+//			if(pivoted){
+//
+//				ConcurrentBiALT searcherA = new ConcurrentBiALT(graph, preProcess, (ConcurrentBiALT) searcher, true);
+//				ConcurrentBiALT searcherB = new ConcurrentBiALT(graph, preProcess, (ConcurrentBiALT) searcher, false);
+//				long src, dst, pvt;
+//				if(closestNodes.get(markers.get(0)) == null){
+//					src = graph.findClosest(markers.get(0));
+//				}else{
+//					src = closestNodes.get(markers.get(0));
+//				}
+//				if(closestNodes.get(markers.get(1)) == null){
+//					dst = graph.findClosest(markers.get(1));
+//				}else{
+//					dst = closestNodes.get(markers.get(1));
+//				}
+//				if(closestNodes.get(pivot) == null){
+//					pvt = graph.findClosest(pivot);
+//				}else{
+//					pvt = closestNodes.get(pivot);
+//				}
+//				routeWays.clear();
+//				routeWays.addAll(searcherA.continueSearch(src, pvt));
+//				routeWays.addAll(searcherB.continueSearch(pvt, dst));
+//				for (Long w : routeWays) {
+//					System.out.println("add");
+//					ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
+//					routeNodes.addAll(p);
+//				}
+//				System.out.println(routeNodes.size());
+//				hasRoute = true;
+//			}else{
+//				System.out.println("search");
+//				long src, dst;
+//				if(closestNodes.get(markers.get(0)) == null){
+//					src = graph.findClosest(markers.get(0));
+//				}else{
+//					src = closestNodes.get(markers.get(0));
+//				}
+//				if(closestNodes.get(markers.get(1)) == null){
+//					dst = graph.findClosest(markers.get(1));
+//				}else{
+//					dst = closestNodes.get(markers.get(1));
+//				}
+//				routeWays = searcher.search(src, dst);
+//				for (Long w : routeWays) {
+//					System.out.println("add");
+//					ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
+//					routeNodes.addAll(p);
+//				}
+//				System.out.println(routeNodes.size());
+//				hasRoute = true;
+//			}
+//		}
+//	}
 
 	public void findRoute() {
-		ArrayList<Thread> routeThreads = new ArrayList<>();
-		ArrayList<ConcurrentBiAStar> routeFinders = new ArrayList<>();
-		routeWays = new ArrayList<>();
 		long startTime, endTime;
+		ArrayList<Thread> routeThreads = new ArrayList<>();
+		ArrayList<ConcurrentBiALT> routeFinders = new ArrayList<>();
+		routeWays = new ArrayList<>();
+		startTime = System.nanoTime();
 		if (markers.size() > 1) {
 			hasRoute = true;
 			routeNodes = new ArrayList<>();
@@ -495,23 +494,23 @@ public class Model {
 					} else {
 						dst = closestNodes.get(markers.get(x + 1));
 					}
-					System.out.println(src);
-					System.out.println(dst);
-					System.out.println("Found src and dst.");
+//					System.out.println(src);
+//					System.out.println(dst);
+//					System.out.println("Found src and dst.");
 					endTime = System.nanoTime();
 //					System.out.println("	closest time: " + (((float) endTime - (float) startTime) / 1000000000));
 //					startTime = System.nanoTime();
 
-					routeFinders.add(new ConcurrentBiAStar(graph, preProcess));
+					routeFinders.add(new ConcurrentBiALT(graph, preProcess));
 					Pair<Thread, Thread> threads = routeFinders.get(x).searchWithThreads(src, dst);
 					threads.getValue().start();
 					threads.getKey().start();
-					System.out.println("Started threads.");
+//					System.out.println("Started threads.");
 					routeThreads.add(threads.getKey());
 					routeThreads.add(threads.getValue());
 				}
 			}
-			System.out.println("Started all threads.");
+//			System.out.println("Started all threads.");
 			boolean done;
 			do {
 				done = true;
@@ -532,11 +531,13 @@ public class Model {
 				}
 			}while(!done);
 
-			System.out.println("done search");
+			endTime = System.nanoTime();
+			System.out.println("Find route: " + (((float) endTime - (float) startTime) / 1000000000));
+			startTime = System.nanoTime();
 
 			int j = 0;
 
-			for (ConcurrentBiAStar c : routeFinders) {
+			for (ConcurrentBiALT c : routeFinders) {
 				ArrayList<Long> ways = c.getRouteAsWays();
 				c = null;
 				if(ways == null){
@@ -548,12 +549,14 @@ public class Model {
 			}
 
 			for (Long w : routeWays) {
-//				System.out.println("way");
-				ArrayList<Point2D.Double> p = graph.wayToNodes(w);
-				System.out.println(graph.wayToRefs(w));
+				ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
 				routeNodes.addAll(p);
 			}
 
+			endTime = System.nanoTime();
+			System.out.println("Get points: " + (((float) endTime - (float) startTime) / 1000000000));
+			System.out.println();
 		}
+
 	}
 }

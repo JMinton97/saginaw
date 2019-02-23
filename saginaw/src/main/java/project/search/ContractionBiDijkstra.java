@@ -6,7 +6,7 @@ import project.map.MyGraph;
 
 import java.util.*;
 
-public class BiDijkstra implements Searcher {
+public class ContractionBiDijkstra implements Searcher {
     long startTime, endTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, arelaxTimeStart, arelaxTimeEnd, atotalRelaxTime, containsTimeStart, containsTimeEnd, totalContainsTime, pollTimeStart, pollTimeEnd, totalPollTime, relaxPutTimeStart, relaxPutTimeEnd, totalRelaxPutTime;
     THashMap<Long, Double> uDistTo;
     THashMap<Long, Long> uEdgeTo;
@@ -14,18 +14,19 @@ public class BiDijkstra implements Searcher {
     THashMap<Long, Double> vDistTo;
     THashMap<Long, Long> vEdgeTo;
     THashMap<Long, Long> vNodeTo;
-    PriorityQueue<DijkstraEntry> uPq;
-    PriorityQueue<DijkstraEntry> vPq;
+    PriorityQueue<DijkstraEntry> uPq, vPq, coreSQ, coreTQ;
     private HashSet<Long> uRelaxed;
     private HashSet<Long> vRelaxed;
     public Long overlapNode;
     private double maxDist; //how far from the nodes we have explored - have we covered minimum distance yet?
     public double bestSeen;
-    public int explored;
+    public long bestPathNode;
+    public int exploredA, exploredB;
     private long startNode, endNode;
     private MyGraph graph;
+    private boolean foundRoute;
 
-    public BiDijkstra(MyGraph graph) {
+    public ContractionBiDijkstra(MyGraph graph) {
         int size = graph.getFwdGraph().size();
 
 //        System.out.println("SIZE " + size);
@@ -51,6 +52,9 @@ public class BiDijkstra implements Searcher {
     }
 
     public ArrayList<Long> search(long startNode, long endNode){
+
+        exploredA = 0;
+        exploredB = 0;
 
         overlapNode = null;
 
@@ -78,6 +82,9 @@ public class BiDijkstra implements Searcher {
         uPq = new PriorityQueue<>(new DistanceComparator());
         vPq = new PriorityQueue<>(new DistanceComparator());
 
+        coreSQ = new PriorityQueue<>(new DistanceComparator());
+        coreTQ = new PriorityQueue<>(new DistanceComparator());
+
         uPq.add(new DijkstraEntry(startNode, 0.0));
         vPq.add(new DijkstraEntry(endNode, 0.0));
 
@@ -85,76 +92,125 @@ public class BiDijkstra implements Searcher {
         vRelaxed = new HashSet<>();
 
         bestSeen = Double.MAX_VALUE;
-        long bestPathNode = 0;
+        bestPathNode = 0;
+
+        double closestS = 0, closestT = 0;
 
 //        double minDist = haversineDistance(startNode, endNode, dictionary);
         double uFurthest, vFurthest = 0;
 
-        double competitor;
+//        double competitor;
 
         maxDist = 0;
-        explored = 0;
 
-        long startTime = System.nanoTime();
-        OUTER: while(!(uPq.isEmpty()) && !(vPq.isEmpty())){ //check
-            explored += 2;
-            long v1 = uPq.poll().getNode();
-            for (double[] e : graph.fwdAdj(v1)){
-                relax(v1, e, true);
-                if (vRelaxed.contains((long) e[0])) {
-                    competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((long) e[0]));
-                    if (bestSeen > competitor) {
-                        bestSeen = competitor;
-                        bestPathNode = v1;
-                    }
+        Runnable s = () -> {
+            boolean isCore;
+            while(!uPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+                exploredA++;
+                DijkstraEntry v = vPq.poll();
+                long v1 = v.getNode();
+                isCore = graph.isCoreNode(v1);
+                if(isCore){
+                    coreTQ.add(v);
                 }
-                if (vRelaxed.contains(v1)) {
-//                    System.out.println("truth");
-                    if((uDistTo.get(v1) + vDistTo.get(v1)) < bestSeen){
-//                        System.out.println("A");
-                        overlapNode = v1;
-                    } else {
-//                        System.out.println("B");
-                        overlapNode = bestPathNode;
+                for (double[] e : graph.fwdAdj(v1)){
+                    if(!Thread.currentThread().isInterrupted()) {
+                        if(!(isCore && graph.isCoreNode((long) e[0]))){
+                            relax(v1, e, true);
+                            if (vRelaxed.contains((long) e[0])) {
+                                double competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((long) e[0]));
+                                if (bestSeen > competitor) {
+                                    bestSeen = competitor;
+                                    bestPathNode = v1;
+                                }
+                            }
+                            if (vRelaxed.contains(v1)) {
+                                if ((uDistTo.get(v1) + vDistTo.get(v1)) < bestSeen) {
+                                    bestSeen = uDistTo.get(v1) + vDistTo.get(v1);
+                                    overlapNode = v1;
+                                } else {
+                                    overlapNode = bestPathNode;
+                                }
+                                if(bestSeen < coreSQ.peek().getDistance() + coreTQ.peek().getDistance()){
+                                    foundRoute = true;
+                                    Thread.currentThread().interrupt();
+                                }
+                            }
+                        }
                     }
-//                    System.out.println("Explored: " + explored);
-                    return getRouteAsWays();
                 }
             }
+        };
 
-            long v2 = vPq.poll().getNode();
-            for (double[] e : graph.bckAdj(v2)) {
-                relax(v2, e, false);
-                if (uRelaxed.contains((long) e[0])) {
-                    competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((long) e[0]));
-                    if (bestSeen > competitor) {
-                        bestSeen = competitor;
-                        bestPathNode = v2;
-                    }
+        Runnable t = () -> {
+            boolean isCore;
+            while(!vPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+                exploredB++;
+                DijkstraEntry v = vPq.poll();
+                long v2 = v.getNode();
+                isCore = graph.isCoreNode(v2);
+                if(isCore){
+                    coreTQ.add(v);
                 }
-                if (uRelaxed.contains(v2)) { //FINAL TERMINATION
-//                    System.out.println("truth");
-                    if((uDistTo.get(v2) + vDistTo.get(v2)) < bestSeen){
-//                        System.out.println("A");
-                        overlapNode = v2;
-                    } else {
-//                        System.out.println("B");
-                        overlapNode = bestPathNode;
+                for (double[] e : graph.bckAdj(v2)) {
+                    if(!Thread.currentThread().isInterrupted()){
+                        if(!(isCore && graph.isCoreNode((long) e[0]))){
+                            relax(v2, e, false);
+                            if (uRelaxed.contains((long) e[0])) {
+                                double competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((long) e[0]));
+                                if (bestSeen > competitor) {
+                                    bestSeen = competitor;
+                                    bestPathNode = v2;
+                                }
+                            }
+                            if (uRelaxed.contains(v2)) {
+                                if ((uDistTo.get(v2) + vDistTo.get(v2)) < bestSeen) {
+                                    bestSeen = uDistTo.get(v2) + vDistTo.get(v2);
+                                    overlapNode = v2;
+                                } else {
+                                    overlapNode = bestPathNode;
+                                }
+                                if(bestSeen < coreSQ.peek().getDistance() + coreTQ.peek().getDistance()){
+                                    foundRoute = true;
+                                    Thread.currentThread().interrupt();
+                                }
+                            }
+                        }
                     }
-//                    System.out.println("Explored: " + explored);
-                    return getRouteAsWays();
                 }
             }
+        };
+
+        Thread sThread = new Thread(s);
+        Thread tThread = new Thread(t);
+
+        sThread.start();
+        tThread.start();
+
+        while(sThread.isAlive() && tThread.isAlive()){
+
         }
+
+        sThread.interrupt();
+        tThread.interrupt();
+
+        if(!foundRoute){
+            //do second stage to get overlap, otherwise we continue below
+            secondStage(coreSQ, coreTQ);
+        }
+
+
+
         if(uPq.isEmpty() || vPq.isEmpty()){
             System.out.println("No route found.");
+            return new ArrayList<>();
         }
 
         long endTime = System.nanoTime();
 //        System.out.println("OVERLAP: " + overlapNode);
-//        System.out.println("BiDijkstra time: " + (((float) endTime - (float)startTime) / 1000000000));
+//        System.out.println("BiDijkstra time: " + (((float) endTime - (float) startTime) / 1000000000));
 
-        return new ArrayList<>();
+        return getRouteAsWays();
 
     }
 
@@ -200,8 +256,92 @@ public class BiDijkstra implements Searcher {
         totalRelaxTime += (relaxTimeEnd - relaxTimeStart);
     }
 
+
+    private void secondStage(PriorityQueue coreSQ, PriorityQueue coreTQ){
+
+        uPq = coreSQ;
+        vPq = coreTQ;
+
+        uRelaxed = new HashSet<>();
+        vRelaxed = new HashSet<>();
+
+        bestSeen = Double.MAX_VALUE;
+
+        Runnable s = () -> {
+            long startTime = System.nanoTime();
+            while(!uPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+                exploredA++;
+                long v1 = uPq.poll().getNode();
+                for (double[] e : graph.fwdCoreAdj(v1)){
+                    if(!Thread.currentThread().isInterrupted()) {
+                        relax(v1, e, true);
+                        if (vRelaxed.contains((long) e[0])) {
+                            double competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((long) e[0]));
+                            if (bestSeen > competitor) {
+                                bestSeen = competitor;
+                                bestPathNode = v1;
+                            }
+                        }
+                        if (vRelaxed.contains(v1)) {
+//                            System.out.println("done");
+                            if ((uDistTo.get(v1) + vDistTo.get(v1)) < bestSeen) {
+                                overlapNode = v1;
+                            } else {
+                                overlapNode = bestPathNode;
+                            }
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
+            }
+        };
+
+        Runnable t = () -> {
+            long startTime = System.nanoTime();
+            while(!vPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+                exploredB++;
+                long v2 = vPq.poll().getNode();
+                for (double[] e : graph.bckCoreAdj(v2)){
+                    if(!Thread.currentThread().isInterrupted()) {
+                        relax(v2, e, false);
+                        if (uRelaxed.contains((long) e[0])) {
+                            double competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((long) e[0]));
+                            if (bestSeen > competitor) {
+                                bestSeen = competitor;
+                                bestPathNode = v2;
+                            }
+                        }
+                        if (uRelaxed.contains(v2)) {
+//                            System.out.println("done");
+                            if ((uDistTo.get(v2) + vDistTo.get(v2)) < bestSeen) {
+                                overlapNode = v2;
+                            } else {
+                                overlapNode = bestPathNode;
+                            }
+                            long endTime = System.nanoTime();
+                            System.out.println(Thread.currentThread().getId() + ": " + (((float) endTime - (float) startTime) / 1000000000));
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
+            }
+        };
+
+        Thread sThread = new Thread(s);
+        Thread tThread = new Thread(t);
+
+        sThread.start();
+        tThread.start();
+
+        while(sThread.isAlive() && tThread.isAlive()){
+        }
+        System.out.println(sThread.isAlive());
+        System.out.println(tThread.isAlive());
+        sThread.interrupt();
+        tThread.interrupt();
+    }
+
     public double getDist() {
-        System.out.println(overlapNode);
         return uDistTo.get(overlapNode) + vDistTo.get(overlapNode);
     }
 
@@ -275,7 +415,7 @@ public class BiDijkstra implements Searcher {
             }
 
         }catch(NullPointerException n){
-//            System.out.println("Null: " + node);
+            System.out.println("Null: " + node);
         }
         return route;
     }
@@ -304,10 +444,6 @@ public class BiDijkstra implements Searcher {
     }
 
     public int getExplored(){
-        return explored;
+        return exploredA + exploredB;
     }
-
 }
-
-
-

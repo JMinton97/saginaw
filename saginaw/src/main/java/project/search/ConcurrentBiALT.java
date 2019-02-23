@@ -12,10 +12,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class ConcurrentBiAStar implements Searcher {
+public class ConcurrentBiALT implements Searcher {
     long startTime, endTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, arelaxTimeStart, arelaxTimeEnd, atotalRelaxTime, containsTimeStart, containsTimeEnd, totalContainsTime, pollTimeStart, pollTimeEnd, totalPollTime, relaxPutTimeStart, relaxPutTimeEnd, totalRelaxPutTime;
     THashMap<Long, Double> uDistTo;
     THashMap<Long, Long> uEdgeTo;
@@ -40,7 +39,7 @@ public class ConcurrentBiAStar implements Searcher {
     public long bestPathNode;
     private boolean fromSrc;
 
-    public ConcurrentBiAStar(MyGraph myGraph) {
+    public ConcurrentBiALT(MyGraph myGraph) {
         this.myGraph = myGraph;
         landmarks = new ArrayList<>();
 
@@ -67,7 +66,7 @@ public class ConcurrentBiAStar implements Searcher {
 
     }
 
-    public ConcurrentBiAStar(MyGraph myGraph, ALTPreProcess altPreProcess) {
+    public ConcurrentBiALT(MyGraph myGraph, ALTPreProcess altPreProcess) {
         this.myGraph = myGraph;
         landmarks = new ArrayList<>();
 
@@ -192,7 +191,7 @@ public class ConcurrentBiAStar implements Searcher {
                                 overlapNode = bestPathNode;
                             }
                             long endTime = System.nanoTime();
-                            System.out.println(Thread.currentThread().getId() + ": " + (((float) endTime - (float) startTime) / 1000000000));
+//                            System.out.println(Thread.currentThread().getId() + ": " + (((float) endTime - (float) startTime) / 1000000000));
                             Thread.currentThread().interrupt();
                         }
                     }
@@ -208,8 +207,8 @@ public class ConcurrentBiAStar implements Searcher {
 
         while(sThread.isAlive() && tThread.isAlive()){
         }
-        System.out.println(sThread.isAlive());
-        System.out.println(tThread.isAlive());
+//        System.out.println(sThread.isAlive());
+//        System.out.println(tThread.isAlive());
         sThread.interrupt();
         tThread.interrupt();
 
@@ -352,7 +351,7 @@ public class ConcurrentBiAStar implements Searcher {
     }
 
 
-    public ConcurrentBiAStar(MyGraph myGraph, ALTPreProcess altPreProcess, ConcurrentBiAStar previousSearch, boolean fromSrc) {
+    public ConcurrentBiALT(MyGraph myGraph, ALTPreProcess altPreProcess, ConcurrentBiALT previousSearch, boolean fromSrc) {
 
         this.fromSrc = fromSrc;
 

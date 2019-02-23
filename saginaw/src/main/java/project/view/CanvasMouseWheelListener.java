@@ -23,13 +23,11 @@ public class CanvasMouseWheelListener implements MouseWheelListener
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
         if(e.getWheelRotation() > 0){
-            System.out.println(true);
             model.zoomOut(view.getCanvas().canvasToGeo(e.getX(), e.getY()));
         } else {
 //            model.zoomIn();
             model.zoomIn(view.getCanvas().canvasToGeo(e.getX(), e.getY()));
         }
         view.getCanvas().repaint();
-        System.out.println(e.getWheelRotation());
     }
 }

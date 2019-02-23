@@ -121,7 +121,6 @@ class CanvasMouseListener implements MouseInputListener
 	@Override
 	public void mouseDragged(MouseEvent e)
 	{
-        System.out.println("");
 		x2 = e.getX();
 		y2 = e.getY();
 		if(draggingMap) {
@@ -129,10 +128,10 @@ class CanvasMouseListener implements MouseInputListener
 		} else {
 			double[] loc = view.getClickCoordinate(e.getX(), e.getY());
 //			System.out.println(loc[0] + " " + loc[1]);
-            long startTime = System.nanoTime();
+//            long startTime = System.nanoTime();
 			model.addPivot(loc);
-			long endTime = System.nanoTime();
-            System.out.println("Route time: " + (((float) endTime - (float)startTime) / 1000000000));
+//			long endTime = System.nanoTime();
+//            System.out.println("Route time: " + (((float) endTime - (float)startTime) / 1000000000));
 //			System.out.println(model.getMarkers().get(1)[0] + " " + model.getMarkers().get(1)[1]);
 		}
 		x1 = x2;

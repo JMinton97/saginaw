@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class BiAStar implements Searcher {
+public class BiALT implements Searcher {
     long startTime, endTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, arelaxTimeStart, arelaxTimeEnd, atotalRelaxTime, containsTimeStart, containsTimeEnd, totalContainsTime, pollTimeStart, pollTimeEnd, totalPollTime, relaxPutTimeStart, relaxPutTimeEnd, totalRelaxPutTime;
     THashMap<Long, Double> uDistTo;
     THashMap<Long, Long> uEdgeTo;
@@ -37,7 +37,7 @@ public class BiAStar implements Searcher {
     public int explored, size;
     public String filePrefix;
 
-    public BiAStar(MyGraph myGraph) {
+    public BiALT(MyGraph myGraph) {
         this.myGraph = myGraph;
         landmarks = new ArrayList<>();
 
@@ -62,7 +62,7 @@ public class BiAStar implements Searcher {
 
     }
 
-    public BiAStar(MyGraph myGraph, ALTPreProcess altPreProcess) {
+    public BiALT(MyGraph myGraph, ALTPreProcess altPreProcess) {
         this.myGraph = myGraph;
         landmarks = new ArrayList<>();
 
@@ -164,7 +164,7 @@ public class BiAStar implements Searcher {
                     }
 //                    System.out.println("Explored: " + explored);
                     long endTime = System.nanoTime();
-//                    System.out.println("Inner Bi-AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
+//                    System.out.println("Inner Bi-ALT time: " + (((float) endTime - (float)startTime) / 1000000000));
                     return getRouteAsWays();
                 }
             }
@@ -194,7 +194,7 @@ public class BiAStar implements Searcher {
                     }
 //                    System.out.println("Explored: " + explored);
                     long endTime = System.nanoTime();
-//                    System.out.println("Inner Bi-AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
+//                    System.out.println("Inner Bi-ALT time: " + (((float) endTime - (float)startTime) / 1000000000));
                     return getRouteAsWays();
                 }
                 containsTimeEnd = System.nanoTime();
@@ -202,7 +202,7 @@ public class BiAStar implements Searcher {
             }
         }
         long endTime = System.nanoTime();
-//        System.out.println("Inner Bi-AStar time: " + (((float) endTime - (float)startTime) / 1000000000));
+//        System.out.println("Inner Bi-ALT time: " + (((float) endTime - (float)startTime) / 1000000000));
         System.out.println("No route found.");
         return new ArrayList<>();
     }

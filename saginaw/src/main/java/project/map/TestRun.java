@@ -3,10 +3,12 @@ package project.map;
 import javafx.util.Pair;
 import project.search.*;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.PriorityQueue;
 import java.util.Random;
 
@@ -17,10 +19,8 @@ public class TestRun {
 
     public static void main(String[] args) throws InterruptedException{
 
-
-
         long startTime, endTime;
-        String region = "wales";
+        String region = "england";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 
@@ -31,7 +31,6 @@ public class TestRun {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
 
         MyGraph graph;
         Long src, dst, src1, dst1, src2, dst2;
@@ -54,7 +53,23 @@ public class TestRun {
             graph = new MyGraph(f, region);
             endTime = System.nanoTime();
             System.out.println("Making graph time: " + (((float) endTime - (float)startTime) / 1000000000));
+
+//            BufferedImage coreImg = new DrawGraph(region).draw(graph.getFwdCore(), graph.getDictionary());
+//            try {
+//                // retrieve image
+//                File outputfile = new File("core-" + region + ".png");
+//                ImageIO.write(coreImg, "png", outputfile);
+//            } catch (IOException e) {
+//            }
 //
+//            BufferedImage graphImg = new DrawGraph(region).draw(graph.getFwdGraph(), graph.getDictionary());
+//            try {
+//                // retrieve image
+//                File outputfile = new File("graph-" + region + ".png");
+//                ImageIO.write(graphImg, "png", outputfile);
+//            } catch (IOException e) {
+//            }
+
 //            System.exit(0);
 
 //            startTime = System.nanoTime();
@@ -62,9 +77,9 @@ public class TestRun {
 //            endTime = System.nanoTime();
 //            System.out.println("Finding nearest time: " + (((float) endTime - (float)startTime) / 1000000000));
 
-//            src = Long.parseLong("1349207723"); //wales
-//            dst = Long.parseLong("707151082");
-//
+            src = Long.parseLong("1349207723"); //wales
+            dst = Long.parseLong("411081397");
+
 //            src = Long.parseLong("154401978"); //wales middle
 //            dst = Long.parseLong("411081397");
 
@@ -82,8 +97,8 @@ public class TestRun {
 //            dst = Long.parseLong("513499");
 //
 //
-            src = Long.parseLong("548050322"); //exeter to spalding
-            dst = Long.parseLong("550385409");
+//            src = Long.parseLong("548050322"); //exeter to spalding
+//            dst = Long.parseLong("550385409");
 
 //            src = Long.parseLong("548050322"); //brum
 //            dst = Long.parseLong("280150290");
@@ -109,6 +124,34 @@ public class TestRun {
 
             ALTPreProcess altPreProcess = new ALTPreProcess(graph, region);
 
+            System.out.println("Done pre-processing.");
+
+            ContractionALT contractionALT = new ContractionALT(graph, altPreProcess);
+
+            BiDijkstra biDijkstra = new BiDijkstra(graph);
+
+            BiALT biAlt = new BiALT(graph, altPreProcess);
+
+            startTime = System.nanoTime();
+            biDijkstra.search(src, dst);
+            endTime = System.nanoTime();
+            System.out.println("Bi-dijkstra: " + (((float) endTime - (float)startTime) / 1000000000));
+            System.out.println(biDijkstra.getDist());
+
+            startTime = System.nanoTime();
+            contractionALT.search(src, dst);
+            endTime = System.nanoTime();
+            System.out.println("CALT: " + (((float) endTime - (float)startTime) / 1000000000));
+            System.out.println(contractionALT.getDist());
+
+            startTime = System.nanoTime();
+            biAlt.search(src, dst);
+            endTime = System.nanoTime();
+            System.out.println("Bi-ALT: " + (((float) endTime - (float)startTime) / 1000000000));
+            System.out.println(biAlt.getDist());
+
+            System.exit(0);
+
             src = Long.parseLong("1488735936");
             dst = Long.parseLong("1490759079");
             long pvt = Long.parseLong("307371102");
@@ -117,13 +160,13 @@ public class TestRun {
             System.out.println(graph.getFwdGraph().containsKey(dst));
             System.out.println(graph.getFwdGraph().containsKey(pvt));
 
-            ConcurrentBiAStar concurrentBiAStar = new ConcurrentBiAStar(graph, altPreProcess);
-            concurrentBiAStar.search(src, dst);
+            ConcurrentBiALT concurrentBiALT = new ConcurrentBiALT(graph, altPreProcess);
+            concurrentBiALT.search(src, dst);
 
 //            System.exit(0);
 
-            ConcurrentBiAStar aCon = new ConcurrentBiAStar(graph, altPreProcess, concurrentBiAStar, true);
-            ConcurrentBiAStar bCon = new ConcurrentBiAStar(graph, altPreProcess, concurrentBiAStar, false);
+            ConcurrentBiALT aCon = new ConcurrentBiALT(graph, altPreProcess, concurrentBiALT, true);
+            ConcurrentBiALT bCon = new ConcurrentBiALT(graph, altPreProcess, concurrentBiALT, false);
 
             System.out.println();
 
@@ -139,11 +182,11 @@ public class TestRun {
             System.exit(0);
 
             Dijkstra dijkstra = new Dijkstra(graph);
-            BiDijkstra biDijkstra = new BiDijkstra(graph);
-            AStar aStar = new AStar(graph, altPreProcess);
-            BiAStar biAStar = new BiAStar(graph, altPreProcess);
+//            BiDijkstra biDijkstra = new BiDijkstra(graph);
+            ALT ALT = new ALT(graph, altPreProcess);
+            BiALT biALT = new BiALT(graph, altPreProcess);
             ConcurrentBiDijkstra concurrentBiDijkstra = new ConcurrentBiDijkstra(graph);
-//            ConcurrentBiAStar concurrentBiAStar = new ConcurrentBiAStar(graph, altPreProcess);
+//            ConcurrentBiALT concurrentBiALT = new ConcurrentBiALT(graph, altPreProcess);
 
             long avgDijkstra = 0, avgBiDijkstra = 0, avgAStar = 0, avgBiAStar = 0, avgConcurrentBiDijkstra = 0, avgConcurrentBiAStar = 0;
             long avgDijkstraEpS = 0, avgBiDijkstraEpS = 0, avgAStarEpS = 0, avgBiAStarEpS = 0, avgConcurrentBiDijkstraEpS = 0, avgConcurrentBiAStarEpS = 0;
@@ -184,63 +227,61 @@ public class TestRun {
 //                System.out.println(concurrentBiDijkstra.getDist());
 
                 startTime = System.nanoTime();
-                aStar.search(randomSrc, randomDst);
+                ALT.search(randomSrc, randomDst);
                 endTime = System.nanoTime();
                 avgAStar += ((float) endTime - (float) startTime) / 100000000;
-                avgAStarEpS += aStar.getExplored() / (((float) endTime - (float) startTime) / 100000000);
-                System.out.println("AStar:                  " + ((float) endTime - (float) startTime) / 100000000);
-                System.out.println("Explored: " + aStar.getExplored());
-//                System.out.println(aStar.getDist());
+                avgAStarEpS += ALT.getExplored() / (((float) endTime - (float) startTime) / 100000000);
+                System.out.println("ALT:                  " + ((float) endTime - (float) startTime) / 100000000);
+                System.out.println("Explored: " + ALT.getExplored());
+//                System.out.println(ALT.getDist());
 
                 startTime = System.nanoTime();
-                biAStar.search(randomSrc, randomDst);
+                biALT.search(randomSrc, randomDst);
                 endTime = System.nanoTime();
                 avgBiAStar += ((float) endTime - (float) startTime) / 100000000;
-                avgBiAStarEpS += biAStar.getExplored() / (((float) endTime - (float) startTime) / 100000000);
-                System.out.println("BiAStar:                " + ((float) endTime - (float) startTime) / 100000000);
-                System.out.println("Explored: " + biAStar.getExplored());
-//                System.out.println(biAStar.getDist());
+                avgBiAStarEpS += biALT.getExplored() / (((float) endTime - (float) startTime) / 100000000);
+                System.out.println("BiALT:                " + ((float) endTime - (float) startTime) / 100000000);
+                System.out.println("Explored: " + biALT.getExplored());
+//                System.out.println(biALT.getDist());
 
 
                 startTime = System.nanoTime();
-                concurrentBiAStar.search(randomSrc, randomDst);
+                concurrentBiALT.search(randomSrc, randomDst);
                 endTime = System.nanoTime();
                 avgConcurrentBiAStar += ((float) endTime - (float) startTime) / 100000000;
-                avgConcurrentBiAStarEpS += concurrentBiAStar.getExplored() / (((float) endTime - (float) startTime) / 100000000);
-                System.out.println("ConcurrentBiAStar:      " + ((float) endTime - (float) startTime) / 100000000);
-                System.out.println("Explored: " + concurrentBiAStar.getExplored());
-//                System.out.println(concurrentBiAStar.getDist());
+                avgConcurrentBiAStarEpS += concurrentBiALT.getExplored() / (((float) endTime - (float) startTime) / 100000000);
+                System.out.println("ConcurrentBiALT:      " + ((float) endTime - (float) startTime) / 100000000);
+                System.out.println("Explored: " + concurrentBiALT.getExplored());
+
+//                System.out.println(concurrentBiALT.getDist());
                 System.out.println();
 
 
                 System.out.println("Dijkstra:               " + avgDijkstra / x);
                 System.out.println("BiDijkstra:             " + avgBiDijkstra / x);
                 System.out.println("Concurrent BiDijkstra:  " + avgConcurrentBiDijkstra / x);
-                System.out.println("AStar:                  " + avgAStar / x);
-                System.out.println("BiAStar:                " + avgBiAStar / x);
-                System.out.println("ConcurrentBiAStar:      " + avgConcurrentBiAStar / x);
+                System.out.println("ALT:                  " + avgAStar / x);
+                System.out.println("BiALT:                " + avgBiAStar / x);
+                System.out.println("ConcurrentBiALT:      " + avgConcurrentBiAStar / x);
                 System.out.println();
                 System.out.println("Dijkstra EpS:               " + avgDijkstraEpS / x);
                 System.out.println("BiDijkstra EpS:             " + avgBiDijkstraEpS / x);
                 System.out.println("Concurrent BiDijkstra EpS:  " + avgConcurrentBiDijkstraEpS / x);
-                System.out.println("AStar EpS:                  " + avgAStarEpS / x);
-                System.out.println("BiAStar EpS:                " + avgBiAStarEpS / x);
-                System.out.println("ConcurrentBiAStar EpS:      " + avgConcurrentBiAStarEpS / x);
+                System.out.println("ALT EpS:                  " + avgAStarEpS / x);
+                System.out.println("BiALT EpS:                " + avgBiAStarEpS / x);
+                System.out.println("ConcurrentBiALT EpS:      " + avgConcurrentBiAStarEpS / x);
                 System.out.println();
                 System.out.println();
                 System.out.println();
 
             }
 
-
-
-
 //
-//            AStar astar = new AStar(graph);
+//            ALT astar = new ALT(graph);
 //            startTime = System.nanoTime();
 //            astar.search(src, dst);
 //            endTime = System.nanoTime();
-//            System.out.println("AStar full time: " + (((float) endTime - (float)startTime) / 1000000000));
+//            System.out.println("ALT full time: " + (((float) endTime - (float)startTime) / 1000000000));
 //            System.out.println("Distance: " + astar.getDistTo(dst));
 //            System.out.println("Explored: " + astar.explored);
 //            astar.clear();
@@ -315,6 +356,18 @@ public class TestRun {
 //            map.saveMap();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static class KeyComparator implements Comparator<Pair<Long, Double>>{
+        public int compare(Pair<Long, Double> x, Pair<Long, Double> y){
+            if(x.getValue() < y.getValue()){
+                return -1;
+            }
+            if(x.getValue() > y.getValue()){
+                return 1;
+            }
+            else return 0;
         }
     }
 }
