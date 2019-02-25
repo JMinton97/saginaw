@@ -24,6 +24,7 @@ import project.search.DijkstraEntry;
 public class MyGraph {
     //    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
     public static BTreeMap<Long, double[]> dictionary; //maps a node id to a double array containing the coordinates of the node
+    public static double[][] dictionary2;
     private static Map<Long, long[]> mapRoads; //a list of all connections between nodes. Later becomes all graph edges.
     private static ConcurrentMap<Long, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a list of ways each one is part of
     private static boolean parsingNodes;
@@ -516,8 +517,12 @@ public class MyGraph {
 //                        }
 //                        Iterator fwdIt = fwdCore.get((long) beforeEdge[0]).iterator();
 //                        Iterator bckIt = bckCore.get((long) afterEdge[0]).iterator();
-                        fwdCore.get((long) beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], beforeEdge[2], beforeEdge[3] + afterEdge[3]});   //add shortcut to forward and backward graph
-                        bckCore.get((long) afterEdge[0]).add(new double[]{beforeEdge[0], beforeEdge[1] + afterEdge[1], beforeEdge[2], beforeEdge[3] + afterEdge[3]});
+                        long fwdId = joinWays((long) beforeEdge[2], (long) afterEdge[2]);
+                        long bckId = joinWays((long) afterEdge[2], (long) beforeEdge[2]);
+                        fwdCore.get((long) beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], (double) fwdId, beforeEdge[3] + afterEdge[3]});   //add shortcut to forward and backward graph
+                        bckCore.get((long) afterEdge[0]).add(new double[]{beforeEdge[0], beforeEdge[1] + afterEdge[1], (double) bckId, beforeEdge[3] + afterEdge[3]});
+
+
 //                        while(fwdIt.hasNext()){
 //                            if((long) ((double[]) fwdIt.next())[0] == bypassNode){
 //                                fwdIt.remove();
@@ -627,12 +632,26 @@ public class MyGraph {
 
         edgeCounter = 0;
 
+        int emptyFwdCounter = 0;
+        int emptyBckCounter = 0;
+
         for (Map.Entry<Long, ArrayList<double[]>> nodeEntry : fwdCore.entrySet()) {
-            edgeCounter += nodeEntry.getValue().size();
             if(nodeEntry.getValue().size() == 0){
-                System.out.println("Oh no.");
+//                fwdCore.remove(nodeEntry.getKey());
+                emptyFwdCounter++;
             }
         }
+
+        for (Map.Entry<Long, ArrayList<double[]>> nodeEntry : bckCore.entrySet()) {
+            if(nodeEntry.getValue().size() == 0){
+//                bckCore.remove(nodeEntry.getKey());
+                emptyBckCounter++;
+            }
+        }
+
+        System.out.println("Empty forward:" + emptyFwdCounter);
+        System.out.println("Empty back:" + emptyBckCounter);
+
 
         System.out.println("Edges before:   " + edgeCounter);
 
@@ -848,6 +867,21 @@ public class MyGraph {
 
 //        System.out.println(fwdCore.get(node).size());
 
+    }
+
+    private long joinWays(long fst, long snd){
+        long id = generateNewWayRef();
+//        System.out.println(Arrays.toString(mapRoads.get(fst)));
+//        System.out.println(Arrays.toString(mapRoads.get(snd)));
+//        System.out.println();
+        long[] first = mapRoads.get(fst);
+        long[] second = mapRoads.get(snd);
+        if(first[first.length - 1] == second[0]){
+            mapRoads.put(id, concat(first, second));
+        } else {
+            mapRoads.put(id, concat(second, first));
+        }
+        return id;
     }
 
 
@@ -1351,6 +1385,12 @@ public class MyGraph {
             else return 0;
         }
     }
+
+    public static long[] concat(long[] first, long[] second) {
+        long[] result = Arrays.copyOf(first, first.length + second.length);
+        System.arraycopy(second, 0, result, first.length, second.length);
+        return result;
+    } //from stackoverflow: https://stackoverflow.com/a/784842/3032936
 
     private boolean connectedInCore(long a, long b){
         try{

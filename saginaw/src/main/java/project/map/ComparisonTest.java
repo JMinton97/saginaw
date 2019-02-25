@@ -128,11 +128,12 @@ public class ComparisonTest {
 
             Searcher searcher = new ContractionALT(graph, altPreProcess);
             avg = 0; eps = 0;
-            for (int x = 0; x < 20; x++) {
+            for (int x = 1; x < 20; x++) {
 //                System.out.println(x);
                 startTime = System.nanoTime();
                 searcher.search(srcs[x], dsts[x]);
                 endTime = System.nanoTime();
+                System.out.println(x + " : " + ((float) endTime - (float) startTime) / 1000000000);
                 avg += ((float) endTime - (float) startTime) / 1000000000;
                 eps += searcher.getExplored() / (((float) endTime - (float) startTime) / 1000000000);
             }
@@ -141,11 +142,12 @@ public class ComparisonTest {
 
             searcher = new ConcurrentBiALT(graph, altPreProcess);
             avg = 0; eps = 0;
-            for (int x = 0; x < 20; x++) {
+            for (int x = 1; x < 20; x++) {
 //                System.out.println(x);
                 startTime = System.nanoTime();
                 searcher.search(srcs[x], dsts[x]);
                 endTime = System.nanoTime();
+                System.out.println(x + " : " + ((float) endTime - (float) startTime) / 1000000000);
                 avg += ((float) endTime - (float) startTime) / 1000000000;
                 eps += searcher.getExplored() / (((float) endTime - (float) startTime) / 1000000000);
             }

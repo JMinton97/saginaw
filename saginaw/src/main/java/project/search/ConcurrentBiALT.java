@@ -743,10 +743,10 @@ public class ConcurrentBiALT implements Searcher {
     }
 
     public double getDist() {
-        System.out.println(bestPathNode);
-        System.out.println(overlapNode);
-        System.out.println(uDistTo.get(overlapNode));
-        System.out.println(vDistTo.get(overlapNode));
+//        System.out.println(bestPathNode);
+//        System.out.println(overlapNode);
+//        System.out.println(uDistTo.get(overlapNode));
+//        System.out.println(vDistTo.get(overlapNode));
         return uDistTo.get(overlapNode) + vDistTo.get(overlapNode);
     }
 

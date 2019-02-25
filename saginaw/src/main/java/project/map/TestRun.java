@@ -5,8 +5,10 @@ import project.search.*;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.PriorityQueue;
@@ -20,7 +22,7 @@ public class TestRun {
     public static void main(String[] args) throws InterruptedException{
 
         long startTime, endTime;
-        String region = "england";
+        String region = "wales";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 
@@ -53,6 +55,53 @@ public class TestRun {
             graph = new MyGraph(f, region);
             endTime = System.nanoTime();
             System.out.println("Making graph time: " + (((float) endTime - (float)startTime) / 1000000000));
+
+            System.out.println("Dictionary: " + graph.getDictionary().size());
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+
+            ALTPreProcess altPreProcess = new ALTPreProcess(graph, region);
+
+            System.out.println("Done pre-processing.");
+
+            ContractionALT contractionALT = new ContractionALT(graph, altPreProcess);
+
+            BiDijkstra biDijkstra = new BiDijkstra(graph);
+
+            ConcurrentBiALT cBiAlt = new ConcurrentBiALT(graph, altPreProcess);
+
+            boolean loop = true;
+
+
+            while(loop){
+                String input = reader.readLine();
+                if(input.equals("quit")){
+                    loop = false;
+                } else {
+                    String[] dsts = input.split(" ");
+                    src = Long.parseLong(dsts[0]);
+                    dst = Long.parseLong(dsts[1]);
+
+                    startTime = System.nanoTime();
+                    contractionALT.search(src, dst);
+                    endTime = System.nanoTime();
+                    System.out.println("CALT: " + (((float) endTime - (float)startTime) / 1000000000));
+                    System.out.println(contractionALT.getDist());
+
+//            startTime = System.nanoTime();
+//            biDijkstra.search(src, dst);
+//            endTime = System.nanoTime();
+//            System.out.println("Bi-dijkstra: " + (((float) endTime - (float)startTime) / 1000000000));
+//            System.out.println(biDijkstra.getDist());
+
+                    startTime = System.nanoTime();
+                    cBiAlt.search(src, dst);
+                    endTime = System.nanoTime();
+                    System.out.println("Concurrent Bi-ALT: " + (((float) endTime - (float)startTime) / 1000000000));
+                    System.out.println(cBiAlt.getExplored());
+                    System.out.println(cBiAlt.getDist());
+                }
+            }
 
 //            BufferedImage coreImg = new DrawGraph(region).draw(graph.getFwdCore(), graph.getDictionary());
 //            try {
@@ -97,14 +146,14 @@ public class TestRun {
 //            dst = Long.parseLong("513499");
 //
 //
-//            src = Long.parseLong("548050322"); //exeter to spalding
-//            dst = Long.parseLong("550385409");
+            src = Long.parseLong("548050322"); //exeter to spalding
+            dst = Long.parseLong("550385409");
 
 //            src = Long.parseLong("548050322"); //brum
 //            dst = Long.parseLong("280150290");
 
-            src = Long.parseLong("370459811"); //wolverton to sheffield
-            dst = Long.parseLong("1014466202");
+//            src = Long.parseLong("370459811"); //wolverton to sheffield
+//            dst = Long.parseLong("1014466202");
 
 //            src = Long.parseLong("1014654504"); //north to south
 //            dst = Long.parseLong("1620423227");
@@ -122,21 +171,7 @@ public class TestRun {
 //            System.out.println("Distance: " + astar.getDistTo().get(dst));
 //            System.out.println("Explored: " + astar.explored);
 
-            ALTPreProcess altPreProcess = new ALTPreProcess(graph, region);
 
-            System.out.println("Done pre-processing.");
-
-            ContractionALT contractionALT = new ContractionALT(graph, altPreProcess);
-
-            BiDijkstra biDijkstra = new BiDijkstra(graph);
-
-            BiALT biAlt = new BiALT(graph, altPreProcess);
-
-            startTime = System.nanoTime();
-            biDijkstra.search(src, dst);
-            endTime = System.nanoTime();
-            System.out.println("Bi-dijkstra: " + (((float) endTime - (float)startTime) / 1000000000));
-            System.out.println(biDijkstra.getDist());
 
             startTime = System.nanoTime();
             contractionALT.search(src, dst);
@@ -144,11 +179,18 @@ public class TestRun {
             System.out.println("CALT: " + (((float) endTime - (float)startTime) / 1000000000));
             System.out.println(contractionALT.getDist());
 
+//            startTime = System.nanoTime();
+//            biDijkstra.search(src, dst);
+//            endTime = System.nanoTime();
+//            System.out.println("Bi-dijkstra: " + (((float) endTime - (float)startTime) / 1000000000));
+//            System.out.println(biDijkstra.getDist());
+
             startTime = System.nanoTime();
-            biAlt.search(src, dst);
+            cBiAlt.search(src, dst);
             endTime = System.nanoTime();
-            System.out.println("Bi-ALT: " + (((float) endTime - (float)startTime) / 1000000000));
-            System.out.println(biAlt.getDist());
+            System.out.println("Concurrent Bi-ALT: " + (((float) endTime - (float)startTime) / 1000000000));
+            System.out.println(cBiAlt.getExplored());
+            System.out.println(cBiAlt.getDist());
 
             System.exit(0);
 

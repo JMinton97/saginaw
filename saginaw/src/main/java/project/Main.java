@@ -52,7 +52,6 @@ public class Main extends JFrame
 				View view = new View(model, controller);
 
 				view.setVisible(true);
-				System.out.println("did that");
 			}
 		});
 
