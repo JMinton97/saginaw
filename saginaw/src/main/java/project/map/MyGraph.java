@@ -43,7 +43,8 @@ public class MyGraph {
     private double contractionParameter = 2.5;
     private double hopLimiter = 50;
     private final double DOU_THRESHOLD = .0001;
-    private static HashMap<Long, Integer> nodeIds;
+    private static HashMap<Long, Integer> nodeLong2Int;
+    private static HashMap<Integer, Long> nodeInt2Long;
     private int maxId = 0;
 
     private long startTime;
@@ -60,7 +61,8 @@ public class MyGraph {
 
         filePrefix = "files//".concat(region + "//");
 
-        nodeIds = new HashMap<>();
+        nodeLong2Int = new HashMap<>();
+        nodeInt2Long = new HashMap<>();
 
         DB db3 = DBMaker
                 .fileDB(filePrefix.concat("mapRoads.db"))
@@ -282,7 +284,6 @@ public class MyGraph {
     }
 
     private Pair<Map, Map> makeDijkstraGraph(Map<Long, int[]> edges, int noOfEdges){
-        System.exit(0);
         fwdGraph = new HashMap<>(noOfEdges);
         bckGraph = new HashMap<>(noOfEdges);
 
@@ -290,7 +291,7 @@ public class MyGraph {
         System.out.println("Adding connections");
         int counter = 0;
         for(Map.Entry<Long, int[]> way : edges.entrySet()){ //iterate through every edge and add neighbours to graph vertices accordingly
-            System.out.println(way.getValue()[0] + " to " + way.getValue()[way.getValue().length - 1] + " by " + way.getKey());
+//            System.out.println(nodeInt2Long.get(way.getValue()[0]) + " to " + nodeInt2Long.get(way.getValue()[way.getValue().length - 1]) + " by " + way.getKey());
             counter++;
             if((counter % 1000) == 0){
                 System.out.println(((double) counter / (double) noOfEdges) * 100);
@@ -1070,24 +1071,23 @@ public class MyGraph {
                     lastId += nodes.getId(i);
                     lastLat += nodes.getLat(i);
                     lastLon += nodes.getLon(i);
-                    if(nodeIds.containsKey(lastId)){
-                        if(allWayNodes.containsKey((nodeIds.get(lastId)))){
-//                System.out.printf("Dense node, ID %d @ %.6f,%.6f\n",
+                    if(nodeLong2Int.containsKey(lastId)){
+//                    System.out.printf("Dense node, ID %d @ %.6f,%.6f\n",
 //                        lastId,parseLat(lastLat),parseLon(lastLon));
-                            double[] tempDense = new double[3];
+                        double[] tempDense = new double[3];
 //                        MyNode tempDense = new MyNode();
 //                        tempDense.setLati(parseLat(lastLat));
 //                        tempDense.setLongi(parseLon(lastLon));
 //                        tempDense.setNodeId(lastId);
-                            tempDense[0] = parseLon(lastLon);
-                            tempDense[1] = parseLat(lastLat);
-                            tempDense[2] = dictionary.size();
-                            nodeIds.put(lastId, dictionary.size());
-                            dictionary.add(tempDense);
+                        tempDense[0] = parseLon(lastLon);
+                        tempDense[1] = parseLat(lastLat);
+                        tempDense[2] = dictionary.size();
+                        dictionary.set(nodeLong2Int.get(lastId), tempDense);
+//                        System.out.println(dictionary.get(nodeLong2Int.get(lastId))[0] + " " + dictionary.get(nodeLong2Int.get(lastId))[1]);
+//                        System.out.println(lastId + " " + tempDense[0] + " " + tempDense[1]);
 //                        System.out.println(tempDense[0] + " " + tempDense[1]);
 //                        counter++;
-//                        System.out.println(counter);
-                        }
+//                        System.out.println(counter)
                     }
                 }
             }
@@ -1146,7 +1146,6 @@ public class MyGraph {
         }
 
         private void addWay(Way w, boolean oneWay, long wayId){
-            System.out.println("Way id: " + wayId);
             int[] fwdWay = new int[w.getRefsList().size()];
             int[] bckWay = new int[w.getRefsList().size()];
             long lastRef = 0;
@@ -1155,11 +1154,13 @@ public class MyGraph {
             int bckCtr = w.getRefsCount() - 1;
             for (Long ref : w.getRefsList()) {
                 lastRef+= ref;
-                if(nodeIds.containsKey(lastRef)){
-                    intRef = nodeIds.get(lastRef);
+                if(nodeLong2Int.containsKey(lastRef)){
+                    intRef = nodeLong2Int.get(lastRef);
                 }else{
-                    intRef = nodeIds.size();
-                    nodeIds.put(lastRef, intRef);
+                    intRef = nodeLong2Int.size();
+                    nodeLong2Int.put(lastRef, intRef);
+                    nodeInt2Long.put(intRef, lastRef);
+                    dictionary.add(new double[]{});
                 }
                 fwdWay[fwdCtr] = intRef;
                 if(!oneWay){
@@ -1314,7 +1315,6 @@ public class MyGraph {
 
 
     public ArrayList<Point2D.Double> wayToNodes(long wayId){
-        System.out.println(wayId);
         ArrayList<Point2D.Double> points = new ArrayList<>();
         int[] ids = mapRoads.get(wayId);
         for(int i = 0; i < ids.length; i++){

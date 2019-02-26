@@ -137,7 +137,6 @@ public class ContractionALT implements Searcher {
                 for (double[] e : graph.fwdAdj(v1)){
                     if(!isCore) {
 //                        System.out.println("got here u");
-                        System.out.println();
                         relax(v1, e, true);
                         if (vRelaxed.contains((int) e[0])) {
                             competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((int) e[0]));
@@ -152,10 +151,6 @@ public class ContractionALT implements Searcher {
                             } else {
                                 overlapNode = bestPathNode;
                             }
-                            System.out.println(explored);
-                            System.out.println(bestSeen);
-                            System.out.println(coreSQ.peek());
-                            System.out.println(coreTQ.peek());
                             if(bestSeen < (coreSQ.peek().getDistance() + coreTQ.peek().getDistance())){
                                 foundRoute = true;
                                 break STAGE1;
@@ -166,7 +161,6 @@ public class ContractionALT implements Searcher {
             }
 
             if(!vPq.isEmpty()){
-                System.out.println();
                 explored++;
                 v = vPq.poll();
                 int v2 = v.getNode();
@@ -179,7 +173,6 @@ public class ContractionALT implements Searcher {
 //                System.out.println(graph.fwdAdj(v2).size() + " edges.");
                 for (double[] e : graph.bckAdj(v2)) {
                     if(!isCore) {
-//                        System.out.println("got here v");
                         relax(v2, e, false);
                         if (uRelaxed.contains((int) e[0])) {
                             competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((int) e[0]));
@@ -189,7 +182,6 @@ public class ContractionALT implements Searcher {
                             }
                         }
                         if (uRelaxed.contains(v2)) {
-                            System.out.println(v2);
                             if ((uDistTo.get(v2) + vDistTo.get(v2)) < bestSeen) {
                                 bestSeen = uDistTo.get(v2) + vDistTo.get(v2);
                                 overlapNode = v2;
@@ -197,9 +189,6 @@ public class ContractionALT implements Searcher {
                                 overlapNode = bestPathNode;
                             }
 //                            System.out.println("Found a route of " + bestSeen + " but core distances are " + coreSQ.peek().getDistance() + " " + coreTQ.peek().getDistance());\
-                            System.out.println(bestSeen);
-                            System.out.println(coreSQ.peek());
-                            System.out.println(coreTQ.peek());
                             if(bestSeen < (coreSQ.peek().getDistance() + coreTQ.peek().getDistance())){
                                 foundRoute = true;
                                 break STAGE1;
@@ -235,7 +224,7 @@ public class ContractionALT implements Searcher {
         int w = (int) edge[0];
         double weight = edge[1];
         double wayId = edge[2];
-        System.out.println(w + " " + weight + " " + wayId);
+//        System.out.println(w + " " + weight + " " + wayId);
         if(u){
             uRelaxed.add(x);
             double distToX = uDistTo.getOrDefault(x, Double.MAX_VALUE);
@@ -274,7 +263,6 @@ public class ContractionALT implements Searcher {
         relaxTimeEnd = System.nanoTime();
         totalRelaxTime += (relaxTimeEnd - relaxTimeStart);
     }
-
 
     private void secondStage(PriorityQueue coreSQ, PriorityQueue coreTQ){
 
@@ -396,8 +384,8 @@ public class ContractionALT implements Searcher {
                 for (double[] e : graph.fwdCoreAdj(v1)){
                     if(!Thread.currentThread().isInterrupted()) {
                         relaxALT(v1, e, true);
-                        if (vRelaxed.contains((long) e[0])) {
-                            double competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((long) e[0]));
+                        if (vRelaxed.contains((int) e[0])) {
+                            double competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((int) e[0]));
                             if (bestSeen > competitor) {
                                 bestSeen = competitor;
                                 bestPathNode = v1;
@@ -427,8 +415,8 @@ public class ContractionALT implements Searcher {
                     if(!Thread.currentThread().isInterrupted()) {
 //                        System.out.println("t relax");
                         relaxALT(v2, e, false);
-                        if (uRelaxed.contains((long) e[0])) {
-                            double competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((long) e[0]));
+                        if (uRelaxed.contains((int) e[0])) {
+                            double competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((int) e[0]));
                             if (bestSeen > competitor) {
                                 bestSeen = competitor;
                                 bestPathNode = v2;
@@ -565,7 +553,6 @@ public class ContractionALT implements Searcher {
                 isCore = graph.isCoreNode(v1);
 //                System.out.println(v1);
                 if(isCore){
-//                    System.out.println("Found core node.");
                     coreSQ.add(v);
                 }
 //                System.out.println(graph.fwdAdj(v1).size() + " edges.");
@@ -573,8 +560,8 @@ public class ContractionALT implements Searcher {
                     if(!isCore) {
 //                        System.out.println("got here u");
                         relax(v1, e, true);
-                        if (vRelaxed.contains((long) e[0])) {
-                            competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((long) e[0]));
+                        if (vRelaxed.contains((int) e[0])) {
+                            competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((int) e[0]));
                             if (bestSeen > competitor) {
                                 bestSeen = competitor;
                                 bestPathNode = v1;
@@ -602,16 +589,14 @@ public class ContractionALT implements Searcher {
 //                System.out.println(v2);
                 isCore = graph.isCoreNode(v2);
                 if(isCore){
-//                    System.out.println("Found core node.");
                     coreTQ.add(v);
                 }
 //                System.out.println(graph.fwdAdj(v2).size() + " edges.");
                 for (double[] e : graph.bckAdj(v2)) {
                     if(!isCore) {
-//                        System.out.println("got here v");
                         relax(v2, e, false);
-                        if (uRelaxed.contains((long) e[0])) {
-                            competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((long) e[0]));
+                        if (uRelaxed.contains((int) e[0])) {
+                            competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((int) e[0]));
                             if (bestSeen > competitor) {
                                 bestSeen = competitor;
                                 bestPathNode = v2;
@@ -624,7 +609,7 @@ public class ContractionALT implements Searcher {
                             } else {
                                 overlapNode = bestPathNode;
                             }
-//                            System.out.println("Found a route of " + bestSeen + " but core distances are " + coreSQ.peek().getDistance() + " " + coreTQ.peek().getDistance());
+//                            System.out.println("Found a route of " + bestSeen + " but core distances are " + coreSQ.peek().getDistance() + " " + coreTQ.peek().getDistance());\
                             if(bestSeen < (coreSQ.peek().getDistance() + coreTQ.peek().getDistance())){
                                 foundRoute = true;
                                 break STAGE1;

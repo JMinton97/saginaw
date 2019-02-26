@@ -2,6 +2,10 @@ package project.search;
 
 
 import gnu.trove.map.hash.THashMap;
+import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2LongArrayMap;
+import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
 import javafx.util.Pair;
@@ -15,27 +19,29 @@ public class Dijkstra implements Searcher {
     THashMap<Long, Double> distTo;
     THashMap<Long, Long> edgeTo;
 
-    public long src, dst;
+    public int src, dst;
 
     private MyGraph graph;
 
-    Long2DoubleOpenHashMap distTo2;
-    Long2LongOpenHashMap edgeTo2;
+    Int2DoubleOpenHashMap distTo2;
+    Int2LongOpenHashMap edgeTo2;
+    Int2IntOpenHashMap nodeTo2;
 
     PriorityQueue<DijkstraEntry> pq;
-    long startNode, endNode;
+    int startNode, endNode;
     public int explored;
 
-    public Dijkstra(project.map.MyGraph graph, long startNode) {
+    public Dijkstra(project.map.MyGraph graph, int startNode) {
         distTo = new THashMap<>();
         edgeTo = new THashMap<>();
 
-        distTo2 = new Long2DoubleOpenHashMap();
-        edgeTo2 = new Long2LongOpenHashMap();
+        distTo2 = new Int2DoubleOpenHashMap();
+        edgeTo2 = new Int2LongOpenHashMap();
+        nodeTo2 = new Int2IntOpenHashMap();
 
         pq = new PriorityQueue();
 
-        for (long vert : graph.getFwdGraph().keySet()) {
+        for (int vert : graph.getFwdGraph().keySet()) {
             distTo2.put(vert, Double.MAX_VALUE);
         }
         distTo2.put(startNode, 0.0);
@@ -46,7 +52,7 @@ public class Dijkstra implements Searcher {
         pq.add(new DijkstraEntry(startNode, 0.0));
 
         while (!pq.isEmpty()) {
-            long v = pq.poll().getNode();
+            int v = pq.poll().getNode();
             for (double[] e : graph.fwdAdj(v)) {
                 relax(v, e);
             }
@@ -58,7 +64,7 @@ public class Dijkstra implements Searcher {
     }
 
 
-    public ArrayList<Long> search(long src, long dst){
+    public ArrayList<Long> search(int src, int dst){
 
         explored = 0;
 
@@ -68,13 +74,14 @@ public class Dijkstra implements Searcher {
         distTo = new THashMap<>();
         edgeTo = new THashMap<>();
 
-        distTo2 = new Long2DoubleOpenHashMap();
-        edgeTo2 = new Long2LongOpenHashMap();
+        distTo2 = new Int2DoubleOpenHashMap();
+        edgeTo2 = new Int2LongOpenHashMap();
+        nodeTo2 = new Int2IntOpenHashMap();
 
         this.startNode = src;
         this.endNode = dst;
 
-        for(long vert : graph.getFwdGraph().keySet()){
+        for(int vert : graph.getFwdGraph().keySet()){
             distTo2.put(vert, Double.MAX_VALUE);
         }
         distTo2.put(startNode, 0.0);
@@ -87,11 +94,11 @@ public class Dijkstra implements Searcher {
         long startTime = System.nanoTime();
         OUTER: while(!pq.isEmpty()){
             explored++;
-            long v = pq.poll().getNode();
+            int v = pq.poll().getNode();
             for (double[] e : graph.fwdAdj(v)){
                 relax(v, e);
                 if(v == endNode){
-                    return getRoute();
+                    return getRouteAsWays();
                 }
             }
         }
@@ -101,18 +108,19 @@ public class Dijkstra implements Searcher {
         return new ArrayList<>();
     }
 
-    private void relax(long v, double[] edge){
-        long w = (long) edge[0];
+    private void relax(int v, double[] edge){
+        int w = (int) edge[0];
         double weight = edge[1];
         double distToV = distTo2.get(v);
         if (distTo2.get(w) > (distToV + weight)){
             distTo2.put(w, distToV + weight);
-            edgeTo2.put(w, v); //should be 'nodeBefore'
+            edgeTo2.put(w, (long) edge[2]); //should be 'nodeBefore'
+            nodeTo2.put(w, v);
             pq.add(new DijkstraEntry(w, distToV + weight)); //inefficient?
         }
     }
 
-    public Long2DoubleOpenHashMap getDistTo() {
+    public Int2DoubleOpenHashMap getDistTo() {
         return distTo2;
     }
 
@@ -128,15 +136,36 @@ public class Dijkstra implements Searcher {
         }
     }
 
-    public ArrayList<Long> getRoute(){
+//    public ArrayList<Integer> getRoute(){
+//        ArrayList<Integer> route = new ArrayList<>();
+//        int node = endNode;
+//        route.add(node);
+//        while(node != startNode){
+//            node = edgeTo2.get(node);
+//            route.add(node);
+//        }
+//        Collections.reverse(route);
+//        return route;
+//    }
+
+    public ArrayList<Long> getRouteAsWays(){
         ArrayList<Long> route = new ArrayList<>();
-        long node = endNode;
-        route.add(node);
-        while(node != startNode){
-            node = edgeTo2.get(node);
-            route.add(node);
+        try{
+//            System.out.println("GETROUTEASWAYS");
+            long way = 0;
+            int node = endNode;
+            while(node != startNode){
+//            System.out.println(node + ",");
+                way = edgeTo2.get(node);
+                node = nodeTo2.get(node);
+//            System.out.println(way);
+                route.add(way);
+            }
+
+        }catch(NullPointerException n){
+//            System.out.println("Null: " + node);
+//            System.out.println(n.getStackTrace());
         }
-        Collections.reverse(route);
         return route;
     }
 
