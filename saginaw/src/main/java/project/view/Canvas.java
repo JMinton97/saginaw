@@ -242,6 +242,7 @@ class Canvas extends JPanel
 			for(Point2D.Double point : route){
 				point = geoToCanvas(point);
 				path.lineTo((int) point.getX(), (int) point.getY());
+				System.out.println((int) point.getX() + " " + (int) point.getY());
 			}
 			g.setColor(Color.RED.darker());
 			g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));

@@ -282,6 +282,7 @@ public class MyGraph {
     }
 
     private Pair<Map, Map> makeDijkstraGraph(Map<Long, int[]> edges, int noOfEdges){
+        System.exit(0);
         fwdGraph = new HashMap<>(noOfEdges);
         bckGraph = new HashMap<>(noOfEdges);
 
@@ -289,6 +290,7 @@ public class MyGraph {
         System.out.println("Adding connections");
         int counter = 0;
         for(Map.Entry<Long, int[]> way : edges.entrySet()){ //iterate through every edge and add neighbours to graph vertices accordingly
+            System.out.println(way.getValue()[0] + " to " + way.getValue()[way.getValue().length - 1] + " by " + way.getKey());
             counter++;
             if((counter % 1000) == 0){
                 System.out.println(((double) counter / (double) noOfEdges) * 100);
@@ -539,10 +541,10 @@ public class MyGraph {
 //                        }
 //                        Iterator fwdIt = fwdCore.get((long) beforeEdge[0]).iterator();
 //                        Iterator bckIt = bckCore.get((long) afterEdge[0]).iterator();
-                        long fwdId = joinWays((long) beforeEdge[2], (long) afterEdge[2]);
-                        long bckId = joinWays((long) afterEdge[2], (long) beforeEdge[2]);
-                        fwdCore.get((int) beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], (double) fwdId, beforeEdge[3] + afterEdge[3]});   //add shortcut to forward and backward graph
-                        bckCore.get((int) afterEdge[0]).add(new double[]{beforeEdge[0], beforeEdge[1] + afterEdge[1], (double) bckId, beforeEdge[3] + afterEdge[3]});
+//                        long fwdId = joinWays((long) beforeEdge[2], (long) afterEdge[2]);
+//                        long bckId = joinWays((long) afterEdge[2], (long) beforeEdge[2]);
+                        fwdCore.get((int) beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], (double) beforeEdge[2], beforeEdge[3] + afterEdge[3]});   //add shortcut to forward and backward graph
+                        bckCore.get((int) afterEdge[0]).add(new double[]{beforeEdge[0], beforeEdge[1] + afterEdge[1], (double) afterEdge[2], beforeEdge[3] + afterEdge[3]});
 
 
 //                        while(fwdIt.hasNext()){
@@ -1144,6 +1146,7 @@ public class MyGraph {
         }
 
         private void addWay(Way w, boolean oneWay, long wayId){
+            System.out.println("Way id: " + wayId);
             int[] fwdWay = new int[w.getRefsList().size()];
             int[] bckWay = new int[w.getRefsList().size()];
             long lastRef = 0;
@@ -1287,7 +1290,7 @@ public class MyGraph {
         }
     }
 
-    public boolean isCoreNode(long id){
+    public boolean isCoreNode(int id){
         return(fwdCore.containsKey(id) || bckCore.containsKey(id));
     }
 
@@ -1311,6 +1314,7 @@ public class MyGraph {
 
 
     public ArrayList<Point2D.Double> wayToNodes(long wayId){
+        System.out.println(wayId);
         ArrayList<Point2D.Double> points = new ArrayList<>();
         int[] ids = mapRoads.get(wayId);
         for(int i = 0; i < ids.length; i++){

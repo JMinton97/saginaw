@@ -515,7 +515,7 @@ public class Model {
 //			startTime = System.nanoTime();
 
 			for (Long w : routeWays) {
-//				System.out.println(w);
+				System.out.println(w);
 				ArrayList<Point2D.Double> p = graph.wayToNodes(w);
 				routeNodes.addAll(p);
 			}
