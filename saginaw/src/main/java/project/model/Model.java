@@ -34,7 +34,7 @@ public class Model {
 	private BufferedImage image = null;
 	private MyMap2 map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
-	private String region = "england";
+	private String region = "birmingham";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
 	private BigDecimal zoom, baseScale;
@@ -52,7 +52,7 @@ public class Model {
 	private MyGraph graph;
 	private ArrayList<Long> routeWays;
 	private ArrayList<Point2D.Double> routeNodes;
-	private HashMap<double[], Long> closestNodes;
+	private HashMap<double[], Integer> closestNodes;
 	private ALTPreProcess preProcess;
 
 	public boolean hasRoute;
@@ -76,7 +76,7 @@ public class Model {
 		}
 
 		try{
-			preProcess = new ALTPreProcess(graph, region);
+			preProcess = new ALTPreProcess(graph);
 		} catch(IOException e){
 			System.out.println("IO error in ALTPreProcess.");
 			System.exit(0);
@@ -263,7 +263,7 @@ public class Model {
 		centreCoord.setLocation(geomXD, geomYD);
 	}
 
-	public void findRoute(long src, long dst){
+	public void findRoute(int src, int dst){
 		routeWays = c1.search(src, dst);
 		System.out.println("Distance: " + c1.getDist());
 		routeNodes = new ArrayList<>();
@@ -281,7 +281,7 @@ public class Model {
 		Object randomSrc = keys[generator.nextInt(keys.length)];
 		Object randomDst = keys[generator.nextInt(keys.length)];
 		System.out.println(randomSrc + "    " + randomDst);
-		routeWays = c1.search((Long) randomSrc, (Long) randomDst);
+		routeWays = c1.search((int) randomSrc, (int) randomDst);
 		System.out.println("Distance: " + c1.getDist());
 		routeNodes = new ArrayList<>();
 		for(Long w : routeWays){
@@ -482,18 +482,18 @@ public class Model {
 				if (!flags.get(x)) {
 //					System.out.println(markers.get(x)[0] + " " + markers.get(x)[1]);
 //					startTime = System.nanoTime();
-					long src, dst;
+					int src, dst;
 					if (closestNodes.containsKey(markers.get(x))) {
+						src = closestNodes.get(markers.get(x));
+					} else {
 						src = graph.findClosest(markers.get(x));
 						closestNodes.put(markers.get(x), src);
-					} else {
-						src = closestNodes.get(markers.get(x));
 					}
 					if (closestNodes.containsKey(markers.get(x + 1))) {
+						dst = closestNodes.get(markers.get(x + 1));
+					} else {
 						dst = graph.findClosest(markers.get(x + 1));
 						closestNodes.put(markers.get(x + 1), dst);
-					} else {
-						dst = closestNodes.get(markers.get(x + 1));
 					}
 //					endTime = System.nanoTime();
 //					System.out.println("Find nodes: " + (((float) endTime - (float) startTime) / 1000000000));
@@ -540,7 +540,7 @@ public class Model {
 				if (!flags.get(x)) {
 //					System.out.println(markers.get(x)[0] + " " + markers.get(x)[1]);
 					startTime = System.nanoTime();
-					long src, dst;
+					int src, dst;
 					if (closestNodes.get(markers.get(x)) == null) {
 						src = graph.findClosest(markers.get(x));
 						closestNodes.put(markers.get(x), src);

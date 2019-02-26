@@ -51,7 +51,7 @@ public class ConcurrentBiDijkstra implements Searcher {
 
     }
 
-    public ArrayList<Long> search(long startNode, long endNode){
+    public ArrayList<Long> search(int startNode, int endNode){
 
         exploredA = 0;
         exploredB = 0;

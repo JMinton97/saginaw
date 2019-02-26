@@ -18,32 +18,32 @@ import org.mapdb.*;
 import org.nustaq.serialization.FSTObjectInput;
 import org.nustaq.serialization.FSTObjectOutput;
 import project.kdtree.Tree;
-import project.search.Dijkstra;
+//import project.search.Dijkstra;
 import project.search.DijkstraEntry;
 
 public class MyGraph {
     //    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
-    public static BTreeMap<Long, double[]> dictionary; //maps a node id to a double array containing the coordinates of the node
-    public static double[][] dictionary2;
-    private static Map<Long, long[]> mapRoads; //a list of all connections between nodes. Later becomes all graph edges.
-    private static ConcurrentMap<Long, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a list of ways each one is part of
+//    public static BTreeMap<Long, double[]> dictionary; //maps a node id to a double array containing the coordinates of the node
+    public static ArrayList<double[]> dictionary;
+    private static Map<Long, int[]> mapRoads; //a list of all connections between nodes. Later becomes all graph edges.
+    private static ConcurrentMap<Integer, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a counter of the number of ways each one is part of
     private static boolean parsingNodes;
 //    private static HashSet<Long> junctions;
-    private static Map<Long, ArrayList<double[]>> fwdGraph;
-    private static Map<Long, ArrayList<double[]>> bckGraph;
-    private static Map<Long, ArrayList<double[]>> fwdCore;
-    private static Map<Long, ArrayList<double[]>> bckCore;
-    private static HashMap<Long, Double> keys = new HashMap<>();
+    private static Map<Integer, ArrayList<double[]>> fwdGraph;
+    private static Map<Integer, ArrayList<double[]>> bckGraph;
+    private static Map<Integer, ArrayList<double[]>> fwdCore;
+    private static Map<Integer, ArrayList<double[]>> bckCore;
+    private static HashMap<Integer, Double> keys = new HashMap<>();
     private Pair<Map, Map> graph;
     private Tree tree;
-    private long bypassNode;
+    private int bypassNode;
     private float totalHeapTime, totalNonHeapTime;
     private SimpleDateFormat sdf;
     private Calendar cal;
     private double contractionParameter = 2.5;
     private double hopLimiter = 50;
     private final double DOU_THRESHOLD = .0001;
-    private HashMap<Long, Integer> nodeIds;
+    private static HashMap<Long, Integer> nodeIds;
     private int maxId = 0;
 
     private long startTime;
@@ -60,6 +60,8 @@ public class MyGraph {
 
         filePrefix = "files//".concat(region + "//");
 
+        nodeIds = new HashMap<>();
+
         DB db3 = DBMaker
                 .fileDB(filePrefix.concat("mapRoads.db"))
                 .fileMmapEnable()
@@ -67,7 +69,7 @@ public class MyGraph {
                 .closeOnJvmShutdown()
                 .make();
 
-        mapRoads = db3.treeMap("map", Serializer.LONG, Serializer.LONG_ARRAY).createOrOpen();
+        mapRoads = db3.treeMap("map", Serializer.LONG, Serializer.INT_ARRAY).createOrOpen();
 
         makeDictionary(file);
 
@@ -87,14 +89,14 @@ public class MyGraph {
             FileInputStream fileIn = new FileInputStream(fwdGraphDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
-                fwdGraph = (Map<Long, ArrayList<double[]>>) objectIn.readObject();
+                fwdGraph = (Map<Integer, ArrayList<double[]>>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
             fileIn = new FileInputStream(bckGraphDir);
             objectIn = new FSTObjectInput(fileIn);
             try {
-                bckGraph = (Map<Long, ArrayList<double[]>>) objectIn.readObject();
+                bckGraph = (Map<Integer, ArrayList<double[]>>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -127,14 +129,14 @@ public class MyGraph {
                 fileIn = new FileInputStream(fwdCoreDir);
                 objectIn = new FSTObjectInput(fileIn);
                 try {
-                    fwdCore = (Map<Long, ArrayList<double[]>>) objectIn.readObject();
+                    fwdCore = (Map<Integer, ArrayList<double[]>>) objectIn.readObject();
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
                 fileIn = new FileInputStream(bckCoreDir);
                 objectIn = new FSTObjectInput(fileIn);
                 try {
-                    bckCore = (Map<Long, ArrayList<double[]>>) objectIn.readObject();
+                    bckCore = (Map<Integer, ArrayList<double[]>>) objectIn.readObject();
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
@@ -204,9 +206,23 @@ public class MyGraph {
                 .closeOnJvmShutdown()
                 .make();
 
-        dictionary = db2.treeMap("map", Serializer.LONG, Serializer.DOUBLE_ARRAY).createOrOpen();
+        File dictionaryDir = new File(filePrefix.concat("dictionary.ser"));
 
-        if(dictionary.isEmpty()){
+        if(dictionaryDir.exists()){
+            System.out.println("Found dictionary.");
+            timerStart();
+            FileInputStream fileIn = new FileInputStream(dictionaryDir);
+            FSTObjectInput objectIn = new FSTObjectInput(fileIn);
+            try {
+                dictionary = (ArrayList<double[]>) objectIn.readObject();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+            timerEnd("Read dictionary");
+        }else{
+
+            dictionary = new ArrayList<>();
+
             System.out.println("Generating dictionary.");
             DB db = DBMaker
                     .fileDB(filePrefix.concat("wayNodes.db"))
@@ -217,7 +233,7 @@ public class MyGraph {
 
 
             allWayNodes = db
-                    .treeMap("map", Serializer.LONG, Serializer.INTEGER)
+                    .treeMap("map", Serializer.INTEGER, Serializer.INTEGER)
                     .createOrOpen();
 
 
@@ -253,33 +269,39 @@ public class MyGraph {
             BlockReaderAdapter brad2 = new OSMBinaryParser();
             new BlockInputStream(input2, brad2).process();
             timerEnd("Getting nodes");
-        } else {
-            System.out.println("Dictionary found; skipping creation.");
+
+            timerStart();
+            FileOutputStream fileOut = new FileOutputStream(dictionaryDir);
+            FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
+            objectOut.writeObject(dictionary);
+            objectOut.close();
+            timerEnd("Writing dictionary");
+
+
         }
     }
 
-    private Pair<Map, Map> makeDijkstraGraph(Map<Long, long[]> edges, int noOfEdges){
+    private Pair<Map, Map> makeDijkstraGraph(Map<Long, int[]> edges, int noOfEdges){
         fwdGraph = new HashMap<>(noOfEdges);
         bckGraph = new HashMap<>(noOfEdges);
 
         timerStart();
         System.out.println("Adding connections");
         int counter = 0;
-        for(Map.Entry<Long, long[]> way : edges.entrySet()){ //iterate through every edge and add neighbours to graph vertices accordingly
+        for(Map.Entry<Long, int[]> way : edges.entrySet()){ //iterate through every edge and add neighbours to graph vertices accordingly
             counter++;
             if((counter % 1000) == 0){
                 System.out.println(((double) counter / (double) noOfEdges) * 100);
             }
 //            System.out.println(way.getWayId());
 
-            long[] wayNodes = way.getValue();
+            int[] wayNodes = way.getValue();
             if(wayNodes.length > 1){
-                long fstVert = wayNodes[0];
-                long lstVert = wayNodes[wayNodes.length - 1]; //could be .get(1) if we've stripped the ways
+                int fstVert = wayNodes[0];
+                int lstVert = wayNodes[wayNodes.length - 1]; //could be .get(1) if we've stripped the ways
                 if(fstVert != lstVert){
-                    if(fstVert == (Long.parseLong("2310931045")) || lstVert == (Long.parseLong("2310931045"))){
-                        System.out.println("Something ain't right here");
-                    }
+                    System.out.println("added edge");
+
                     if(!fwdGraph.containsKey(fstVert)){
                         fwdGraph.put(fstVert, new ArrayList<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
                     }
@@ -308,8 +330,8 @@ public class MyGraph {
     private void contract() {
         System.out.println(fwdGraph.containsKey(Long.parseLong("694020801")));
         System.out.println(bckGraph.containsKey(Long.parseLong("694020801")));
-        Comparator<Pair<Long, Double>> comp = new KeyComparator(); //maybe we can use
-        PriorityQueue<Pair<Long, Double>> heap = new PriorityQueue<>(comp);
+        Comparator<Pair<Integer, Double>> comp = new KeyComparator(); //maybe we can use
+        PriorityQueue<Pair<Integer, Double>> heap = new PriorityQueue<>(comp);
         keys = new HashMap<>(fwdGraph.size());
         boolean stopFlag = true;
 
@@ -320,7 +342,7 @@ public class MyGraph {
         System.out.println("Original size: " + fwdGraph.size() + " " + bckGraph.size());
 
         int edgeCounter = 0;
-        for (Map.Entry<Long, ArrayList<double[]>> nodeEntry : fwdGraph.entrySet()) {
+        for (Map.Entry<Integer, ArrayList<double[]>> nodeEntry : fwdGraph.entrySet()) {
             edgeCounter = nodeEntry.getValue().size() + edgeCounter;
         }
 
@@ -334,7 +356,7 @@ public class MyGraph {
 
         int i = 0;
 
-        for (Map.Entry<Long, ArrayList<double[]>> nodeEntry : fwdCore.entrySet()) {
+        for (Map.Entry<Integer, ArrayList<double[]>> nodeEntry : fwdCore.entrySet()) {
 
             i++;
 
@@ -343,7 +365,7 @@ public class MyGraph {
 //            }
 
             edgeCounter = nodeEntry.getValue().size() + edgeCounter;
-            long node = nodeEntry.getKey();
+            int node = nodeEntry.getKey();
             vertexHeapAdd(node, heap);
 
         }
@@ -362,7 +384,7 @@ public class MyGraph {
                 totalHeapTime = 0;
                 totalNonHeapTime = 0;
             }
-            Pair<Long, Double> entry = heap.poll();
+            Pair<Integer, Double> entry = heap.poll();
 
             if(keys.containsKey(entry.getKey())){
                 if(!entry.getValue().equals(keys.get(entry.getKey()))){
@@ -392,7 +414,7 @@ public class MyGraph {
                 continue;
             }
 
-            HashSet<Long> alteredNodes = new HashSet<>();
+            HashSet<Integer> alteredNodes = new HashSet<>();
 //            System.out.println(i + "   " + bypassNode);
 //                System.out.println("Got key.");
 //                System.out.println(bypassNode);
@@ -470,7 +492,7 @@ public class MyGraph {
                     INNER: while (afterItr.hasNext()) {
 //                        System.out.println("combo");
                         double[] afterEdge = (double[]) afterItr.next();
-                        if ((long) afterEdge[0] == (long) beforeEdge[0]) {    //check we're not making an x to x edge
+                        if ((int) afterEdge[0] == (long) beforeEdge[0]) {    //check we're not making an x to x edge
 //                            System.out.println("No edge added.");
                             notAddedAdgesCtr++;
 //                            System.out.println(bypassNode);
@@ -519,8 +541,8 @@ public class MyGraph {
 //                        Iterator bckIt = bckCore.get((long) afterEdge[0]).iterator();
                         long fwdId = joinWays((long) beforeEdge[2], (long) afterEdge[2]);
                         long bckId = joinWays((long) afterEdge[2], (long) beforeEdge[2]);
-                        fwdCore.get((long) beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], (double) fwdId, beforeEdge[3] + afterEdge[3]});   //add shortcut to forward and backward graph
-                        bckCore.get((long) afterEdge[0]).add(new double[]{beforeEdge[0], beforeEdge[1] + afterEdge[1], (double) bckId, beforeEdge[3] + afterEdge[3]});
+                        fwdCore.get((int) beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], (double) fwdId, beforeEdge[3] + afterEdge[3]});   //add shortcut to forward and backward graph
+                        bckCore.get((int) afterEdge[0]).add(new double[]{beforeEdge[0], beforeEdge[1] + afterEdge[1], (double) bckId, beforeEdge[3] + afterEdge[3]});
 
 
 //                        while(fwdIt.hasNext()){
@@ -533,8 +555,8 @@ public class MyGraph {
 //                                bckIt.remove();
 //                            }
 //                        }
-                        alteredNodes.add((long) afterEdge[0]);
-                        alteredNodes.add((long) beforeEdge[0]);
+                        alteredNodes.add((int) afterEdge[0]);
+                        alteredNodes.add((int) beforeEdge[0]);
                         addedEdgesCtr++;
 //                        System.out.println("Added these shortcuts.");
 //                        System.out.println("Added edge from " + (long) beforeEdge[0] + " to " + (long) afterEdge[0] + " of length " + (beforeEdge[1] + afterEdge[1]) + " and hop size " + (beforeEdge[3] + afterEdge[3]));
@@ -549,7 +571,7 @@ public class MyGraph {
                 forwardsEdges.addAll(fwdCore.get(bypassNode));
 
                 for (double[] awayEdge : fwdCore.get(bypassNode)) {
-                    Iterator it = bckCore.get((long) awayEdge[0]).iterator();
+                    Iterator it = bckCore.get((int) awayEdge[0]).iterator();
                     while (it.hasNext()) {
                         double[] returnEdge = (double[]) it.next();
                         if (returnEdge[0] == bypassNode) {
@@ -561,7 +583,7 @@ public class MyGraph {
 //                System.out.println("Removed bckgraph.");
 
                 for (double[] awayEdge : bckCore.get(bypassNode)) {
-                    Iterator it = fwdCore.get((long) awayEdge[0]).iterator();
+                    Iterator it = fwdCore.get((int) awayEdge[0]).iterator();
                     while (it.hasNext()) {
                         double[] returnEdge = (double[]) it.next();
                         if (returnEdge[0] == bypassNode) {
@@ -581,17 +603,17 @@ public class MyGraph {
 
 
                 for (double[] backwardsEdge : backwardsEdges) {
-                    long node = (long) backwardsEdge[0];
+                    int node = (int) backwardsEdge[0];
                     if(bckCore.containsKey(node)){
                         for(double[] backBackEdge : bckCore.get(node)){
 //                            System.out.println((long) backBackEdge[0]);
-                            vertexHeapAdd((long) backBackEdge[0], heap);
+                            vertexHeapAdd((int) backBackEdge[0], heap);
                         }
                     }
                     if(fwdCore.containsKey(node)){
                         for (double[] forForEdge : fwdCore.get(node)) {
 //                            System.out.println((long) forForEdge[0]);
-                            vertexHeapAdd((long) forForEdge[0], heap);
+                            vertexHeapAdd((int) forForEdge[0], heap);
                         }
                     }
 //                    System.out.println(node);
@@ -599,17 +621,17 @@ public class MyGraph {
                 }
 
                 for (double[] forwardsEdge : forwardsEdges) {
-                    long node = (long) forwardsEdge[0];
+                    int node = (int) forwardsEdge[0];
                     if(fwdCore.containsKey(node)){
                         for (double[] forForEdge : fwdCore.get(node)) {
 //                            System.out.println((long) forForEdge[0]);
-                            vertexHeapAdd((long) forForEdge[0], heap);
+                            vertexHeapAdd((int) forForEdge[0], heap);
                         }
                     }
                     if(bckCore.containsKey(node)){
                         for(double[] backBackEdge : bckCore.get(node)){
 //                            System.out.println((long) backBackEdge[0]);
-                            vertexHeapAdd((long) backBackEdge[0], heap);
+                            vertexHeapAdd((int) backBackEdge[0], heap);
                         }
                     }
 //                    System.out.println(node);
@@ -635,14 +657,14 @@ public class MyGraph {
         int emptyFwdCounter = 0;
         int emptyBckCounter = 0;
 
-        for (Map.Entry<Long, ArrayList<double[]>> nodeEntry : fwdCore.entrySet()) {
+        for (Map.Entry<Integer, ArrayList<double[]>> nodeEntry : fwdCore.entrySet()) {
             if(nodeEntry.getValue().size() == 0){
 //                fwdCore.remove(nodeEntry.getKey());
                 emptyFwdCounter++;
             }
         }
 
-        for (Map.Entry<Long, ArrayList<double[]>> nodeEntry : bckCore.entrySet()) {
+        for (Map.Entry<Integer, ArrayList<double[]>> nodeEntry : bckCore.entrySet()) {
             if(nodeEntry.getValue().size() == 0){
 //                bckCore.remove(nodeEntry.getKey());
                 emptyBckCounter++;
@@ -656,13 +678,13 @@ public class MyGraph {
         System.out.println("Edges before:   " + edgeCounter);
 
 
-        for (Map.Entry<Long, ArrayList<double[]>> nodeEntry : fwdCore.entrySet()) {
+        for (Map.Entry<Integer, ArrayList<double[]>> nodeEntry : fwdCore.entrySet()) {
             edgeReduce(nodeEntry.getKey());
         }
 
         edgeCounter = 0;
 
-        for (Map.Entry<Long, ArrayList<double[]>> nodeEntry : fwdCore.entrySet()) {
+        for (Map.Entry<Integer, ArrayList<double[]>> nodeEntry : fwdCore.entrySet()) {
             edgeCounter += nodeEntry.getValue().size();
         }
 
@@ -672,7 +694,8 @@ public class MyGraph {
         System.out.println("Final size: " + fwdCore.size() + " " + bckCore.size());
     }
 
-    private Double checkKey(long node){
+    private Double checkKey(int node){
+
         ArrayList<double[]> beforeEdges = bckCore.get(node);
         ArrayList<double[]> afterEdges = fwdCore.get(node);
 
@@ -720,13 +743,15 @@ public class MyGraph {
         return Double.MAX_VALUE;
     }
 
-    private void vertexHeapAdd(long node, PriorityQueue heap){
+    private void vertexHeapAdd(int node, PriorityQueue heap){
 
 //        if(keys.containsKey(node)){
 //            startTime = System.nanoTime();
 //            heap.remove(new Pair<>(node, keys.get(node)));
 //            endTime = System.nanoTime();
 //        }
+//        System.out.println("Check " + node);
+//        System.out.println(heap.size());
 
         ArrayList<double[]> beforeEdges = bckCore.get(node);
         ArrayList<double[]> afterEdges = fwdCore.get(node);
@@ -809,15 +834,15 @@ public class MyGraph {
         }
     }
 
-    private void edgeReduce(long node){
+    private void edgeReduce(int node){
 //        System.out.println("REDUCE " + node);
-        ArrayList<Long> neighbours = new ArrayList<>();
-        ArrayList<Long> neighboursFound = new ArrayList<>();
-        HashMap<Long, Double> distTo = new HashMap<>();
-        HashMap<Long, Long> edgeTo = new HashMap<>();
+        ArrayList<Integer> neighbours = new ArrayList<>();
+        ArrayList<Integer> neighboursFound = new ArrayList<>();
+        HashMap<Integer, Double> distTo = new HashMap<>();
+        HashMap<Integer, Integer> edgeTo = new HashMap<>();
         for(double[] neighbour : fwdCore.get(node)) {
-            neighbours.add((long) neighbour[0]);
-            neighboursFound.add((long) neighbour[0]);
+            neighbours.add((int) neighbour[0]);
+            neighboursFound.add((int) neighbour[0]);
         }
 
         Comparator<DijkstraEntry> comparator = new DistanceComparator();
@@ -827,14 +852,17 @@ public class MyGraph {
         while(!neighboursFound.isEmpty()){
 //            System.out.println(neighboursFound);
 //            System.out.println(queue.size());
-            long v = queue.poll().getNode();
-            while(neighboursFound.contains(v)){
-                neighboursFound.remove(v);
+            int v = queue.poll().getNode();
+            Iterator foundIt = neighboursFound.iterator();
+            while(foundIt.hasNext()){
+                if((Integer) foundIt.next() == v){
+                    foundIt.remove();
+                }
             }
 //            System.out.println(v);
             if(fwdCore.containsKey(v)){
                 for(double[] edge : fwdCore.get(v)){
-                    long w = (long) edge[0];
+                    int w = (int) edge[0];
                     double weight = edge[1];
 //                System.out.println("EDGE TO " + w + " of length " + weight);
                     double distToV = distTo.get(v);
@@ -851,10 +879,10 @@ public class MyGraph {
 
         while(neighbourIt.hasNext()){
             double[] edge = (double[]) neighbourIt.next();
-            long neighbour = (long) edge[0];
+            int neighbour = (int) edge[0];
             if(neighbour != node) {
                 if (!edgeTo.get(neighbour).equals(node)) {
-                    long prev = neighbour;
+                    int prev = neighbour;
                     do{
                         prev = edgeTo.get(prev);
 //                        System.out.println(prev);
@@ -874,8 +902,8 @@ public class MyGraph {
 //        System.out.println(Arrays.toString(mapRoads.get(fst)));
 //        System.out.println(Arrays.toString(mapRoads.get(snd)));
 //        System.out.println();
-        long[] first = mapRoads.get(fst);
-        long[] second = mapRoads.get(snd);
+        int[] first = mapRoads.get(fst);
+        int[] second = mapRoads.get(snd);
         if(first[first.length - 1] == second[0]){
             mapRoads.put(id, concat(first, second));
         } else {
@@ -894,7 +922,7 @@ public class MyGraph {
 
         timerStart();
         tree = new Tree(120);
-        ArrayList<Long> nodes = new ArrayList<>();
+        ArrayList<Integer> nodes = new ArrayList<>();
         nodes.addAll(fwdGraph.keySet());
         System.out.println("done");
         Random rand = new Random();
@@ -902,10 +930,10 @@ public class MyGraph {
         int counter = 0;
         int sizeStart = nodes.size();
         int size = sizeStart;
-        ArrayList<Pair<Long, Integer>> medians = new ArrayList<>();
+        ArrayList<Pair<Integer, Integer>> medians = new ArrayList<>();
         TREE: while(!nodes.isEmpty()){
             if(size < 21){
-                for(long n : nodes){
+                for(int n : nodes){
                     tree.insert(n, dictionary.get(n));
                     break TREE;
                 }
@@ -970,10 +998,10 @@ public class MyGraph {
 //        System.out.println(graph.size());
 //    }
 
-    private double lengthOfEdge(long[] edge){
+    private double lengthOfEdge(int[] edge){
         double length = 0;
         double[] nodeA = dictionary.get(edge[0]);
-        for(long node : edge){
+        for(int node : edge){
             double[] nodeB = dictionary.get(node);
             length = length + haversineDistance(nodeA, nodeB);
             nodeA = nodeB;
@@ -1040,21 +1068,24 @@ public class MyGraph {
                     lastId += nodes.getId(i);
                     lastLat += nodes.getLat(i);
                     lastLon += nodes.getLon(i);
-                    if(allWayNodes.containsKey(lastId)){
+                    if(nodeIds.containsKey(lastId)){
+                        if(allWayNodes.containsKey((nodeIds.get(lastId)))){
 //                System.out.printf("Dense node, ID %d @ %.6f,%.6f\n",
 //                        lastId,parseLat(lastLat),parseLon(lastLon));
-                        double[] tempDense = new double[3];
+                            double[] tempDense = new double[3];
 //                        MyNode tempDense = new MyNode();
 //                        tempDense.setLati(parseLat(lastLat));
 //                        tempDense.setLongi(parseLon(lastLon));
 //                        tempDense.setNodeId(lastId);
-                        tempDense[0] = parseLon(lastLon);
-                        tempDense[1] = parseLat(lastLat);
-                        tempDense[2] = lastId;
-                        dictionary.put(lastId, tempDense);
+                            tempDense[0] = parseLon(lastLon);
+                            tempDense[1] = parseLat(lastLat);
+                            tempDense[2] = dictionary.size();
+                            nodeIds.put(lastId, dictionary.size());
+                            dictionary.add(tempDense);
 //                        System.out.println(tempDense[0] + " " + tempDense[1]);
 //                        counter++;
 //                        System.out.println(counter);
+                        }
                     }
                 }
             }
@@ -1113,29 +1144,31 @@ public class MyGraph {
         }
 
         private void addWay(Way w, boolean oneWay, long wayId){
-            long[] fwdWay = new long[w.getRefsList().size()];
-            long[] bckWay = new long[w.getRefsList().size()];
+            int[] fwdWay = new int[w.getRefsList().size()];
+            int[] bckWay = new int[w.getRefsList().size()];
             long lastRef = 0;
             int fwdCtr = 0;
+            int intRef;
             int bckCtr = w.getRefsCount() - 1;
             for (Long ref : w.getRefsList()) {
                 lastRef+= ref;
-                fwdWay[fwdCtr] = lastRef;
+                if(nodeIds.containsKey(lastRef)){
+                    intRef = nodeIds.get(lastRef);
+                }else{
+                    intRef = nodeIds.size();
+                    nodeIds.put(lastRef, intRef);
+                }
+                fwdWay[fwdCtr] = intRef;
                 if(!oneWay){
-                    bckWay[bckCtr] = lastRef;
+                    bckWay[bckCtr] = intRef;
                 }
                 int wayCount;
-                if(allWayNodes.get(lastRef) != null){
-                    wayCount = allWayNodes.get(lastRef);
+                if(allWayNodes.get(intRef) != null){
+                    wayCount = allWayNodes.get(intRef);
                 } else {
                     wayCount = 0;
                 }
-                allWayNodes.put(lastRef, wayCount + 1);
-
-                if(lastRef == (Long.parseLong("2310931045"))){
-                    System.out.println(w.getId());
-                    System.out.println(wayCount);
-                }
+                allWayNodes.put(intRef, wayCount + 1);
                 fwdCtr++;
                 bckCtr--;
             }
@@ -1160,7 +1193,7 @@ public class MyGraph {
         }
     }
 
-    private void splitWays(Map<Long, long[]> ways, boolean strip){
+    private void splitWays(Map<Long, int[]> ways, boolean strip){
 //        DB db3 = DBMaker
 //                .fileDB("files//edges.db")
 //                .fileMmapEnable()
@@ -1171,7 +1204,7 @@ public class MyGraph {
 //        Map<Long, long[]> edges = db3.treeMap("set", Serializer.LONG, Serializer.LONG_ARRAY).createOrOpen();
 
 //        if(edges.isEmpty()){
-            for(Map.Entry<Long, long[]> w : ways.entrySet()){
+            for(Map.Entry<Long, int[]> w : ways.entrySet()){
                 splitWay(w.getKey(), w.getValue(), strip);
             }
 //        } else {
@@ -1186,14 +1219,14 @@ public class MyGraph {
         return way;
     }
 
-    private void splitWay(Long id, long[] nodes, boolean strip){
+    private void splitWay(Long id, int[] nodes, boolean strip){
         for(int i = 1; i < (nodes.length - 1); i++){
             if(allWayNodes.get(nodes[i]) > 1){
                 if(nodes[i] == (Long.parseLong("2310931045"))){
                     System.out.println("Huh");
                 }
                 long restOfWayId = generateNewWayRef();
-                long[] headerWayNodes = Arrays.copyOfRange(nodes, 0, i + 1);
+                int[] headerWayNodes = Arrays.copyOfRange(nodes, 0, i + 1);
                 mapRoads.put(id, headerWayNodes);
                 splitWay(restOfWayId, Arrays.copyOfRange(nodes, i, nodes.length), strip);
                 return;
@@ -1202,15 +1235,15 @@ public class MyGraph {
         mapRoads.put(id, nodes);
     }
 
-    public Map<Long, ArrayList<double[]>> getFwdGraph() {
+    public Map<Integer, ArrayList<double[]>> getFwdGraph() {
         return fwdGraph;
     }
 
-    public Map<Long, ArrayList<double[]>> getBckGraph() {
+    public Map<Integer, ArrayList<double[]>> getBckGraph() {
         return bckGraph;
     }
 
-    public ArrayList<double[]> fwdAdj(Long v){
+    public ArrayList<double[]> fwdAdj(int v){
         ArrayList x = fwdGraph.get(v);
         if(fwdGraph.get(v) != null){
             return x;
@@ -1219,7 +1252,7 @@ public class MyGraph {
         }
     }
 
-    public ArrayList<double[]> bckAdj(Long v){
+    public ArrayList<double[]> bckAdj(int v){
         ArrayList x = bckGraph.get(v);
         if(bckGraph.get(v) != null){
             return x;
@@ -1228,15 +1261,15 @@ public class MyGraph {
         }
     }
 
-    public Map<Long, ArrayList<double[]>> getFwdCore() {
+    public Map<Integer, ArrayList<double[]>> getFwdCore() {
         return fwdCore;
     }
 
-    public Map<Long, ArrayList<double[]>> getBckCore() {
+    public Map<Integer, ArrayList<double[]>> getBckCore() {
         return bckCore;
     }
 
-    public ArrayList<double[]> fwdCoreAdj(Long v){
+    public ArrayList<double[]> fwdCoreAdj(int v){
         ArrayList x = fwdCore.get(v);
         if(fwdCore.get(v) != null){
             return x;
@@ -1245,7 +1278,7 @@ public class MyGraph {
         }
     }
 
-    public ArrayList<double[]> bckCoreAdj(Long v){
+    public ArrayList<double[]> bckCoreAdj(int v){
         ArrayList x = bckCore.get(v);
         if(bckCore.get(v) != null){
             return x;
@@ -1258,18 +1291,18 @@ public class MyGraph {
         return(fwdCore.containsKey(id) || bckCore.containsKey(id));
     }
 
-    public ArrayList<Point2D.Double> refsToNodes(ArrayList<Long> refs){
+    public ArrayList<Point2D.Double> refsToNodes(ArrayList<Integer> refs){
         ArrayList<Point2D.Double> nodes = new ArrayList<>();
-        for(Long ref : refs){
+        for(int ref : refs){
             nodes.add(new Point2D.Double(dictionary.get(ref)[0], dictionary.get(ref)[1]));
         }
         return nodes;
     }
 
-    public ArrayList<Long> wayToRefs(long wayId){
-        ArrayList<Long> returnNodes = new ArrayList<>();
+    public ArrayList<Integer> wayToRefs(long wayId){
+        ArrayList<Integer> returnNodes = new ArrayList<>();
 //        System.out.println(mapRoads.containsKey(wayId));
-        long[] nodes = mapRoads.get(wayId);
+        int[] nodes = mapRoads.get(wayId);
         for(int i = 0; i < nodes.length; i++){
             returnNodes.add(nodes[i]);
         }
@@ -1279,7 +1312,7 @@ public class MyGraph {
 
     public ArrayList<Point2D.Double> wayToNodes(long wayId){
         ArrayList<Point2D.Double> points = new ArrayList<>();
-        long[] ids = mapRoads.get(wayId);
+        int[] ids = mapRoads.get(wayId);
         for(int i = 0; i < ids.length; i++){
             double[] point = dictionary.get(ids[i]);
             points.add(new Point2D.Double(point[0], point[1]));
@@ -1289,7 +1322,7 @@ public class MyGraph {
 
     public ArrayList<Point2D.Double> wayToFirstNodes(long wayId){
         ArrayList<Point2D.Double> points = new ArrayList<>();
-        long[] ids = mapRoads.get(wayId);
+        int[] ids = mapRoads.get(wayId);
         for(int i = 0; i < 1; i++){
             double[] point = dictionary.get(ids[i]);
             points.add(new Point2D.Double(point[0], point[1]));
@@ -1319,7 +1352,7 @@ public class MyGraph {
         return timer + (endTime - startTime);
     }
 
-    public BTreeMap<Long, double[]> getDictionary(){
+    public ArrayList<double[]> getDictionary(){
         return dictionary;
     }
 
@@ -1334,21 +1367,21 @@ public class MyGraph {
         return restOfWayId;
     }
 
-    public long findClosest(double[] loc){
+    public int findClosest(double[] loc){
         return tree.nearest(loc, dictionary);
     }
 
-    class SortByLong implements Comparator<Pair<Long, Integer>>
+    class SortByLong implements Comparator<Pair<Integer, Integer>>
     {
-        public int compare(Pair<Long, Integer> a, Pair<Long, Integer> b)
+        public int compare(Pair<Integer, Integer> a, Pair<Integer, Integer> b)
         {
             return (int) (dictionary.get(a.getKey())[0] - dictionary.get(b.getKey())[0]);
         }
     }
 
-    class SortByLat implements Comparator<Pair<Long, Integer>>
+    class SortByLat implements Comparator<Pair<Integer, Integer>>
     {
-        public int compare(Pair<Long, Integer> a, Pair<Long, Integer> b)
+        public int compare(Pair<Integer, Integer> a, Pair<Integer, Integer> b)
         {
             return (int) (dictionary.get(a.getKey())[1] - dictionary.get(b.getKey())[1]);
         }
@@ -1362,8 +1395,8 @@ public class MyGraph {
         return region;
     }
 
-    public class KeyComparator implements Comparator<Pair<Long, Double>>{
-        public int compare(Pair<Long, Double> x, Pair<Long, Double> y){
+    public class KeyComparator implements Comparator<Pair<Integer, Double>>{
+        public int compare(Pair<Integer, Double> x, Pair<Integer, Double> y){
             if(x.getValue() < y.getValue()){
                 return -1;
             }
@@ -1386,8 +1419,8 @@ public class MyGraph {
         }
     }
 
-    public static long[] concat(long[] first, long[] second) {
-        long[] result = Arrays.copyOf(first, first.length + second.length);
+    public static int[] concat(int[] first, int[] second) {
+        int[] result = Arrays.copyOf(first, first.length + second.length);
         System.arraycopy(second, 0, result, first.length, second.length);
         return result;
     } //from stackoverflow: https://stackoverflow.com/a/784842/3032936

@@ -8,12 +8,12 @@ import java.util.ArrayList;
 
 public class Node implements Serializable{
     private double[] point;
-    private long id;
+    private int id;
     private Node left;
     private Node right;
     private int depth;
     private boolean leaf;
-    private ArrayList<Long> ids;
+    private ArrayList<Integer> ids;
 
     public void setPoint(double[] point) {
         this.point = point;
@@ -27,11 +27,11 @@ public class Node implements Serializable{
         this.right = right;
     }
 
-    protected Node(long id, double[] point, int depth, boolean isLeaf){
+    protected Node(int id, double[] point, int depth, boolean isLeaf){
         this.point = point;
         this.depth = depth;
         if(isLeaf){
-            this.ids = new ArrayList<Long>();
+            this.ids = new ArrayList<>();
             ids.add(id);
             leaf = true;
         } else {
@@ -58,11 +58,11 @@ public class Node implements Serializable{
         return point;
     }
 
-    public long getId(){
+    public int getId(){
         return id;
     }
 
-    public void setId(long id){
+    public void setId(int id){
         if(leaf) {
             ids.add(id);
         } else {
@@ -74,11 +74,11 @@ public class Node implements Serializable{
         return depth;
     }
 
-    public Pair<Long, Double> findClosest(double[] searchLoc, BTreeMap<Long, double[]> dictionary){
-        long closest = ids.get(0);
+    public Pair<Integer, Double> findClosest(double[] searchLoc, ArrayList<double[]> dictionary){
+        int closest = ids.get(0);
         double closestDistance = Double.MAX_VALUE;
         double thisDist;
-        for(long id : ids){
+        for(int id : ids){
             thisDist = distance(searchLoc, dictionary.get(id));
             if(thisDist < closestDistance){
                 closest = id;
@@ -93,7 +93,7 @@ public class Node implements Serializable{
         return (((b[0] - a[0]) * (b[0] - a[0])) + ((b[1] - a[1]) * (b[1] - a[1])));
     }
 
-    public ArrayList<Long> getIds() {
+    public ArrayList<Integer> getIds() {
         return ids;
     }
 }

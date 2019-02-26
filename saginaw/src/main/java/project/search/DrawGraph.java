@@ -59,15 +59,15 @@ public class DrawGraph {
 
     }
 
-    public BufferedImage draw(Map<Long, ArrayList<double[]>> graph, BTreeMap<Long, double[]> dictionary){
+    public BufferedImage draw(Map<Integer, ArrayList<double[]>> graph, ArrayList<double[]> dictionary){
         BufferedImage img = new BufferedImage(1000, 1000, 1);
         Graphics2D g = img.createGraphics();
         this.graph = (HashMap) graph;
         g.setStroke(new BasicStroke(1));
         g.setPaint(new Color(102, 178, 255));
-        for(Map.Entry<Long, ArrayList<double[]>> v : graph.entrySet()){
+        for(Map.Entry<Integer, ArrayList<double[]>> v : graph.entrySet()){
 //            System.out.println(n);
-            Long n = v.getKey();
+            int n = v.getKey();
             double[] loc = dictionary.get(n);
             double x = loc[0];
             double y = loc[1];
@@ -76,7 +76,7 @@ public class DrawGraph {
 //            System.out.println(x + " " + y);
 
             for(double[] edge : v.getValue()){
-                loc = dictionary.get((long) edge[0]);
+                loc = dictionary.get((int) edge[0]);
                 double tx = loc[0];
                 double ty = loc[1];
                 tx = (tx - westMost) * xScale;

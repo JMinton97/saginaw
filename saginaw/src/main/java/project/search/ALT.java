@@ -13,13 +13,13 @@ import java.util.*;
 
 public class ALT implements Searcher {
     private long pollTimeStart, pollTimeEnd, totalPollTime, addTimeStart, addTimeEnd, totalAddTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, putTimeStart, putTimeEnd, totalPutTime;
-    private THashMap<Long, Double> distTo;
-    private THashMap<Long, Long> edgeTo;
+    private THashMap<Integer, Double> distTo;
+    private THashMap<Integer, Long> edgeTo;
     private PriorityQueue<DijkstraEntry> pq;
     private long startNode, endNode;
     public int explored;
     private MyGraph myGraph;
-    private ArrayList<Long> landmarks;
+    private ArrayList<Integer> landmarks;
     private Long2ObjectOpenHashMap distancesTo;
     private Long2ObjectOpenHashMap distancesFrom;
     private long src, dst;
@@ -42,17 +42,17 @@ public class ALT implements Searcher {
         this.distancesTo = altPreProcess.distancesTo;
     }
 
-    public ArrayList<Long> search(long src, long dst){
+    public ArrayList<Long> search(int src, int dst){
         this.dst = dst;
         this.src = src;
 //        System.out.println("search");
-        distTo = new THashMap<Long, Double>(myGraph.getFwdGraph().size());
-        edgeTo = new THashMap<Long, Long>(myGraph.getFwdGraph().size());
+        distTo = new THashMap<>(myGraph.getFwdGraph().size());
+        edgeTo = new THashMap<>(myGraph.getFwdGraph().size());
         pq = new PriorityQueue();
 
 //        HashMap<Long, Double> nodeWeights = MakeNodeWeights(graph.getGraph());
 
-        for(Long vert : myGraph.getFwdGraph().keySet()){
+        for(Integer vert : myGraph.getFwdGraph().keySet()){
             distTo.put(vert, Double.MAX_VALUE);
         }
         distTo.put(src, 0.0);
@@ -89,7 +89,7 @@ public class ALT implements Searcher {
 
     private void relax(Long v, double[] edge, long t){
         relaxTimeStart = System.nanoTime();
-        long w = (long) edge[0];
+        int w = (int) edge[0];
         double weight = edge[1];
         double distToV = distTo.get(v);
         if (distTo.get(w) > (distToV + weight)){
@@ -114,8 +114,8 @@ public class ALT implements Searcher {
     }
 
     public void Precomputation() throws IOException {
-        Map<Long, ArrayList<double[]>> graph = myGraph.getFwdGraph();
-        BTreeMap<Long, double[]> dictionary = myGraph.getDictionary();
+        Map<Integer, ArrayList<double[]>> graph = myGraph.getFwdGraph();
+        ArrayList<double[]> dictionary = myGraph.getDictionary();
         distancesTo = new Long2ObjectOpenHashMap<double[]>(); //need to compute
         distancesFrom = new Long2ObjectOpenHashMap<double[]>();
         GenerateLandmarks();
@@ -167,10 +167,10 @@ public class ALT implements Searcher {
     }
 
     public void GenerateLandmarks(){
-        Map<Long, ArrayList<double[]>> graph = myGraph.getFwdGraph();
+        Map<Integer, ArrayList<double[]>> graph = myGraph.getFwdGraph();
         int size = graph.size();
         Random random = new Random();
-        List<Long> nodes = new ArrayList<>(graph.keySet());
+        List<Integer> nodes = new ArrayList<>(graph.keySet());
 
         for(int x = 0; x < 4; x++){
             landmarks.add(nodes.get(random.nextInt(size)));
