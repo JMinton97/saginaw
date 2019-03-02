@@ -167,6 +167,9 @@ public class MyGraph {
 
             graph = makeDijkstraGraph(mapRoads, mapRoads.size());
 
+            nodeInt2Long = null;
+            nodeLong2Int = null;
+
             timerStart();
             FileOutputStream fileOut = new FileOutputStream(fwdGraphDir);
             FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
@@ -293,7 +296,7 @@ public class MyGraph {
         for(Map.Entry<Long, int[]> way : edges.entrySet()){ //iterate through every edge and add neighbours to graph vertices accordingly
 //            System.out.println(nodeInt2Long.get(way.getValue()[0]) + " to " + nodeInt2Long.get(way.getValue()[way.getValue().length - 1]) + " by " + way.getKey());
             counter++;
-            if((counter % 1000) == 0){
+            if((counter % 200000) == 0){
                 System.out.println(((double) counter / (double) noOfEdges) * 100);
             }
 //            System.out.println(way.getWayId());
@@ -303,7 +306,6 @@ public class MyGraph {
                 int fstVert = wayNodes[0];
                 int lstVert = wayNodes[wayNodes.length - 1]; //could be .get(1) if we've stripped the ways
                 if(fstVert != lstVert){
-                    System.out.println("added edge");
 
                     if(!fwdGraph.containsKey(fstVert)){
                         fwdGraph.put(fstVert, new ArrayList<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
@@ -331,8 +333,7 @@ public class MyGraph {
     }
 
     private void contract() {
-        System.out.println(fwdGraph.containsKey(Long.parseLong("694020801")));
-        System.out.println(bckGraph.containsKey(Long.parseLong("694020801")));
+
         Comparator<Pair<Integer, Double>> comp = new KeyComparator(); //maybe we can use
         PriorityQueue<Pair<Integer, Double>> heap = new PriorityQueue<>(comp);
         keys = new HashMap<>(fwdGraph.size());

@@ -96,6 +96,11 @@ public class MyMap2 {
             westMost = -2.240133;
             southMost = 52.336874;   //BIRMINGHAM
             eastMost = -1.655798;
+        } else if (region == "britain") {
+            northMost = 58.7;
+            westMost = -8;
+            southMost = 49.5;   //BRITAIN
+            eastMost = 2;
         }
 
         counter = 0;
@@ -556,7 +561,7 @@ public class MyMap2 {
         File inputfile, outputfile;
         BufferedImage map;
         try{
-            for(int z = 2; z < 1024; z = z * 2){
+            for(int z = 2; z < 4096; z = z * 2){
                 new File("draw/" + region + "/" + z + "/").mkdirs();
 //                if(Math.max(tiles.length, tiles[0].length))
                 System.out.println("z" + z);

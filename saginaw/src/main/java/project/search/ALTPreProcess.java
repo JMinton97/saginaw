@@ -127,14 +127,14 @@ public class ALTPreProcess {
             for(int x = 0; x < 10; x++){
                 boolean exitFlag = false;
                 while(!exitFlag){
-                    System.out.println(size);
+//                    System.out.println(size);
                     Integer node = fwdNodes.get(random.nextInt(size));
                     if(bckNodes.contains(node)){
                         landmarks.add(node);
                         exitFlag = true;
                     }
                 }
-                System.out.println(landmarks.get(x));
+//                System.out.println(landmarks.get(x));
             }
         }
     }

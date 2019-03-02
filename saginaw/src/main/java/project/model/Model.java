@@ -267,7 +267,7 @@ public class Model {
 	}
 
 	public void findRoute(int src, int dst){
-		routeWays = c1.search(src, dst);
+		c1.search(src, dst);
 		System.out.println("Distance: " + c1.getDist());
 		routeNodes = new ArrayList<>();
 		for(Long w : routeWays){
@@ -284,7 +284,7 @@ public class Model {
 		Object randomSrc = keys[generator.nextInt(keys.length)];
 		Object randomDst = keys[generator.nextInt(keys.length)];
 		System.out.println(randomSrc + "    " + randomDst);
-		routeWays = c1.search((int) randomSrc, (int) randomDst);
+		c1.search((int) randomSrc, (int) randomDst);
 		System.out.println("Distance: " + c1.getDist());
 		routeNodes = new ArrayList<>();
 		for(Long w : routeWays){
@@ -382,7 +382,7 @@ public class Model {
 //		System.out.println(location[0] + " " + location[1]);
 		markers.add(location);
 		flags.add(false);
-		findRoute();
+		findRouteThreads();
 	}
 
 	public void addPivot(double[] location){
@@ -509,7 +509,7 @@ public class Model {
 //					startTime = System.nanoTime();
 
 //					c1.clear();
-					routeWays.addAll(c1.search(src, dst));
+//					routeWays.addAll(c1.search(src, dst));
 				}
 			}
 
@@ -564,16 +564,16 @@ public class Model {
 
 					Pair<Thread, Thread> threads;
 
-					if(x == 0){
-						threads = c1.searchWithThreads(src, dst);
-					} else {
-						threads = c2.searchWithThreads(src, dst);
-					}
+//					if(x == 0){
+//						threads = c1.searchWithThreads(src, dst);
+//					} else {
+//						threads = c2.searchWithThreads(src, dst);
+//					}
 
-					threads.getValue().start();
-					threads.getKey().start();
-					routeThreads.add(threads.getKey());
-					routeThreads.add(threads.getValue());
+//					threads.getValue().start();
+//					threads.getKey().start();
+//					routeThreads.add(threads.getKey());
+//					routeThreads.add(threads.getValue());
 				}
 			}
 //			System.out.println("Started all threads.");
@@ -609,7 +609,7 @@ public class Model {
 
 			for (Long w : routeWays) {
 //				System.out.println(w);
-				ArrayList<Point2D.Double> p = graph.wayToNodes(w);
+				ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
 				routeNodes.addAll(p);
 			}
 

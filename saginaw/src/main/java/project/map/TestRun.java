@@ -22,7 +22,7 @@ public class TestRun {
     public static void main(String[] args) throws InterruptedException{
 
         long startTime, endTime;
-        String region = "england";
+        String region = "britain";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 
@@ -61,6 +61,8 @@ public class TestRun {
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
             ALTPreProcess altPreProcess = new ALTPreProcess(graph);
+
+            System.exit(0);
 
             System.out.println("Done pre-processing.");
 
