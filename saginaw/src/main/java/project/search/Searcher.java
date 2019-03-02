@@ -3,7 +3,10 @@ package project.search;
 import java.util.ArrayList;
 
 public interface Searcher {
-    ArrayList<Long> search(long src, long dst);
+    void search(int src, int dst);
+    void clear();
     double getDist();
     int getExplored();
+    ArrayList<Integer> getRoute();
+    ArrayList<Long> getRouteAsWays();
 }

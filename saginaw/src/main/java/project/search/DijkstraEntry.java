@@ -1,19 +1,19 @@
 package project.search;
 
 public class DijkstraEntry {
-    private long node;
+    private int node;
     private double distance;
 
-    public DijkstraEntry(long node, double distance){
+    public DijkstraEntry(int node, double distance){
         this.node = node;
         this.distance = distance;
     }
 
-    public void setNode(long node) {
+    public void setNode(int node) {
         this.node = node;
     }
 
-    public long getNode(){
+    public int getNode(){
         return node;
     }
 

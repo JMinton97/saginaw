@@ -4,16 +4,17 @@ import javafx.util.Pair;
 import org.mapdb.BTreeMap;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Tree implements Serializable{
     private Node root;
     private double[] nearestPoint;
-    private long nearestId;
+    private int nearestId;
     private double minDist;
     private double maxDepth;
 
-    public void insert(long id, double[] addPoint){
+    public void insert(int id, double[] addPoint){
         if(root == null){
             root = new Node(id, addPoint, 0, false);
         } else {
@@ -30,7 +31,7 @@ public class Tree implements Serializable{
     }
 
 
-    private void add(double[] addPoint, long id, Node point, boolean vertical){
+    private void add(double[] addPoint, int id, Node point, boolean vertical){
         if(point.isLeaf()){
             point.setId(id);
         }
@@ -101,7 +102,7 @@ public class Tree implements Serializable{
         }
     }
 
-    public long nearest(double[] point, BTreeMap<Long, double[]> dictionary){
+    public int nearest(double[] point, ArrayList<double[]> dictionary){
 //        System.out.println("Nearest to " + point[0] + " " + point[1]);
         nearestId = 0;
         if(root == null){
@@ -113,13 +114,13 @@ public class Tree implements Serializable{
         }
     }
 
-    public void find(double[] p, Node node, boolean vertical, BTreeMap<Long, double[]> dictionary){
+    public void find(double[] p, Node node, boolean vertical, ArrayList<double[]> dictionary){
         if(node != null){
 //            System.out.println("Trying " + node.getPoint()[0] + "," + node.getPoint()[1]);
             if(node.isLeaf()){
 //                System.out.println("true");
                 System.out.println("LEAF SIZE: " + node.getIds().size());
-                Pair<Long, Double> leafClosest = node.findClosest(p, dictionary);
+                Pair<Integer, Double> leafClosest = node.findClosest(p, dictionary);
 //                System.out.println(d);
                 if (minDist > leafClosest.getValue()) {
 //                    System.out.println("yeah!");

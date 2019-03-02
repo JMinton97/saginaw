@@ -52,7 +52,7 @@ public class Model {
 	private MyGraph graph;
 	private ArrayList<Long> routeWays;
 	private ArrayList<Point2D.Double> routeNodes;
-	private HashMap<double[], Long> closestNodes;
+	private HashMap<double[], Integer> closestNodes;
 	private ALTPreProcess preProcess;
 
 	public boolean hasRoute;
@@ -76,7 +76,7 @@ public class Model {
 		}
 
 		try{
-			preProcess = new ALTPreProcess(graph, region);
+			preProcess = new ALTPreProcess(graph);
 		} catch(IOException e){
 			System.out.println("IO error in ALTPreProcess.");
 			System.exit(0);
@@ -85,6 +85,9 @@ public class Model {
 
 		c1 = new ContractionALT(graph, preProcess);
 		c2 = new ContractionALT(graph, preProcess);
+
+//		c1 = new Dijkstra(graph);
+//		c2 = new Dijkstra(graph);
 
 		routeNodes = new ArrayList<>();
 		flags = new ArrayList<>();
@@ -263,8 +266,8 @@ public class Model {
 		centreCoord.setLocation(geomXD, geomYD);
 	}
 
-	public void findRoute(long src, long dst){
-		routeWays = c1.search(src, dst);
+	public void findRoute(int src, int dst){
+		c1.search(src, dst);
 		System.out.println("Distance: " + c1.getDist());
 		routeNodes = new ArrayList<>();
 		for(Long w : routeWays){
@@ -281,7 +284,7 @@ public class Model {
 		Object randomSrc = keys[generator.nextInt(keys.length)];
 		Object randomDst = keys[generator.nextInt(keys.length)];
 		System.out.println(randomSrc + "    " + randomDst);
-		routeWays = c1.search((Long) randomSrc, (Long) randomDst);
+		c1.search((int) randomSrc, (int) randomDst);
 		System.out.println("Distance: " + c1.getDist());
 		routeNodes = new ArrayList<>();
 		for(Long w : routeWays){
@@ -379,7 +382,7 @@ public class Model {
 //		System.out.println(location[0] + " " + location[1]);
 		markers.add(location);
 		flags.add(false);
-		findRoute();
+		findRouteThreads();
 	}
 
 	public void addPivot(double[] location){
@@ -391,7 +394,7 @@ public class Model {
 		pivoted = true;
 		flags.set(0, false);
 		flags.set(1, false);
-		findRoute();
+		findRouteThreads();
 	}
 
 	public void addPivotAlternate(double[] location){
@@ -482,18 +485,18 @@ public class Model {
 				if (!flags.get(x)) {
 //					System.out.println(markers.get(x)[0] + " " + markers.get(x)[1]);
 //					startTime = System.nanoTime();
-					long src, dst;
+					int src, dst;
 					if (closestNodes.containsKey(markers.get(x))) {
+						src = closestNodes.get(markers.get(x));
+					} else {
 						src = graph.findClosest(markers.get(x));
 						closestNodes.put(markers.get(x), src);
-					} else {
-						src = closestNodes.get(markers.get(x));
 					}
 					if (closestNodes.containsKey(markers.get(x + 1))) {
+						dst = closestNodes.get(markers.get(x + 1));
+					} else {
 						dst = graph.findClosest(markers.get(x + 1));
 						closestNodes.put(markers.get(x + 1), dst);
-					} else {
-						dst = closestNodes.get(markers.get(x + 1));
 					}
 //					endTime = System.nanoTime();
 //					System.out.println("Find nodes: " + (((float) endTime - (float) startTime) / 1000000000));
@@ -505,8 +508,8 @@ public class Model {
 //					System.out.println("	closest time: " + (((float) endTime - (float) startTime) / 1000000000));
 //					startTime = System.nanoTime();
 
-					c1.clear();
-					routeWays.addAll(c1.search(src, dst));
+//					c1.clear();
+//					routeWays.addAll(c1.search(src, dst));
 				}
 			}
 
@@ -515,7 +518,6 @@ public class Model {
 //			startTime = System.nanoTime();
 
 			for (Long w : routeWays) {
-//				System.out.println(w);
 				ArrayList<Point2D.Double> p = graph.wayToNodes(w);
 				routeNodes.addAll(p);
 			}
@@ -540,14 +542,14 @@ public class Model {
 				if (!flags.get(x)) {
 //					System.out.println(markers.get(x)[0] + " " + markers.get(x)[1]);
 					startTime = System.nanoTime();
-					long src, dst;
-					if (closestNodes.get(markers.get(x)) == null) {
+					int src, dst;
+					if (!closestNodes.containsKey(markers.get(x))) {
 						src = graph.findClosest(markers.get(x));
 						closestNodes.put(markers.get(x), src);
 					} else {
 						src = closestNodes.get(markers.get(x));
 					}
-					if (closestNodes.get(markers.get(x + 1)) == null) {
+					if (!closestNodes.containsKey(markers.get(x + 1))) {
 						dst = graph.findClosest(markers.get(x + 1));
 						closestNodes.put(markers.get(x + 1), dst);
 					} else {
@@ -560,13 +562,18 @@ public class Model {
 //					System.out.println("	closest time: " + (((float) endTime - (float) startTime) / 1000000000));
 //					startTime = System.nanoTime();
 
-					routeFinders.add(new ContractionALT(graph, preProcess));
-					Pair<Thread, Thread> threads = routeFinders.get(x).searchWithThreads(src, dst);
-					threads.getValue().start();
-					threads.getKey().start();
-//					System.out.println("Started threads.");
-					routeThreads.add(threads.getKey());
-					routeThreads.add(threads.getValue());
+					Pair<Thread, Thread> threads;
+
+//					if(x == 0){
+//						threads = c1.searchWithThreads(src, dst);
+//					} else {
+//						threads = c2.searchWithThreads(src, dst);
+//					}
+
+//					threads.getValue().start();
+//					threads.getKey().start();
+//					routeThreads.add(threads.getKey());
+//					routeThreads.add(threads.getValue());
 				}
 			}
 //			System.out.println("Started all threads.");
@@ -594,22 +601,15 @@ public class Model {
 			System.out.println("Find route: " + (((float) endTime - (float) startTime) / 1000000000));
 			startTime = System.nanoTime();
 
-			int j = 0;
+			routeWays.addAll(c1.getRouteAsWays());
+			routeWays.addAll(c2.getRouteAsWays());
 
-			for (ContractionALT c : routeFinders) {
-				ArrayList<Long> ways = c.getRouteAsWays();
-				c = null;
-				if(ways == null){
-					System.out.println("Error at segment " + j);
-				} else {
-					routeWays.addAll(ways);
-				}
-				j++;
-			}
+			c1.clear();
+			c2.clear();
 
 			for (Long w : routeWays) {
 //				System.out.println(w);
-				ArrayList<Point2D.Double> p = graph.wayToNodes(w);
+				ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
 				routeNodes.addAll(p);
 			}
 
