@@ -138,7 +138,6 @@ public class BiDijkstra implements Searcher {
                 vNodeTo.put(w, x); //should be 'nodeBefore'
                 vEdgeTo.put(w, (long) wayId);
                 vPq.add(new DijkstraEntry(w, distToX + weight)); //inefficient?
-
             }
         }
 

@@ -34,7 +34,7 @@ public class Model {
 	private BufferedImage image = null;
 	private MyMap2 map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
-	private String region = "england";
+	private String region = "birmingham";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
 	private BigDecimal zoom, baseScale;
@@ -51,12 +51,14 @@ public class Model {
 	private ContractionALT c1, c2;
 	private MyGraph graph;
 	private ArrayList<Long> routeWays;
-	private ArrayList<Point2D.Double> routeNodes;
+	private ArrayList<ArrayList<Point2D.Double>> routeNodes;
 	private HashMap<double[], Integer> closestNodes;
 	private ALTPreProcess preProcess;
 
 	public boolean hasRoute;
 	public boolean pivoted;
+
+	private ArrayList<Searcher> searcherList;
 
 	public Model() {
 		x = 1;
@@ -82,16 +84,12 @@ public class Model {
 			System.exit(0);
 		}
 
-
-		c1 = new ContractionALT(graph, preProcess);
-		c2 = new ContractionALT(graph, preProcess);
-
-//		c1 = new Dijkstra(graph);
-//		c2 = new Dijkstra(graph);
-
 		routeNodes = new ArrayList<>();
 		flags = new ArrayList<>();
 		pivoted = false;
+
+		searcherList = new ArrayList<>();
+		switchSearchers(SearchType.CONTRACTION_ALT);
 
 //		Long src = Long.parseLong("1349207723"); //wales
 		Long src, dst;
@@ -148,7 +146,7 @@ public class Model {
 		return baseScale;
 	}
 
-	public ArrayList<Point2D.Double> getRoute() {
+	public ArrayList<ArrayList<Point2D.Double>> getRoute() {
 		return routeNodes;
 	}
 
@@ -266,34 +264,66 @@ public class Model {
 		centreCoord.setLocation(geomXD, geomYD);
 	}
 
-	public void findRoute(int src, int dst){
-		c1.search(src, dst);
-		System.out.println("Distance: " + c1.getDist());
-		routeNodes = new ArrayList<>();
-		for(Long w : routeWays){
-//			System.out.println(w);
-//			System.out.println(graph.wayToNodes(w));
-			routeNodes.addAll(graph.refsToNodes(graph.wayToRefs(w)));
-//			System.out.println();
+	public void switchSearchers(SearchType s){
+		switch(s){
+			case DIJKSTRA:
+				searcherList.clear();
+				searcherList.add(new Dijkstra(graph));
+				searcherList.add(new Dijkstra(graph));
+
+			case BIDIJKSTRA:
+				searcherList.clear();
+				searcherList.add(new BiDijkstra(graph));
+				searcherList.add(new BiDijkstra(graph));
+
+			case CONCURRENT_BIDIJKSTRA:
+				searcherList.clear();
+				searcherList.add(new ConcurrentBiDijkstra(graph));
+				searcherList.add(new ConcurrentBiDijkstra(graph));
+
+			case ALT:
+				searcherList.clear();
+				searcherList.add(new ALT(graph, preProcess));
+				searcherList.add(new ALT(graph, preProcess));
+
+			case BIALT:
+				searcherList.clear();
+				searcherList.add(new BiALT(graph, preProcess));
+				searcherList.add(new BiALT(graph, preProcess));
+
+			case CONCURRENT_BIALT:
+				searcherList.clear();
+				searcherList.add(new ConcurrentBiALT(graph, preProcess));
+				searcherList.add(new ConcurrentBiALT(graph, preProcess));
+
+			case CONTRACTION_DIJKSTRA:
+//				searcherList.add(new Con)
+
+			case CONTRACTION_ALT:
+				searcherList.clear();
+				searcherList.add(new ContractionALT(graph, preProcess));
+				searcherList.add(new ContractionALT(graph, preProcess));
+
 		}
+
 	}
 
-	public void findRandomRoute(){
-		Random generator = new Random();
-		Object[] keys = graph.getFwdGraph().keySet().toArray();
-		Object randomSrc = keys[generator.nextInt(keys.length)];
-		Object randomDst = keys[generator.nextInt(keys.length)];
-		System.out.println(randomSrc + "    " + randomDst);
-		c1.search((int) randomSrc, (int) randomDst);
-		System.out.println("Distance: " + c1.getDist());
-		routeNodes = new ArrayList<>();
-		for(Long w : routeWays){
-//			System.out.println(w);
-//			System.out.println(graph.wayToNodes(w));
-			routeNodes.addAll(graph.refsToNodes(graph.wayToRefs(w)));
-//			System.out.println();
-		}
-	}
+//	public void findRandomRoute(){
+//		Random generator = new Random();
+//		Object[] keys = graph.getFwdGraph().keySet().toArray();
+//		Object randomSrc = keys[generator.nextInt(keys.length)];
+//		Object randomDst = keys[generator.nextInt(keys.length)];
+//		System.out.println(randomSrc + "    " + randomDst);
+//		c1.search((int) randomSrc, (int) randomDst);
+//		System.out.println("Distance: " + c1.getDist());
+//		routeNodes = new ArrayList<>();
+//		for(Long w : routeWays){
+////			System.out.println(w);
+////			System.out.println(graph.wayToNodes(w));
+//			routeNodes.addAll(graph.refsToNodes(graph.wayToRefs(w)));
+////			System.out.println();
+//		}
+//	}
 
 	public void zoomIn() {
 //        System.out.println(zoom);
@@ -382,7 +412,7 @@ public class Model {
 //		System.out.println(location[0] + " " + location[1]);
 		markers.add(location);
 		flags.add(false);
-		findRouteThreads();
+		betterFindRoutes();
 	}
 
 	public void addPivot(double[] location){
@@ -394,7 +424,7 @@ public class Model {
 		pivoted = true;
 		flags.set(0, false);
 		flags.set(1, false);
-		findRouteThreads();
+		betterFindRoutes();
 	}
 
 	public void addPivotAlternate(double[] location){
@@ -472,151 +502,207 @@ public class Model {
 //		}
 //	}
 
-	public void findRoute() {
-		long startTime, endTime;
-		ArrayList<Thread> routeThreads = new ArrayList<>();
-		ArrayList<ContractionALT> routeFinders = new ArrayList<>();
-		routeWays = new ArrayList<>();
-		startTime = System.nanoTime();
-		if (markers.size() > 1) {
-			hasRoute = true;
-			routeNodes = new ArrayList<>();
-			for (int x = 0; x < markers.size() - 1; x++) {
-				if (!flags.get(x)) {
-//					System.out.println(markers.get(x)[0] + " " + markers.get(x)[1]);
-//					startTime = System.nanoTime();
-					int src, dst;
-					if (closestNodes.containsKey(markers.get(x))) {
-						src = closestNodes.get(markers.get(x));
-					} else {
-						src = graph.findClosest(markers.get(x));
-						closestNodes.put(markers.get(x), src);
-					}
-					if (closestNodes.containsKey(markers.get(x + 1))) {
-						dst = closestNodes.get(markers.get(x + 1));
-					} else {
-						dst = graph.findClosest(markers.get(x + 1));
-						closestNodes.put(markers.get(x + 1), dst);
-					}
-//					endTime = System.nanoTime();
-//					System.out.println("Find nodes: " + (((float) endTime - (float) startTime) / 1000000000));
-//					startTime = System.nanoTime();
-//					System.out.println(src);
-//					System.out.println(dst);
-//					System.out.println("Found src and dst.");
-					endTime = System.nanoTime();
-//					System.out.println("	closest time: " + (((float) endTime - (float) startTime) / 1000000000));
-//					startTime = System.nanoTime();
-
-//					c1.clear();
-//					routeWays.addAll(c1.search(src, dst));
-				}
-			}
-
-			endTime = System.nanoTime();
-			System.out.println("Find route: " + (((float) endTime - (float) startTime) / 1000000000));
-//			startTime = System.nanoTime();
-
-			for (Long w : routeWays) {
-				ArrayList<Point2D.Double> p = graph.wayToNodes(w);
-				routeNodes.addAll(p);
-			}
-
-			endTime = System.nanoTime();
-			System.out.println("Get points: " + (((float) endTime - (float) startTime) / 1000000000));
-			System.out.println();
-		}
-
-	}
-
-	public void findRouteThreads() {
-		long startTime, endTime;
-		ArrayList<Thread> routeThreads = new ArrayList<>();
-		ArrayList<ContractionALT> routeFinders = new ArrayList<>();
-		routeWays = new ArrayList<>();
-		startTime = System.nanoTime();
-		if (markers.size() > 1) {
-			hasRoute = true;
-			routeNodes = new ArrayList<>();
-			for (int x = 0; x < markers.size() - 1; x++) {
-				if (!flags.get(x)) {
-//					System.out.println(markers.get(x)[0] + " " + markers.get(x)[1]);
-					startTime = System.nanoTime();
-					int src, dst;
-					if (!closestNodes.containsKey(markers.get(x))) {
-						src = graph.findClosest(markers.get(x));
-						closestNodes.put(markers.get(x), src);
-					} else {
-						src = closestNodes.get(markers.get(x));
-					}
-					if (!closestNodes.containsKey(markers.get(x + 1))) {
-						dst = graph.findClosest(markers.get(x + 1));
-						closestNodes.put(markers.get(x + 1), dst);
-					} else {
-						dst = closestNodes.get(markers.get(x + 1));
-					}
-//					System.out.println(src);
-//					System.out.println(dst);
-//					System.out.println("Found src and dst.");
-					endTime = System.nanoTime();
-//					System.out.println("	closest time: " + (((float) endTime - (float) startTime) / 1000000000));
-//					startTime = System.nanoTime();
-
-					Pair<Thread, Thread> threads;
-
-//					if(x == 0){
-//						threads = c1.searchWithThreads(src, dst);
+//	public void findRoute() {
+//		long startTime, endTime;
+//		ArrayList<Thread> routeThreads = new ArrayList<>();
+//		ArrayList<ContractionALT> routeFinders = new ArrayList<>();
+//		routeWays = new ArrayList<>();
+//		startTime = System.nanoTime();
+//		if (markers.size() > 1) {
+//			hasRoute = true;
+//			routeNodes = new ArrayList<>();
+//			for (int x = 0; x < markers.size() - 1; x++) {
+//				if (!flags.get(x)) {
+////					System.out.println(markers.get(x)[0] + " " + markers.get(x)[1]);
+////					startTime = System.nanoTime();
+//					int src, dst;
+//					if (closestNodes.containsKey(markers.get(x))) {
+//						src = closestNodes.get(markers.get(x));
 //					} else {
-//						threads = c2.searchWithThreads(src, dst);
+//						src = graph.findClosest(markers.get(x));
+//						closestNodes.put(markers.get(x), src);
 //					}
+//					if (closestNodes.containsKey(markers.get(x + 1))) {
+//						dst = closestNodes.get(markers.get(x + 1));
+//					} else {
+//						dst = graph.findClosest(markers.get(x + 1));
+//						closestNodes.put(markers.get(x + 1), dst);
+//					}
+////					endTime = System.nanoTime();
+////					System.out.println("Find nodes: " + (((float) endTime - (float) startTime) / 1000000000));
+////					startTime = System.nanoTime();
+////					System.out.println(src);
+////					System.out.println(dst);
+////					System.out.println("Found src and dst.");
+//					endTime = System.nanoTime();
+////					System.out.println("	closest time: " + (((float) endTime - (float) startTime) / 1000000000));
+////					startTime = System.nanoTime();
+//
+////					c1.clear();
+////					routeWays.addAll(c1.search(src, dst));
+//				}
+//			}
+//
+//			endTime = System.nanoTime();
+//			System.out.println("Find route: " + (((float) endTime - (float) startTime) / 1000000000));
+////			startTime = System.nanoTime();
+//
+//			for (Long w : routeWays) {
+//				ArrayList<Point2D.Double> p = graph.wayToNodes(w);
+//				routeNodes.addAll(p);
+//			}
+//
+//			endTime = System.nanoTime();
+//			System.out.println("Get points: " + (((float) endTime - (float) startTime) / 1000000000));
+//			System.out.println();
+//		}
+//
+//	}
 
-//					threads.getValue().start();
-//					threads.getKey().start();
-//					routeThreads.add(threads.getKey());
-//					routeThreads.add(threads.getValue());
+
+	public void betterFindRoutes() {
+		ArrayList<Thread> routeThreads = new ArrayList<>();
+		if (markers.size() > 1) {
+			hasRoute = true;
+			for (int x = 0; x < markers.size() - 1; x++) {
+                System.out.println(x);
+				final int z = x;
+				if (!flags.get(x)) {
+					Runnable routeSegmentThread = () -> {
+						int src, dst;
+						if (!closestNodes.containsKey(markers.get(z))) {
+							src = graph.findClosest(markers.get(z));
+							closestNodes.put(markers.get(z), src);
+						} else {
+							src = closestNodes.get(markers.get(z));
+						}
+						if (!closestNodes.containsKey(markers.get(z + 1))) {
+							dst = graph.findClosest(markers.get(z + 1));
+							closestNodes.put(markers.get(z + 1), dst);
+						} else {
+							dst = closestNodes.get(markers.get(z + 1));
+						}
+						Searcher searcher = searcherList.get(z);
+                        System.out.println("before");
+						searcher.search(src, dst);
+                        System.out.println("after");
+						if(routeNodes.size() > z){
+                            routeNodes.set(z, graph.refsToNodes(searcher.getRoute()));
+                        } else {
+						    routeNodes.add(graph.refsToNodes(searcher.getRoute()));
+                        }
+						flags.set(z, true);
+						searcher.clear();
+					};
+
+					Thread searchThread = new Thread(routeSegmentThread);
+					routeThreads.add(searchThread);
+					searchThread.start();
 				}
 			}
-//			System.out.println("Started all threads.");
-			boolean done;
-			do {
-				done = true;
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+
+			for(Thread routeThread : routeThreads){
+				try{
+					routeThread.join();
+				} catch(InterruptedException e){
+					System.out.println("Error with thread " + routeThread.getId());
 				}
-				for(int x = 0; x < routeThreads.size(); x += 2){
-					done = done && !routeThreads.get(x).isAlive();
-					if(!routeThreads.get(x).isAlive()){
-						routeThreads.get(x + 1).interrupt();
-					}
-					done = done && !routeThreads.get(x + 1).isAlive();
-					if(!routeThreads.get(x + 1).isAlive()){
-						routeThreads.get(x).interrupt();
-					}
-				}
-			}while(!done);
-
-			endTime = System.nanoTime();
-			System.out.println("Find route: " + (((float) endTime - (float) startTime) / 1000000000));
-			startTime = System.nanoTime();
-
-			routeWays.addAll(c1.getRouteAsWays());
-			routeWays.addAll(c2.getRouteAsWays());
-
-			c1.clear();
-			c2.clear();
-
-			for (Long w : routeWays) {
-//				System.out.println(w);
-				ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
-				routeNodes.addAll(p);
 			}
-
-			endTime = System.nanoTime();
-			System.out.println("Get points: " + (((float) endTime - (float) startTime) / 1000000000));
-			System.out.println();
+            System.out.println("Finished.x");
 		}
-
 	}
+
+
+
+
+//	public void findRouteThreads() {
+//		long startTime, endTime;
+//		ArrayList<Thread> routeThreads = new ArrayList<>();
+//		ArrayList<ContractionALT> routeFinders = new ArrayList<>();
+//		routeWays = new ArrayList<>();
+//		startTime = System.nanoTime();
+//		if (markers.size() > 1) {
+//			hasRoute = true;
+//			routeNodes = new ArrayList<>();
+//			for (int x = 0; x < markers.size() - 1; x++) {
+//				if (!flags.get(x)) {
+////					System.out.println(markers.get(x)[0] + " " + markers.get(x)[1]);
+//					startTime = System.nanoTime();
+//					int src, dst;
+//					if (!closestNodes.containsKey(markers.get(x))) {
+//						src = graph.findClosest(markers.get(x));
+//						closestNodes.put(markers.get(x), src);
+//					} else {
+//						src = closestNodes.get(markers.get(x));
+//					}
+//					if (!closestNodes.containsKey(markers.get(x + 1))) {
+//						dst = graph.findClosest(markers.get(x + 1));
+//						closestNodes.put(markers.get(x + 1), dst);
+//					} else {
+//						dst = closestNodes.get(markers.get(x + 1));
+//					}
+////					System.out.println(src);
+////					System.out.println(dst);
+////					System.out.println("Found src and dst.");
+//					endTime = System.nanoTime();
+////					System.out.println("	closest time: " + (((float) endTime - (float) startTime) / 1000000000));
+////					startTime = System.nanoTime();
+//
+//					Pair<Thread, Thread> threads;
+//
+////					if(x == 0){
+////						threads = c1.searchWithThreads(src, dst);
+////					} else {
+////						threads = c2.searchWithThreads(src, dst);
+////					}
+//
+////					threads.getValue().start();
+////					threads.getKey().start();
+////					routeThreads.add(threads.getKey());
+////					routeThreads.add(threads.getValue());
+//				}
+//			}
+////			System.out.println("Started all threads.");
+//			boolean done;
+//			do {
+//				done = true;
+//				try {
+//					Thread.sleep(100);
+//				} catch (InterruptedException e) {
+//					e.printStackTrace();
+//				}
+//				for(int x = 0; x < routeThreads.size(); x += 2){
+//					done = done && !routeThreads.get(x).isAlive();
+//					if(!routeThreads.get(x).isAlive()){
+//						routeThreads.get(x + 1).interrupt();
+//					}
+//					done = done && !routeThreads.get(x + 1).isAlive();
+//					if(!routeThreads.get(x + 1).isAlive()){
+//						routeThreads.get(x).interrupt();
+//					}
+//				}
+//			}while(!done);
+//
+//			endTime = System.nanoTime();
+//			System.out.println("Find route: " + (((float) endTime - (float) startTime) / 1000000000));
+//			startTime = System.nanoTime();
+//
+//			routeWays.addAll(c1.getRouteAsWays());
+//			routeWays.addAll(c2.getRouteAsWays());
+//
+//			c1.clear();
+//			c2.clear();
+//
+//			for (Long w : routeWays) {
+////				System.out.println(w);
+//				ArrayList<Point2D.Double> p = graph.wayToFirstNodes(w);
+//				routeNodes.addAll(p);
+//			}
+//
+//			endTime = System.nanoTime();
+//			System.out.println("Get points: " + (((float) endTime - (float) startTime) / 1000000000));
+//			System.out.println();
+//		}
+//
+//	}
 }

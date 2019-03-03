@@ -164,8 +164,8 @@ public class ContractionALT implements Searcher {
 
         if(!foundRoute){
             //do second stage to get overlap, otherwise we continue below
-            System.out.println("First stage: " + explored);
-            secondStage(coreSQ, coreTQ);
+//            System.out.println("First stage: " + explored);
+            secondStage();
         }
     }
 
@@ -194,11 +194,7 @@ public class ContractionALT implements Searcher {
         }
     }
 
-    private void secondStage(PriorityQueue coreSQ, PriorityQueue coreTQ){
-
-        uPq = coreSQ;
-        vPq = coreTQ;
-
+    private void secondStage(){
         uRelaxed = new HashSet<>();
         vRelaxed = new HashSet<>();
 
@@ -208,9 +204,9 @@ public class ContractionALT implements Searcher {
         exploredA = 0;
 
         Runnable s = () -> {
-            while(!uPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+            while(!coreSQ.isEmpty() && !Thread.currentThread().isInterrupted()){
                 exploredA++;
-                int v1 = uPq.poll().getNode();
+                int v1 = coreSQ.poll().getNode();
                 for (double[] e : graph.fwdCoreAdj(v1)){
                     if(!Thread.currentThread().isInterrupted()) {
                         relaxALT(v1, e, true);
@@ -235,9 +231,9 @@ public class ContractionALT implements Searcher {
         };
 
         Runnable t = () -> {
-            while(!vPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+            while(!coreTQ.isEmpty() && !Thread.currentThread().isInterrupted()){
                 exploredB++;
-                int v2 = vPq.poll().getNode();
+                int v2 = coreTQ.poll().getNode();
                 for (double[] e : graph.bckCoreAdj(v2)){
                     if(!Thread.currentThread().isInterrupted()) {
                         relaxALT(v2, e, false);
@@ -270,7 +266,9 @@ public class ContractionALT implements Searcher {
         while(sThread.isAlive() && tThread.isAlive()){
         }
 
-        System.out.println("Done.");
+        if(overlapNode == -1){
+            System.out.println("No route found.");
+        }
         sThread.interrupt();
         tThread.interrupt();
     }
@@ -286,7 +284,7 @@ public class ContractionALT implements Searcher {
                 uDistTo.put(w, distToX + weight);
                 uNodeTo.put(w, x); //should be 'nodeBefore'
                 uEdgeTo.put(w, (long) wayId); //should be 'nodeBefore'
-                uPq.add(new DijkstraEntry(w, distToX + weight + lowerBound(w, true))); //inefficient?
+                coreSQ.add(new DijkstraEntry(w, distToX + weight + lowerBound(w, true))); //inefficient?
             } else {
             }
         } else {
@@ -296,7 +294,7 @@ public class ContractionALT implements Searcher {
                 vDistTo.put(w, distToX + weight);
                 vNodeTo.put(w, x); //should be 'nodeBefore'
                 vEdgeTo.put(w, (long) wayId); //should be 'nodeBefore'
-                vPq.add(new DijkstraEntry(w, distToX + weight + lowerBound(w, false))); //inefficient?
+                coreTQ.add(new DijkstraEntry(w, distToX + weight + lowerBound(w, false))); //inefficient?
             }
         }
     }
@@ -410,6 +408,8 @@ public class ContractionALT implements Searcher {
         vEdgeTo.clear();
         uNodeTo.clear();
         vNodeTo.clear();
+        coreSQ.clear();
+        coreTQ.clear();
         if(vPq != null){if(!vPq.isEmpty()){vPq.clear();}}
         if(uPq != null){if(!uPq.isEmpty()){uPq.clear();}}
         if(vRelaxed != null){vRelaxed.clear();}

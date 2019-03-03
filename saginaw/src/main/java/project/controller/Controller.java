@@ -1,6 +1,7 @@
 package project.controller;
 
 import project.model.Model;
+import project.search.SearchType;
 import project.utils.UnsupportedImageTypeException;
 import project.view.View;
 
@@ -190,5 +191,12 @@ public class Controller
 	}
 
 	public void randomRoute() {
-		model.findRandomRoute(); }
+//		model.findRandomRoute();
+	}
+
+	public void switchSearchers(SearchType s){
+		model.switchSearchers(s);
+	}
+
+
 }

@@ -2,10 +2,8 @@ package project.view;
 
 import project.controller.Controller;
 import project.model.Model;
-import project.view.actions.ExitAction;
-import project.view.actions.LongRunningAction;
-import project.view.actions.OpenAction;
-import project.view.actions.OpenMapAction;
+import project.search.SearchType;
+import project.view.actions.*;
 
 import javax.swing.*;
 import java.awt.BorderLayout;
@@ -63,17 +61,28 @@ public class View extends JFrame
 
 		// Set up the menu bar
 		JMenu fileMenu;
-		fileMenu = new JMenu("File");
+        fileMenu = new JMenu("File");
 		fileMenu.add(openAction);
 		fileMenu.add(longRunningAction);
 		fileMenu.add(openMapAction);
 		fileMenu.addSeparator();
 		fileMenu.add(exitAction);
 
+        JMenu searchMenu;
+        searchMenu = new JMenu("Search method");
+		searchMenu.add(new ChangeSearchAction(this, controller, SearchType.DIJKSTRA, "Dijkstra"));
+		searchMenu.add(new ChangeSearchAction(this, controller, SearchType.BIDIJKSTRA, "Bidirectional Dijkstra"));
+        searchMenu.add(new ChangeSearchAction(this, controller, SearchType.CONCURRENT_BIDIJKSTRA, "Concurrent Bidirectional Dijkstra"));
+        searchMenu.add(new ChangeSearchAction(this, controller, SearchType.ALT, "ALT"));
+        searchMenu.add(new ChangeSearchAction(this, controller, SearchType.BIALT, "Bidirectional ALT"));
+        searchMenu.add(new ChangeSearchAction(this, controller, SearchType.CONCURRENT_BIALT, "Concurrent Bidirectional ALT"));
+        searchMenu.add(new ChangeSearchAction(this, controller, SearchType.CONTRACTION_ALT, "CALT (Contraction-ALT)"));
+
 		JMenuBar menuBar;
 
 		menuBar = new JMenuBar();
 		menuBar.add(fileMenu);
+		menuBar.add(searchMenu);
 
 		setJMenuBar(menuBar);
 

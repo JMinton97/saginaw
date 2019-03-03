@@ -21,7 +21,6 @@ public class ConcurrentBiDijkstra implements Searcher {
     private HashSet<Integer> uRelaxed;
     private HashSet<Integer> vRelaxed;
     private int overlapNode;
-    private double maxDist; //how far from the nodes we have explored - have we covered minimum distance yet?
     private double bestSeen;
     private int bestPathNode;
     private int exploredA, exploredB;
@@ -68,13 +67,6 @@ public class ConcurrentBiDijkstra implements Searcher {
 
         bestSeen = Double.MAX_VALUE;
         bestPathNode = 0;
-
-//        double minDist = haversineDistance(startNode, endNode, dictionary);
-        double uFurthest, vFurthest = 0;
-
-//        double competitor;
-
-        maxDist = 0;
 
         Runnable s = () -> {
             while(!uPq.isEmpty() && !Thread.currentThread().isInterrupted()){
