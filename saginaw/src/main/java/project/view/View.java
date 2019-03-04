@@ -9,6 +9,7 @@ import javax.swing.*;
 import java.awt.BorderLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
 
 /**
  * User: Alan P. Sexton Date: 21/06/13 Time: 13:42
@@ -70,13 +71,25 @@ public class View extends JFrame
 
         JMenu searchMenu;
         searchMenu = new JMenu("Search method");
-		searchMenu.add(new ChangeSearchAction(this, controller, SearchType.DIJKSTRA, "Dijkstra"));
-		searchMenu.add(new ChangeSearchAction(this, controller, SearchType.BIDIJKSTRA, "Bidirectional Dijkstra"));
-        searchMenu.add(new ChangeSearchAction(this, controller, SearchType.CONCURRENT_BIDIJKSTRA, "Concurrent Bidirectional Dijkstra"));
-        searchMenu.add(new ChangeSearchAction(this, controller, SearchType.ALT, "ALT"));
-        searchMenu.add(new ChangeSearchAction(this, controller, SearchType.BIALT, "Bidirectional ALT"));
-        searchMenu.add(new ChangeSearchAction(this, controller, SearchType.CONCURRENT_BIALT, "Concurrent Bidirectional ALT"));
-        searchMenu.add(new ChangeSearchAction(this, controller, SearchType.CONTRACTION_ALT, "CALT (Contraction-ALT)"));
+
+		ArrayList<JRadioButtonMenuItem> searchMethods = new ArrayList<>();
+
+
+
+        ButtonGroup searchMethodGroup = new ButtonGroup();
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.DIJKSTRA, "Dijkstra")));
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.BIDIJKSTRA, "Bidirectional Dijkstra")));
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.CONCURRENT_BIDIJKSTRA, "Concurrent Bidirectional Dijkstra")));
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.ALT, "ALT")));
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.BIALT, "Bidirectional ALT")));
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.CONCURRENT_BIALT, "Concurrent Bidirectional ALT")));
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.CONTRACTION_ALT, "CALT (Contraction-ALT)")));
+
+		for(JRadioButtonMenuItem item : searchMethods){
+			searchMethodGroup.add(item);
+			searchMenu.add(item);
+			item.setSelected(true);
+		}
 
 		JMenuBar menuBar;
 

@@ -30,11 +30,12 @@ import java.util.*;
  * the user interface
  * </p>
  */
+
 public class Model {
 	private BufferedImage image = null;
 	private MyMap2 map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
-	private String region = "birmingham";
+	private String region = "england";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
 	private BigDecimal zoom, baseScale;
@@ -270,31 +271,39 @@ public class Model {
 				searcherList.clear();
 				searcherList.add(new Dijkstra(graph));
 				searcherList.add(new Dijkstra(graph));
+				return;
 
 			case BIDIJKSTRA:
 				searcherList.clear();
+				System.out.println("changed");
+				System.out.println(searcherList.size());
 				searcherList.add(new BiDijkstra(graph));
 				searcherList.add(new BiDijkstra(graph));
+				return;
 
 			case CONCURRENT_BIDIJKSTRA:
 				searcherList.clear();
 				searcherList.add(new ConcurrentBiDijkstra(graph));
 				searcherList.add(new ConcurrentBiDijkstra(graph));
+				return;
 
 			case ALT:
 				searcherList.clear();
 				searcherList.add(new ALT(graph, preProcess));
 				searcherList.add(new ALT(graph, preProcess));
+				return;
 
 			case BIALT:
 				searcherList.clear();
 				searcherList.add(new BiALT(graph, preProcess));
 				searcherList.add(new BiALT(graph, preProcess));
+				return;
 
 			case CONCURRENT_BIALT:
 				searcherList.clear();
 				searcherList.add(new ConcurrentBiALT(graph, preProcess));
 				searcherList.add(new ConcurrentBiALT(graph, preProcess));
+				return;
 
 			case CONTRACTION_DIJKSTRA:
 //				searcherList.add(new Con)
@@ -303,6 +312,7 @@ public class Model {
 				searcherList.clear();
 				searcherList.add(new ContractionALT(graph, preProcess));
 				searcherList.add(new ContractionALT(graph, preProcess));
+				return;
 
 		}
 
@@ -435,7 +445,7 @@ public class Model {
 
 	public void clearMarkers(){
 		markers.clear();
-		flags.clear();
+		flags = new ArrayList<>();
 		pivoted = false;
 		hasRoute = false;
 	}
@@ -561,6 +571,7 @@ public class Model {
 
 
 	public void betterFindRoutes() {
+		System.out.println();
 		ArrayList<Thread> routeThreads = new ArrayList<>();
 		if (markers.size() > 1) {
 			hasRoute = true;
@@ -583,16 +594,21 @@ public class Model {
 							dst = closestNodes.get(markers.get(z + 1));
 						}
 						Searcher searcher = searcherList.get(z);
-                        System.out.println("before");
+//                        System.out.println("before " + Thread.currentThread().getId());
 						searcher.search(src, dst);
-                        System.out.println("after");
+//                        System.out.println("after " + Thread.currentThread().getId());
+						System.out.println("getting nodes...");
 						if(routeNodes.size() > z){
-                            routeNodes.set(z, graph.refsToNodes(searcher.getRoute()));
+                            routeNodes.set(z, graph.wayListToNodes(searcher.getRouteAsWays()));
                         } else {
-						    routeNodes.add(graph.refsToNodes(searcher.getRoute()));
+						    routeNodes.add(graph.wayListToNodes(searcher.getRouteAsWays()));
                         }
+						System.out.println("				...got nodes.");
 						flags.set(z, true);
+//						System.out.println("before clear");
 						searcher.clear();
+//						System.out.println("after clear");
+
 					};
 
 					Thread searchThread = new Thread(routeSegmentThread);
@@ -601,14 +617,37 @@ public class Model {
 				}
 			}
 
-			for(Thread routeThread : routeThreads){
-				try{
-					routeThread.join();
-				} catch(InterruptedException e){
-					System.out.println("Error with thread " + routeThread.getId());
+			for(int x = 0; x < routeNodes.size(); x++){
+				if(x >= markers.size() - 1){
+					routeNodes.remove(x);
+					x--;
 				}
 			}
-            System.out.println("Finished.x");
+
+
+			System.out.println("Thread count: " + routeThreads.size());
+
+			boolean running = true;
+
+			for(Thread t : routeThreads){
+				try{
+					System.out.println("join wait");
+					t.join();
+				} catch(InterruptedException e){
+					System.out.println("Error with thread " + t.getId());
+				}
+			}
+
+
+//			while(running){
+//				running = false;
+//				for(Thread routeThread : routeThreads){
+//					System.out.println("waiting");
+//					running = (running || routeThread.isAlive());
+//				}
+//			}
+
+            System.out.println("Finished.");
 		}
 	}
 

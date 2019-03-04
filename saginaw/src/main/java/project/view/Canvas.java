@@ -237,19 +237,21 @@ class Canvas extends JPanel
 //		long startTime = System.nanoTime();
 		if(route.size() > 0){
 			for(ArrayList<Point2D.Double> subRoute : route){
-				Path2D path = new Path2D.Double();
-				Point2D first = geoToCanvas(subRoute.get(0));
-				path.moveTo((int) first.getX(), (int) first.getY());
-				for(Point2D.Double point : subRoute){
-					point = geoToCanvas(point);
-					path.lineTo((int) point.getX(), (int) point.getY());
+				if(subRoute.size() > 0){
+					Path2D path = new Path2D.Double();
+					Point2D first = geoToCanvas(subRoute.get(0));
+					path.moveTo((int) first.getX(), (int) first.getY());
+					for(Point2D.Double point : subRoute){
+						point = geoToCanvas(point);
+						path.lineTo((int) point.getX(), (int) point.getY());
+					}
+					g.setColor(Color.RED.darker());
+					g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+					g.draw(path);
+					g.setColor(Color.RED);
+					g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+					g.draw(path);
 				}
-				g.setColor(Color.RED.darker());
-				g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-				g.draw(path);
-				g.setColor(Color.RED);
-				g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-				g.draw(path);
 			}
 		}
 		long endTime = System.nanoTime();

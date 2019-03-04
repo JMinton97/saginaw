@@ -20,6 +20,7 @@ public class ALT implements Searcher {
     private ArrayList<Integer> landmarks;
     private Int2ObjectOpenHashMap distancesTo;
     private Int2ObjectOpenHashMap distancesFrom;
+    private boolean routeFound;
 
     public ALT(MyGraph graph, ALTPreProcess altPreProcess){
         this.graph = graph;
@@ -52,17 +53,20 @@ public class ALT implements Searcher {
         explored = 0;
 
         OUTER: while(!pq.isEmpty()){
+            System.out.println("searching");
             explored++;
             int v = pq.poll().getNode();
             for (double[] e : graph.fwdAdj(v)){
                 relax(v, e);
                 if(v == dst){
+                    routeFound = true;
                     return;
                 }
             }
         }
 
         System.out.println("No route found.");
+        routeFound = false;
     }
 
     private void relax(int v, double[] edge){
@@ -117,18 +121,22 @@ public class ALT implements Searcher {
     }
 
     public ArrayList<Long> getRouteAsWays(){
-        ArrayList<Long> route = new ArrayList<>();
-        try{
-            long way = 0;
-            int node = endNode;
-            while(node != startNode){
-                way = edgeTo.get(node);
-                node = nodeTo.get(node);
-                route.add(way);
-            }
+        if(routeFound){
+            ArrayList<Long> route = new ArrayList<>();
+            try{
+                long way = 0;
+                int node = endNode;
+                while(node != startNode){
+                    way = edgeTo.get(node);
+                    node = nodeTo.get(node);
+                    route.add(way);
+                }
 
-        }catch(NullPointerException n){ }
-        return route;
+            }catch(NullPointerException n){ }
+            return route;
+        } else {
+            return new ArrayList<>();
+        }
     }
 
     public void clear(){
@@ -136,6 +144,8 @@ public class ALT implements Searcher {
         edgeTo.clear();
         nodeTo.clear();
         pq.clear();
+        routeFound = false;
+
     }
 
     public double getDist(){
