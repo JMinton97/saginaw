@@ -14,7 +14,7 @@ public class ComparisonTest {
 
     public static void main(String[] args) throws InterruptedException {
         long startTime, endTime;
-        String region = "england";
+        String region = "birmingham";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 
@@ -26,7 +26,9 @@ public class ComparisonTest {
             e.printStackTrace();
         }
 
+
         MyGraph graph;
+        Long src, dst, src1, dst1, src2, dst2;
 
         try {
 
@@ -44,8 +46,8 @@ public class ComparisonTest {
 
             float avg = 0, eps = 0;
 
-            int[] srcs = new int[50];
-            int[] dsts = new int[50];
+            int[] srcs = new int[20];
+            int[] dsts = new int[20];
 
             Random generator = new Random(47465346);
             Object[] keys = graph.getFwdGraph().keySet().toArray();
@@ -62,16 +64,13 @@ public class ComparisonTest {
             System.out.println();
 
             Searcher searcher = new Dijkstra(graph);
-            for (int x = 0; x < 50; x++) {
+            for (int x = 0; x < 20; x++) {
 //                System.out.println(x);
                 startTime = System.nanoTime();
                 searcher.search(srcs[x], dsts[x]);
                 endTime = System.nanoTime();
                 avg += ((float) endTime - (float) startTime) / 1000000000;
                 eps += searcher.getExplored() / (((float) endTime - (float) startTime) / 1000000000);
-                if(x == 5){
-                    System.out.println(searcher.getDist());
-                }
                 searcher.clear();
             }
             System.out.println("Dijkstra: " + avg / 10);
@@ -82,14 +81,14 @@ public class ComparisonTest {
 
             searcher = new BiDijkstra(graph);
             avg = 0; eps = 0;
-            for (int x = 0; x < 50; x++) {
+            for (int x = 0; x < 20; x++) {
 //                System.out.println(x);
                 startTime = System.nanoTime();
                 searcher.search(srcs[x], dsts[x]);
                 endTime = System.nanoTime();
                 avg += ((float) endTime - (float) startTime) / 1000000000;
                 eps += searcher.getExplored() / (((float) endTime - (float) startTime) / 1000000000);
-                if(x == 5){
+                if(x == 10){
                     System.out.println(searcher.getDist());
                 }
                 searcher.clear();
@@ -102,14 +101,14 @@ public class ComparisonTest {
 
             searcher = new ConcurrentBiDijkstra(graph);
             avg = 0; eps = 0;
-            for (int x = 0; x < 50; x++) {
+            for (int x = 0; x < 20; x++) {
 //                System.out.println(x);
                 startTime = System.nanoTime();
                 searcher.search(srcs[x], dsts[x]);
                 endTime = System.nanoTime();
                 avg += ((float) endTime - (float) startTime) / 1000000000;
                 eps += searcher.getExplored() / (((float) endTime - (float) startTime) / 1000000000);
-                if(x == 5){
+                if(x == 10){
                     System.out.println(searcher.getDist());
                 }
                 searcher.clear();
@@ -122,14 +121,14 @@ public class ComparisonTest {
 
             searcher = new ALT(graph, altPreProcess);
             avg = 0; eps = 0;
-            for (int x = 0; x < 50; x++) {
+            for (int x = 0; x < 20; x++) {
 //                System.out.println(x);
                 startTime = System.nanoTime();
                 searcher.search(srcs[x], dsts[x]);
                 endTime = System.nanoTime();
                 avg += ((float) endTime - (float) startTime) / 1000000000;
                 eps += searcher.getExplored() / (((float) endTime - (float) startTime) / 1000000000);
-                if(x == 5){
+                if(x == 10){
                     System.out.println(searcher.getDist());
                 }
                 searcher.clear();
@@ -142,16 +141,15 @@ public class ComparisonTest {
 
             searcher = new BiALT(graph, altPreProcess);
             avg = 0; eps = 0;
-            for (int x = 0; x < 50; x++) {
+            for (int x = 0; x < 20; x++) {
 //                System.out.println(x);
                 startTime = System.nanoTime();
                 searcher.search(srcs[x], dsts[x]);
                 endTime = System.nanoTime();
                 avg += ((float) endTime - (float) startTime) / 1000000000;
                 eps += searcher.getExplored() / (((float) endTime - (float) startTime) / 1000000000);
-                if(x == 5){
+                if(x == 10){
                     System.out.println(searcher.getDist());
-                    System.out.println(searcher.getRoute().size());
                 }
                 searcher.clear();
 
@@ -163,7 +161,7 @@ public class ComparisonTest {
 
             searcher = new ConcurrentBiALT(graph, altPreProcess);
             avg = 0; eps = 0;
-            for (int x = 1; x < 50; x++) {
+            for (int x = 1; x < 20; x++) {
 //                System.out.println(x);
                 startTime = System.nanoTime();
                 searcher.search(srcs[x], dsts[x]);
@@ -171,13 +169,12 @@ public class ComparisonTest {
 //                System.out.println(x + " : " + ((float) endTime - (float) startTime) / 1000000000);
                 avg += ((float) endTime - (float) startTime) / 1000000000;
                 eps += searcher.getExplored() / (((float) endTime - (float) startTime) / 1000000000);
-                if(x == 5){
+                if(x == 10){
                     System.out.println(searcher.getDist());
-                    System.out.println(searcher.getRoute().size());
                 }
                 searcher.clear();
-            }
 
+            }
             System.out.println("ConcurrentBiALT: " + avg / 10);
             System.out.println("EpS:    " + eps / 10);
 
@@ -185,14 +182,14 @@ public class ComparisonTest {
 
             searcher = new ContractionALT(graph, altPreProcess);
             avg = 0; eps = 0;
-            for (int x = 1; x < 50; x++) {
+            for (int x = 1; x < 20; x++) {
                 startTime = System.nanoTime();
                 searcher.search(srcs[x], dsts[x]);
                 endTime = System.nanoTime();
-//                System.out.println(x + " : " + ((float) endTime - (float) startTime) / 1000000000);
+                System.out.println(x + " : " + ((float) endTime - (float) startTime) / 1000000000);
                 avg += ((float) endTime - (float) startTime) / 1000000000;
                 eps += searcher.getExplored() / (((float) endTime - (float) startTime) / 1000000000);
-                if(x == 5){
+                if(x == 10){
                     System.out.println(searcher.getDist());
                 }
                 searcher.clear();

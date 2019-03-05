@@ -23,8 +23,6 @@ public class Dijkstra implements Searcher {
     private PriorityQueue<DijkstraEntry> pq;
     public int explored;
 
-    private boolean routeFound;
-
     public Dijkstra(project.map.MyGraph graph) {
 
         distTo = new Int2DoubleOpenHashMap();
@@ -55,13 +53,11 @@ public class Dijkstra implements Searcher {
             for (double[] e : graph.fwdAdj(v)){
                 relax(v, e);
                 if(v == dst){
-                    routeFound = true;
                     return;
                 }
             }
         }
 
-        routeFound = false;
         System.out.println("No route found.");
 
     }
@@ -103,23 +99,18 @@ public class Dijkstra implements Searcher {
     }
 
     public ArrayList<Long> getRouteAsWays(){
-        if(routeFound){
-            ArrayList<Long> route = new ArrayList<>();
-            try{
-                long way = 0;
-                int node = dst;
-                while(node != dst){
-                    way = edgeTo.get(node);
-                    node = nodeTo.get(node);
-                    route.add(way);
-                }
+        ArrayList<Long> route = new ArrayList<>();
+        try{
+            long way = 0;
+            int node = dst;
+            while(node != dst){
+                way = edgeTo.get(node);
+                node = nodeTo.get(node);
+                route.add(way);
+            }
 
-            }catch(NullPointerException n){ }
-            return route;
-        }else{
-            return new ArrayList<>();
-        }
-
+        }catch(NullPointerException n){ }
+        return route;
     }
 
 
@@ -132,7 +123,6 @@ public class Dijkstra implements Searcher {
         edgeTo.clear();
         nodeTo.clear();
         pq.clear();
-        routeFound = false;
     }
 
     public int getExplored(){

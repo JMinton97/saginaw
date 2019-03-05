@@ -83,12 +83,12 @@ public class ALTPreProcess {
     }
 
     public void GenerateLandmarks(){
-        Map<Integer, ArrayList<double[]>> fwdCore = graph.getFwdCore();
-        Map<Integer, ArrayList<double[]>> bckCore = graph.getBckGraph();
-        int size = fwdCore.size();
+        Map<Integer, ArrayList<double[]>> fwdGraph = graph.getFwdGraph();
+        Map<Integer, ArrayList<double[]>> bckGraph = graph.getBckGraph();
+        int size = fwdGraph.size();
         Random random = new Random();
-        List<Integer> fwdNodes = new ArrayList<>(fwdCore.keySet());
-        List<Integer> bckNodes = new ArrayList<>(bckCore.keySet());
+        List<Integer> fwdNodes = new ArrayList<>(fwdGraph.keySet());
+        List<Integer> bckNodes = new ArrayList<>(bckGraph.keySet());
 
         if(graph.getRegion().equals("englande")){
 //            landmarks.add(Long.parseLong("27103812"));

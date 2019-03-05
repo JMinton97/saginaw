@@ -117,7 +117,7 @@ class Canvas extends JPanel
 				Thread t = new Thread(tm);
 //				t.start();
 			}
-//			System.out.println(l + " is " +  (int) Math.ceil(xDimension / (double) l) + ", " + (int) Math.ceil(yDimension / (double) l));
+			System.out.println(l + " is " +  (int) Math.ceil(xDimension / (double) l) + ", " + (int) Math.ceil(yDimension / (double) l));
 			for(int x = 0; x < tileGrid.length; x++){
 				for(int y = 0; y < tileGrid[0].length; y++){
 					tileGrid[x][y] = new Tile((l * x), (l * y), l, scale, imageEdge, model.getRegion());
@@ -232,27 +232,23 @@ class Canvas extends JPanel
 		return model.getDimensions();
 	}
 
-	public void drawRoute(ArrayList<ArrayList<Point2D.Double>> route, Graphics2D g){
+	public void drawRoute(ArrayList<Point2D.Double> route, Graphics2D g){
 //		route = doug.simplify(route, zoom / 50000);
 //		long startTime = System.nanoTime();
 		if(route.size() > 0){
-			for(ArrayList<Point2D.Double> subRoute : route){
-				if(subRoute.size() > 0){
-					Path2D path = new Path2D.Double();
-					Point2D first = geoToCanvas(subRoute.get(0));
-					path.moveTo((int) first.getX(), (int) first.getY());
-					for(Point2D.Double point : subRoute){
-						point = geoToCanvas(point);
-						path.lineTo((int) point.getX(), (int) point.getY());
-					}
-					g.setColor(Color.RED.darker());
-					g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-					g.draw(path);
-					g.setColor(Color.RED);
-					g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-					g.draw(path);
-				}
+			Path2D path = new Path2D.Double();
+			Point2D first = geoToCanvas(route.get(0));
+			path.moveTo((int) first.getX(), (int) first.getY());
+			for(Point2D.Double point : route){
+				point = geoToCanvas(point);
+				path.lineTo((int) point.getX(), (int) point.getY());
 			}
+			g.setColor(Color.RED.darker());
+			g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+			g.draw(path);
+			g.setColor(Color.RED);
+			g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+			g.draw(path);
 		}
 		long endTime = System.nanoTime();
 //		System.out.println("drawRoute: " + (((float) endTime - (float)startTime) / 1000000000));
