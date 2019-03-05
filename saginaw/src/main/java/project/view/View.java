@@ -2,15 +2,14 @@ package project.view;
 
 import project.controller.Controller;
 import project.model.Model;
-import project.view.actions.ExitAction;
-import project.view.actions.LongRunningAction;
-import project.view.actions.OpenAction;
-import project.view.actions.OpenMapAction;
+import project.search.SearchType;
+import project.view.actions.*;
 
 import javax.swing.*;
 import java.awt.BorderLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
 
 /**
  * User: Alan P. Sexton Date: 21/06/13 Time: 13:42
@@ -63,17 +62,40 @@ public class View extends JFrame
 
 		// Set up the menu bar
 		JMenu fileMenu;
-		fileMenu = new JMenu("File");
+        fileMenu = new JMenu("File");
 		fileMenu.add(openAction);
 		fileMenu.add(longRunningAction);
 		fileMenu.add(openMapAction);
 		fileMenu.addSeparator();
 		fileMenu.add(exitAction);
 
+        JMenu searchMenu;
+        searchMenu = new JMenu("Search method");
+
+		ArrayList<JRadioButtonMenuItem> searchMethods = new ArrayList<>();
+
+
+
+        ButtonGroup searchMethodGroup = new ButtonGroup();
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.DIJKSTRA, "Dijkstra")));
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.BIDIJKSTRA, "Bidirectional Dijkstra")));
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.CONCURRENT_BIDIJKSTRA, "Concurrent Bidirectional Dijkstra")));
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.ALT, "ALT")));
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.BIALT, "Bidirectional ALT")));
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.CONCURRENT_BIALT, "Concurrent Bidirectional ALT")));
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.CONTRACTION_ALT, "CALT (Contraction-ALT)")));
+
+		for(JRadioButtonMenuItem item : searchMethods){
+			searchMethodGroup.add(item);
+			searchMenu.add(item);
+			item.setSelected(true);
+		}
+
 		JMenuBar menuBar;
 
 		menuBar = new JMenuBar();
 		menuBar.add(fileMenu);
+		menuBar.add(searchMenu);
 
 		setJMenuBar(menuBar);
 

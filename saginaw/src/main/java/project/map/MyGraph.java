@@ -37,9 +37,6 @@ public class MyGraph {
     private Pair<Map, Map> graph;
     private Tree tree;
     private int bypassNode;
-    private float totalHeapTime, totalNonHeapTime;
-    private SimpleDateFormat sdf;
-    private Calendar cal;
     private double contractionParameter = 2.5;
     private double hopLimiter = 50;
     private final double DOU_THRESHOLD = .0001;
@@ -74,9 +71,6 @@ public class MyGraph {
         mapRoads = db3.treeMap("map", Serializer.LONG, Serializer.INT_ARRAY).createOrOpen();
 
         makeDictionary(file);
-
-        sdf = new SimpleDateFormat("HH:mm:ss");
-        cal = Calendar.getInstance();
 
 //        File fwdGraphDir = new File(filePrefix.concat("fwdGraph.ser"));
 //        File bckGraphDir = new File(filePrefix.concat("bckGraph.ser"));
@@ -382,11 +376,8 @@ public class MyGraph {
             i++;
 //            System.out.println(i);
             if (i % 100000 == 0) {
-                cal = Calendar.getInstance();
 //                    System.out.println(i + " " + fwdCore.size() + " " + totalHeapTime + " " + totalNonHeapTime + " " + sdf.format(cal.getTime()));
                 System.out.println(i + " " + (100 * ((float) fwdCore.size() / (float) originalSize)) + "%. Heap size " + heap.size());
-                totalHeapTime = 0;
-                totalNonHeapTime = 0;
             }
             Pair<Integer, Double> entry = heap.poll();
 
@@ -543,10 +534,10 @@ public class MyGraph {
 //                        }
 //                        Iterator fwdIt = fwdCore.get((long) beforeEdge[0]).iterator();
 //                        Iterator bckIt = bckCore.get((long) afterEdge[0]).iterator();
-//                        long fwdId = joinWays((long) beforeEdge[2], (long) afterEdge[2]);
-//                        long bckId = joinWays((long) afterEdge[2], (long) beforeEdge[2]);
-                        fwdCore.get((int) beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], (double) beforeEdge[2], beforeEdge[3] + afterEdge[3]});   //add shortcut to forward and backward graph
-                        bckCore.get((int) afterEdge[0]).add(new double[]{beforeEdge[0], beforeEdge[1] + afterEdge[1], (double) afterEdge[2], beforeEdge[3] + afterEdge[3]});
+                        long fwdId = joinWays((long) beforeEdge[2], (long) afterEdge[2]);
+                        long bckId = joinWays((long) afterEdge[2], (long) beforeEdge[2]);
+                        fwdCore.get((int) beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], fwdId, beforeEdge[3] + afterEdge[3]});   //add shortcut to forward and backward graph
+                        bckCore.get((int) afterEdge[0]).add(new double[]{beforeEdge[0], beforeEdge[1] + afterEdge[1], bckId, beforeEdge[3] + afterEdge[3]});
 
 
 //                        while(fwdIt.hasNext()){
@@ -800,10 +791,6 @@ public class MyGraph {
         if(node == Long.parseLong("2322558864")){
             System.out.println(beforeEdges.size() + " " + afterEdges.size() + " " + shortcutCount + " " + maxHop);
         }
-
-
-
-        totalNonHeapTime += (((float) endTime - (float) startTime) / 100000000);
 
         if(shortcutCount > 0){
 
@@ -1321,6 +1308,18 @@ public class MyGraph {
         for(int i = 0; i < ids.length; i++){
             double[] point = dictionary.get(ids[i]);
             points.add(new Point2D.Double(point[0], point[1]));
+        }
+        return points;
+    }
+
+    public ArrayList<Point2D.Double> wayListToNodes(ArrayList<Long> wayList){
+        ArrayList<Point2D.Double> points = new ArrayList<>();
+        for(Long wayId : wayList){
+            int[] ids = mapRoads.get(wayId);
+            for(int i = 0; i < ids.length; i++){
+                double[] point = dictionary.get(ids[i]);
+                points.add(new Point2D.Double(point[0], point[1]));
+            }
         }
         return points;
     }

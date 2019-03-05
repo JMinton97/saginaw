@@ -21,12 +21,12 @@ public class ConcurrentBiDijkstra implements Searcher {
     private HashSet<Integer> uRelaxed;
     private HashSet<Integer> vRelaxed;
     private int overlapNode;
-    private double maxDist; //how far from the nodes we have explored - have we covered minimum distance yet?
     private double bestSeen;
     private int bestPathNode;
     private int exploredA, exploredB;
     private int startNode, endNode;
     private MyGraph graph;
+    private boolean routeFound;
 
     public ConcurrentBiDijkstra(MyGraph graph) {
         int size = graph.getFwdGraph().size();
@@ -69,13 +69,6 @@ public class ConcurrentBiDijkstra implements Searcher {
         bestSeen = Double.MAX_VALUE;
         bestPathNode = 0;
 
-//        double minDist = haversineDistance(startNode, endNode, dictionary);
-        double uFurthest, vFurthest = 0;
-
-//        double competitor;
-
-        maxDist = 0;
-
         Runnable s = () -> {
             while(!uPq.isEmpty() && !Thread.currentThread().isInterrupted()){
                 exploredA++;
@@ -96,6 +89,7 @@ public class ConcurrentBiDijkstra implements Searcher {
                             } else {
                                 overlapNode = bestPathNode;
                             }
+                            routeFound = true;
                             Thread.currentThread().interrupt();
                         }
                     }
@@ -123,6 +117,7 @@ public class ConcurrentBiDijkstra implements Searcher {
                             } else {
                                 overlapNode = bestPathNode;
                             }
+                            routeFound = true;
                             Thread.currentThread().interrupt();
                         }
                     }
@@ -143,6 +138,7 @@ public class ConcurrentBiDijkstra implements Searcher {
 
         if(overlapNode == -1){
             System.out.println("No route found.");
+            routeFound = false;
         }
     }
 
@@ -221,33 +217,31 @@ public class ConcurrentBiDijkstra implements Searcher {
     }
 
     public ArrayList<Long> getRouteAsWays(){
-        int node = overlapNode;
-        ArrayList<Long> route = new ArrayList<>();
-        try{
-//            System.out.println("GETROUTEASWAYS");
-            long way = 0;
-            while(node != startNode && node != endNode){
-//            System.out.println(node + ",");
-                way = uEdgeTo.get(node);
-                node = uNodeTo.get(node);
-//            System.out.println(way);
-                route.add(way);
-            }
+        if(routeFound){
+            int node = overlapNode;
+            ArrayList<Long> route = new ArrayList<>();
+            try{
+                long way = 0;
+                while(node != startNode && node != endNode){
+                    way = uEdgeTo.get(node);
+                    node = uNodeTo.get(node);
+                    route.add(way);
+                }
 
-            Collections.reverse(route);
-            node = overlapNode;
-            while(node != startNode && node != endNode){
-//            System.out.println(node + ".");
-                way = vEdgeTo.get(node);
-                node = vNodeTo.get(node);
-//            System.out.println(way);
-                route.add(way);
-            }
+                Collections.reverse(route);
+                node = overlapNode;
+                while(node != startNode && node != endNode){
+                    way = vEdgeTo.get(node);
+                    node = vNodeTo.get(node);
+                    route.add(way);
+                }
 
-        }catch(NullPointerException n){
-            System.out.println("Null: " + node);
+            }catch(NullPointerException n){
+            }
+            return route;
+        }else{
+            return new ArrayList<>();
         }
-        return route;
     }
 
     public void clear(){
@@ -261,6 +255,8 @@ public class ConcurrentBiDijkstra implements Searcher {
         uRelaxed.clear();
         uNodeTo.clear();
         vNodeTo.clear();
+        routeFound = false;
+
     }
 
     public int getExplored(){

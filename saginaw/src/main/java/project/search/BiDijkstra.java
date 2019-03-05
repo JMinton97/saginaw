@@ -25,6 +25,7 @@ public class BiDijkstra implements Searcher {
     private int explored;
     private long startNode, endNode;
     private MyGraph graph;
+    private boolean routeFound;
 
     public BiDijkstra(MyGraph graph) {
         int size = graph.getFwdGraph().size();
@@ -70,6 +71,7 @@ public class BiDijkstra implements Searcher {
         explored = 0;
 
         while(!(uPq.isEmpty()) && !(vPq.isEmpty())){ //check
+            System.out.println("searching");
             explored += 2;
             int v1 = uPq.poll().getNode();
             for (double[] e : graph.fwdAdj(v1)){
@@ -87,6 +89,7 @@ public class BiDijkstra implements Searcher {
                     } else {
                         overlapNode = bestPathNode;
                     }
+                    routeFound = true;
                     return;
                 }
             }
@@ -107,12 +110,14 @@ public class BiDijkstra implements Searcher {
                     } else {
                         overlapNode = bestPathNode;
                     }
+                    routeFound = true;
                     return;
                 }
             }
         }
         if(uPq.isEmpty() || vPq.isEmpty()) {
             System.out.println("No route found.");
+            routeFound = false;
         }
     }
 
@@ -138,7 +143,6 @@ public class BiDijkstra implements Searcher {
                 vNodeTo.put(w, x); //should be 'nodeBefore'
                 vEdgeTo.put(w, (long) wayId);
                 vPq.add(new DijkstraEntry(w, distToX + weight)); //inefficient?
-
             }
         }
 
@@ -195,27 +199,31 @@ public class BiDijkstra implements Searcher {
     }
 
     public ArrayList<Long> getRouteAsWays(){
-        int node = overlapNode;
-        ArrayList<Long> route = new ArrayList<>();
-        try{
-            long way = 0;
-            while(node != startNode && node != endNode){
-                way = uEdgeTo.get(node);
-                node = uNodeTo.get(node);
-                route.add(way);
-            }
+        if(routeFound){
+            int node = overlapNode;
+            ArrayList<Long> route = new ArrayList<>();
+            try{
+                long way = 0;
+                while(node != startNode && node != endNode){
+                    way = uEdgeTo.get(node);
+                    node = uNodeTo.get(node);
+                    route.add(way);
+                }
 
-            Collections.reverse(route);
-            node = overlapNode;
-            while(node != startNode && node != endNode){
-                way = vEdgeTo.get(node);
-                node = vNodeTo.get(node);
-                route.add(way);
-            }
+                Collections.reverse(route);
+                node = overlapNode;
+                while(node != startNode && node != endNode){
+                    way = vEdgeTo.get(node);
+                    node = vNodeTo.get(node);
+                    route.add(way);
+                }
 
-        }catch(NullPointerException n){
+            }catch(NullPointerException n){
+            }
+            return route;
+        }else{
+            return new ArrayList<>();
         }
-        return route;
     }
 
 
@@ -230,6 +238,8 @@ public class BiDijkstra implements Searcher {
         uRelaxed.clear();
         vNodeTo.clear();
         uNodeTo.clear();
+        routeFound = false;
+
     }
 
     public int getExplored(){

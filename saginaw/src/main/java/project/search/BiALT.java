@@ -1,21 +1,12 @@
 package project.search;
 
-import gnu.trove.map.hash.THashMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.mapdb.BTreeMap;
-import org.nustaq.serialization.FSTObjectInput;
-import org.nustaq.serialization.FSTObjectOutput;
 import project.map.MyGraph;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class BiALT implements Searcher {
@@ -29,7 +20,7 @@ public class BiALT implements Searcher {
     private PriorityQueue<DijkstraEntry> uPq;
     private PriorityQueue<DijkstraEntry> vPq;
     private int start, end;
-    private MyGraph myGraph;
+    private MyGraph graph;
     private ArrayList<Integer> landmarks;
     private Int2ObjectOpenHashMap distancesTo;
     private Int2ObjectOpenHashMap distancesFrom;
@@ -37,16 +28,19 @@ public class BiALT implements Searcher {
     private HashSet<Integer> vRelaxed;
     private int overlapNode;
     private int explored;
+    private double bestSeen;
+    private int bestPathNode;
+    private boolean routeFound;
 
-    public BiALT(MyGraph myGraph, ALTPreProcess altPreProcess) {
-        this.myGraph = myGraph;
+    public BiALT(MyGraph graph, ALTPreProcess altPreProcess) {
+        this.graph = graph;
         landmarks = new ArrayList<>();
 
         landmarks = altPreProcess.landmarks;
         distancesFrom = altPreProcess.distancesFrom;
         distancesTo = altPreProcess.distancesTo;
 
-        int size = myGraph.getFwdGraph().size();
+        int size = graph.getFwdGraph().size();
 
         uDistTo = new Int2DoubleOpenHashMap();
         uEdgeTo = new Int2LongOpenHashMap();
@@ -79,8 +73,8 @@ public class BiALT implements Searcher {
         uPq.add(new DijkstraEntry(start, 0.0));
         vPq.add(new DijkstraEntry(end, 0.0));
 
-        double bestSeen = Double.MAX_VALUE;
-        int bestPathNode = 0;
+        bestSeen = Double.MAX_VALUE;
+        bestPathNode = 0;
 
         double competitor;
 
@@ -89,7 +83,7 @@ public class BiALT implements Searcher {
         OUTER: while(!(uPq.isEmpty()) && !(vPq.isEmpty())) { //check
             explored += 2;
             int v1 = uPq.poll().getNode();
-            for (double[] e : myGraph.fwdAdj(v1)) {
+            for (double[] e : graph.fwdAdj(v1)) {
                 relax(v1, e, true);
                 if (vRelaxed.contains((int) e[0])) {
                     competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((int) e[0]));
@@ -104,11 +98,12 @@ public class BiALT implements Searcher {
                     } else {
                         overlapNode = bestPathNode;
                     }
+                    routeFound = true;
                     return;
                 }
             }
             int v2 = vPq.poll().getNode();
-            for (double[] e : myGraph.bckAdj(v2)) {
+            for (double[] e : graph.bckAdj(v2)) {
                 relax(v2, e, false);
                 if (uRelaxed.contains((int) e[0])) {
                     competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((int) e[0]));
@@ -123,12 +118,14 @@ public class BiALT implements Searcher {
                     } else {
                         overlapNode = bestPathNode;
                     }
+                    routeFound = true;
                     return;
                 }
             }
         }
 
         System.out.println("No route found.");
+        routeFound = false;
     }
 
     private void relax(int x, double[] edge, boolean u){
@@ -236,28 +233,31 @@ public class BiALT implements Searcher {
     }
 
     public ArrayList<Long> getRouteAsWays(){
-        int node = overlapNode;
-        ArrayList<Long> route = new ArrayList<>();
-        try{
-            long way;
-            while(node != start && node != end){
-                way = uEdgeTo.get(node);
-                node = uNodeTo.get(node);
-                route.add(way);
-            }
+        if(routeFound){
+            int node = overlapNode;
+            ArrayList<Long> route = new ArrayList<>();
+            try{
+                long way = 0;
+                while(node != start && node != end){
+                    way = uEdgeTo.get(node);
+                    node = uNodeTo.get(node);
+                    route.add(way);
+                }
 
-            Collections.reverse(route);
-            node = overlapNode;
-            while(node != start && node != end){
-                way = vEdgeTo.get(node);
-                node = vNodeTo.get(node);
-                route.add(way);
-            }
+                Collections.reverse(route);
+                node = overlapNode;
+                while(node != start && node != end){
+                    way = vEdgeTo.get(node);
+                    node = vNodeTo.get(node);
+                    route.add(way);
+                }
 
-        }catch(NullPointerException n){
-            System.out.println("Null: " + node);
+            }catch(NullPointerException n){
+            }
+            return route;
+        }else{
+            return new ArrayList<>();
         }
-        return route;
     }
 
     public void clear(){
@@ -269,6 +269,8 @@ public class BiALT implements Searcher {
         uPq.clear();
         vRelaxed.clear();
         uRelaxed.clear();
+        routeFound = false;
+
     }
 
     public int getExplored(){
