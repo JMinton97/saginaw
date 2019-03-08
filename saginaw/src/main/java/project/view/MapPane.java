@@ -21,7 +21,7 @@ import java.awt.event.MouseEvent;
 /**
  * User: Alan P. Sexton Date: 20/06/13 Time: 18:00
  */
-class Canvas extends JPanel
+class MapPane extends JPanel
 {
 
 	/**
@@ -53,21 +53,23 @@ class Canvas extends JPanel
 	private int level, modifier;
 	private DouglasPeucker doug;
 	private double dougTolerance;
+	private boolean simplifyRoute;
+	private boolean grid;
 
 	private BufferedImage start, end;
 
 	/**
 	 * The default constructor should NEVER be called. It has been made private
-	 * so that no other class can create a Canvas except by initialising it
+	 * so that no other class can create a MapPane except by initialising it
 	 * properly (i.e. by calling the parameterised constructor)
 	 */
 	@SuppressWarnings("unused")
-	private Canvas()
+	private MapPane()
 	{
 	}
 
 	/**
-	 * Create a <code>Canvas</code> object initialised to the given
+	 * Create a <code>MapPane</code> object initialised to the given
 	 * <code>View</code> and <code>Model</code>
 	 *
 	 * @param view
@@ -78,7 +80,7 @@ class Canvas extends JPanel
 	 * @param controller
 	 *            The Controller object that handles all operations
 	 */
-	public Canvas(Model model, View view, Controller controller)
+	public MapPane(Model model, View view, Controller controller)
 	{
 		this.view = view;
 		this.model = model;
@@ -95,6 +97,10 @@ class Canvas extends JPanel
 		imageEdge = model.getImageEdge();
 
 		image = new BufferedImage(paneX, paneY, 1);
+
+		simplifyRoute = false;
+
+		grid = false;
 
 		try{
 			String filename = "res/icon/start.png";
@@ -152,7 +158,7 @@ class Canvas extends JPanel
 		topLeft = new Point2D.Double((centre.getX() - (((paneX / 2) * zoom) / scale)), (centre.getY() + (((paneY / 2) * zoom) / scale)));
 		bottomRight = new Point2D.Double((centre.getX() + (((paneX / 2) * zoom) / scale)), (centre.getY() - (((paneY / 2) * zoom) / scale)));
 
-//		System.out.println("Canvas zoom: " + zoom);
+//		System.out.println("MapPane zoom: " + zoom);
 
 		g.setColor(new Color(153, 204, 255));
 		g.fillRect(0, 0, paneX, paneY);
@@ -164,7 +170,7 @@ class Canvas extends JPanel
 		boolean flag = true;											//would it be more efficient to declare this outside the method? Ask generally!!!
 
 		level = model.getLevel();
-//		System.out.println("Canvas level: " + level);
+//		System.out.println("MapPane level: " + level);
 		modifier = level;
 
 		tileGrid = layers.get(modifier);
@@ -180,33 +186,37 @@ class Canvas extends JPanel
 					p = geoToCanvas(t.getTopLeft());
 //					System.out.println(p);
 					g.drawImage(t.getImage(), (int) p.getX(), (int) p.getY(), (int) (imageEdge / (zoom / modifier)), (int) (imageEdge / (zoom / modifier)), null);
-//					g.setColor(Color.RED);
-//					g.drawRect((int) p.getX(), (int) p.getY(), (int) (imageEdge / (zoom / modifier)), (int) (imageEdge / (zoom / modifier)));
-//					System.out.println(o.getX() + ", " + o.getY() + "    " + p.getX() + ", " + p.getY());
+					if(grid){
+						g.setColor(Color.RED);
+						g.drawRect((int) p.getX(), (int) p.getY(), (int) (imageEdge / (zoom / modifier)), (int) (imageEdge / (zoom / modifier)));
+					}
 				}
 			}
 		}
 
-		g.drawString(String.valueOf(zoom), 50, 50);
-		g.drawString(String.valueOf(centre.getX()) + " " + String.valueOf(centre.getY()), 50, 100);
-		g.drawString(String.valueOf(dougTolerance), 50, 150);
+//		g.drawString(String.valueOf(zoom), 50, 50);
+//		g.drawString(String.valueOf(centre.getX()) + " " + String.valueOf(centre.getY()), 50, 100);
+//		g.drawString(String.valueOf(dougTolerance), 50, 150);
 
 		drawMarkers((Graphics2D) g);
 
 		if(model.hasRoute){
 			drawRoute(model.getRoute(), (Graphics2D) g);
+			g.setColor(new Color(0, 0, 0));
+			g.setFont(new Font("Ubuntu", Font.BOLD, 30));
+			g.drawString("Route length: " + String.valueOf(Math.round(model.getRouteDistance() / 1000) + "km"), 50, 50);
 		}
 
 		g.setColor(Color.RED);
 		((Graphics2D) g).setStroke(new BasicStroke(6));
 
-		// The ViewPort is the part of the canvas that is displayed.
-		// By scrolling the ViewPort, you move it across the full size canvas,
-		// showing only the ViewPort sized window of the canvas at any one time.
+		// The ViewPort is the part of the mapPane that is displayed.
+		// By scrolling the ViewPort, you move it across the full size mapPane,
+		// showing only the ViewPort sized window of the mapPane at any one time.
 
 		if (model.isActive())
 		{
-			// Draw the display image on the full size canvas
+			// Draw the display image on the full size mapPane
 //			g2.drawImage(image, 0, 0, this.getWidth(), this.getHeight(), null);
 
 			// In case there is some animation going on (e.g. mouse dragging),
@@ -221,7 +231,7 @@ class Canvas extends JPanel
 	}
 
 	/**
-	 * Get the preferred size of the canvas.
+	 * Get the preferred size of the mapPane.
 	 * 
 	 * @return The <code>Dimension</code> object containing the size of the
 	 *         underlying image in the model, if one exits, or
@@ -233,26 +243,30 @@ class Canvas extends JPanel
 	}
 
 	public void drawRoute(ArrayList<ArrayList<Point2D.Double>> route, Graphics2D g){
-//		route = doug.simplify(route, zoom / 50000);
-//		long startTime = System.nanoTime();
-		if(route.size() > 0){
-			for(ArrayList<Point2D.Double> subRoute : route){
-				if(subRoute.size() > 0){
-					Path2D path = new Path2D.Double();
-					Point2D first = geoToCanvas(subRoute.get(0));
-					path.moveTo((int) first.getX(), (int) first.getY());
-					for(Point2D.Double point : subRoute){
-						point = geoToCanvas(point);
-						path.lineTo((int) point.getX(), (int) point.getY());
-					}
-					g.setColor(Color.RED.darker());
-					g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-					g.draw(path);
-					g.setColor(Color.RED);
-					g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-					g.draw(path);
-				}
+//
+		ArrayList<Point2D.Double> fullRoute = new ArrayList<>();
+
+		for(ArrayList<Point2D.Double> subRoute : route) {
+			fullRoute.addAll(subRoute);
+		}
+
+		if(simplifyRoute){ fullRoute = DouglasPeucker.simplify(fullRoute, zoom / 50000); }
+
+		if(fullRoute.size() > 0){
+			Path2D path = new Path2D.Double();
+			Point2D first = geoToCanvas(fullRoute.get(0));
+			path.moveTo((int) first.getX(), (int) first.getY());
+			for(Point2D.Double point : fullRoute){
+				point = geoToCanvas(point);
+				path.lineTo((int) point.getX(), (int) point.getY());
 			}
+			g.setColor(Color.RED.darker());
+			g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+			g.draw(path);
+			g.setColor(Color.RED);
+			g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+			g.draw(path);
+
 		}
 		long endTime = System.nanoTime();
 //		System.out.println("drawRoute: " + (((float) endTime - (float)startTime) / 1000000000));
@@ -309,8 +323,8 @@ class Canvas extends JPanel
 		return new double[]{geoX, geoY};
 	}
 
-	public void upDoug(){
-		dougTolerance *= 1.25;
+	public void toggleDoug(){
+		simplifyRoute = !simplifyRoute;
 	}
 
 	public void downDoug(){
@@ -332,5 +346,16 @@ class Canvas extends JPanel
 
 	public Point2D getBottomRight(){
 		return bottomRight;
+	}
+
+	protected void changeMapSize(int width, int height){
+		image = new BufferedImage(width, height, 1);
+		this.paneX = width;
+		this.paneY = height;
+	}
+
+	protected void toggleGrid(){
+		grid = !grid;
+		repaint();
 	}
 }

@@ -22,7 +22,7 @@ public class TestRun {
     public static void main(String[] args) throws InterruptedException{
 
         long startTime, endTime;
-        String region = "britain";
+        String region = "england";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 
@@ -56,11 +56,11 @@ public class TestRun {
             endTime = System.nanoTime();
             System.out.println("Making graph time: " + (((float) endTime - (float)startTime) / 1000000000));
 
-            System.out.println("Dictionary: " + graph.getDictionary().size());
+//            System.out.println("Dictionary: " + graph.getDictionary().size());
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
-            ALTPreProcess altPreProcess = new ALTPreProcess(graph);
+            ALTPreProcess altPreProcess = new ALTPreProcess(graph, false);
 
             System.exit(0);
 
@@ -399,6 +399,7 @@ public class TestRun {
 ////            map.drawRoute(route);
 ////            map.saveMap();
         } catch (IOException e) {
+            System.out.println("AAAAAAGGGHGHHHHH");
             e.printStackTrace();
         }
     }

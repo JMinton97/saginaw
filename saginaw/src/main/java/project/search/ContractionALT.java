@@ -104,11 +104,6 @@ public class ContractionALT implements Searcher {
 
         DijkstraEntry v;
 
-        forDTV = (double[]) distancesTo.get(proxyEnd);
-        forDFV = (double[]) distancesFrom.get(proxyEnd);
-        backDTV = (double[]) distancesTo.get(proxyStart);
-        backDFV = (double[]) distancesFrom.get(proxyStart);
-
         STAGE1: while(!uPq.isEmpty() || !vPq.isEmpty()){ //check
             if(!uPq.isEmpty()){
                 explored++;
@@ -229,6 +224,13 @@ public class ContractionALT implements Searcher {
         proxyStart = coreSQ.peek().getNode();
         proxyEnd = coreTQ.peek().getNode();
 
+        forDTV = (double[]) distancesTo.get(proxyEnd);
+        forDFV = (double[]) distancesFrom.get(proxyEnd);
+        backDTV = (double[]) distancesTo.get(proxyStart);
+        backDFV = (double[]) distancesFrom.get(proxyStart);
+
+        System.out.println("stage 2");
+
         Runnable s = () -> {
             while(!coreSQ.isEmpty() && !Thread.currentThread().isInterrupted()){
                 exploredA++;
@@ -259,6 +261,7 @@ public class ContractionALT implements Searcher {
 
         Runnable t = () -> {
             while(!coreTQ.isEmpty() && !Thread.currentThread().isInterrupted()){
+
                 exploredB++;
                 int v2 = coreTQ.poll().getNode();
                 for (double[] e : graph.bckCoreAdj(v2)){
@@ -384,22 +387,44 @@ public class ContractionALT implements Searcher {
     }
 
     public ArrayList<Integer> getRoute(){
-        ArrayList<Integer> route = new ArrayList<>();
-        int node = overlapNode;
-        route.add(overlapNode);
-        while(node != start && node != end){
-            node = uNodeTo.get(node);
-            route.add(node);
+        if(routeFound){
+            int node = overlapNode;
+//            System.out.println(overlapNode);
+            ArrayList<Integer> route = new ArrayList<>();
+            try{
+                long way = 0;
+                while(node != start && node != end){
+                    way = uEdgeTo.get(node);
+                    node = uNodeTo.get(node);
+                    if(node == -1){
+                        break;
+                    }
+                    route.add(node);
+//                    System.out.println(node);
+                }
+
+//                System.out.println("Done to.");
+
+                Collections.reverse(route);
+//                System.out.println(overlapNode);
+                node = overlapNode;
+                while(node != start && node != end){
+                    way = vEdgeTo.get(node);
+                    node = vNodeTo.get(node);
+                    if(node == -1){
+                        break;
+                    }
+                    route.add(node);
+//                    System.out.println(node);
+                }
+
+            }catch(NullPointerException n){
+                System.out.println("null!");
+            }
+            return route;
+        }else{
+            return new ArrayList<>();
         }
-        Collections.reverse(route);
-        node = overlapNode;
-        while(node != start && node != end){
-            node = vNodeTo.get(node);
-            route.add(node);
-            System.out.println(route.size());
-            System.out.println(start + " " + end);
-        }
-        return route;
     }
 
     public ArrayList<Long> getRouteAsWays(){

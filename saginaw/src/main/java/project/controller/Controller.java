@@ -182,8 +182,8 @@ public class Controller
 		model.clearMarkers();
 	}
 
-	public void upDoug(){
-		view.upDoug();
+	public void toggleDoug(){
+		view.toggleDoug();
 	}
 
 	public void downDoug(){

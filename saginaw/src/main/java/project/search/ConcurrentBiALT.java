@@ -233,20 +233,44 @@ public class ConcurrentBiALT implements Searcher {
     }
 
     public ArrayList<Integer> getRoute(){
-        ArrayList<Integer> route = new ArrayList<>();
-        int node = overlapNode;
-        route.add(overlapNode);
-        while(node != start){
-            node = uNodeTo.get(node);
-            route.add(node);
+        if(routeFound){
+            int node = overlapNode;
+//            System.out.println(overlapNode);
+            ArrayList<Integer> route = new ArrayList<>();
+            try{
+                long way = 0;
+                while(node != start && node != end){
+                    way = uEdgeTo.get(node);
+                    node = uNodeTo.get(node);
+                    if(node == -1){
+                        break;
+                    }
+                    route.add(node);
+//                    System.out.println(node);
+                }
+
+//                System.out.println("Done to.");
+
+                Collections.reverse(route);
+//                System.out.println(overlapNode);
+                node = overlapNode;
+                while(node != start && node != end){
+                    way = vEdgeTo.get(node);
+                    node = vNodeTo.get(node);
+                    if(node == -1){
+                        break;
+                    }
+                    route.add(node);
+//                    System.out.println(node);
+                }
+
+            }catch(NullPointerException n){
+                System.out.println("null!");
+            }
+            return route;
+        }else{
+            return new ArrayList<>();
         }
-        Collections.reverse(route);
-        node = overlapNode;
-        while(node != end){
-            node = vNodeTo.get(node);
-            route.add(node);
-        }
-        return route;
     }
 
     public ArrayList<Long> getRouteAsWays(){

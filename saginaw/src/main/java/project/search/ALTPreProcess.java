@@ -24,17 +24,23 @@ public class ALTPreProcess {
 
     MyGraph graph;
 
-    public ALTPreProcess(MyGraph graph) throws IOException {
+    public ALTPreProcess(MyGraph graph, boolean core) throws IOException {
         String filePrefix = graph.getFilePrefix();
         distancesTo = new Int2ObjectOpenHashMap<double[]>(); //need to compute
         distancesFrom = new Int2ObjectOpenHashMap<double[]>();
         landmarks = new ArrayList<>();
         this.graph = graph;
 
-        GenerateLandmarks();
+        GenerateLandmarks(core);
         DijkstraLandmarks dj;
 
-        File dfDir = new File(filePrefix.concat("distancesFrom.ser"));
+        File dfDir;
+
+        if(core){
+            dfDir = new File(filePrefix.concat("coreDistancesFrom.ser"));
+        }else{
+            dfDir = new File(filePrefix.concat("distancesFrom.ser"));
+        }
         if(dfDir.exists()){
 //            System.out.println("Found distancesFrom.");
             FileInputStream fileIn = new FileInputStream(dfDir);
@@ -47,18 +53,22 @@ public class ALTPreProcess {
             fileIn.close();
             objectIn.close();
         } else {
-            dj = new DijkstraLandmarks(graph, landmarks, true);
+            dj = new DijkstraLandmarks(graph, landmarks, true, core);
             distancesFrom = dj.getDistTo();
             FileOutputStream fileOut = new FileOutputStream(dfDir);
             FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
             objectOut.writeObject(distancesFrom);
             objectOut.close();
             dj.clear();
-            distancesFrom = null;
         }
 //        System.out.println("Done first bit");
 
-        File dtDir = new File(filePrefix.concat("distancesTo.ser"));
+        File dtDir;
+        if(core){
+            dtDir = new File(filePrefix.concat("coreDistancesTo.ser"));
+        }else{
+            dtDir = new File(filePrefix.concat("distancesTo.ser"));
+        }
         if(dtDir.exists()){
 //            System.out.println("Found distancesTo.");
             FileInputStream fileIn = new FileInputStream(dtDir);
@@ -71,24 +81,36 @@ public class ALTPreProcess {
             fileIn.close();
             objectIn.close();
         } else {
-            dj = new DijkstraLandmarks(graph, landmarks, false);                             // <-- need reverse graph here
+            dj = new DijkstraLandmarks(graph, landmarks, false, core);                             // <-- need reverse graph here
             distancesTo = dj.getDistTo();
             FileOutputStream fileOut = new FileOutputStream(dtDir);
             FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
             objectOut.writeObject(distancesTo);
             objectOut.close();
             dj.clear();
-            distancesTo = null;
         }
     }
 
-    public void GenerateLandmarks(){
-        Map<Integer, ArrayList<double[]>> fwdCore = graph.getFwdCore();
-        Map<Integer, ArrayList<double[]>> bckCore = graph.getBckGraph();
-        int size = fwdCore.size();
+    public void GenerateLandmarks(boolean core){
+        int size;
+        Map<Integer, ArrayList<double[]>> fwd;
+        Map<Integer, ArrayList<double[]>> bck;
+
+
+        if(core){
+            fwd = graph.getFwdCore();
+            bck = graph.getBckCore();
+            size = fwd.size();
+
+        }else{
+            fwd = graph.getFwdGraph();
+            bck = graph.getBckGraph();
+            size = fwd.size();
+        }
+
         Random random = new Random();
-        List<Integer> fwdNodes = new ArrayList<>(fwdCore.keySet());
-        List<Integer> bckNodes = new ArrayList<>(bckCore.keySet());
+        List<Integer> fwdNodes = new ArrayList<>(fwd.keySet());
+        List<Integer> bckNodes = new ArrayList<>(bck.keySet());
 
         if(graph.getRegion().equals("englande")){
 //            landmarks.add(Long.parseLong("27103812"));

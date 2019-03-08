@@ -1,7 +1,6 @@
 package project.view;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
@@ -60,9 +59,9 @@ public class Tile {
         return image;
     }
 
-    public void check(Canvas canvas){
+    public void check(MapPane mapPane){
 //        System.out.println((System.nanoTime() - lastView)/100000000);
-        if(!overlaps(canvas.getTopLeft(), canvas.getBottomRight())){
+        if(!overlaps(mapPane.getTopLeft(), mapPane.getBottomRight())){
             if((System.nanoTime() - lastView)/1000000000 > 5){
                 if(image != null){
                     image = null;

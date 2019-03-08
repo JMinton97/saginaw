@@ -55,9 +55,12 @@ public class Model {
 	private ArrayList<ArrayList<Point2D.Double>> routeNodes;
 	private HashMap<double[], Integer> closestNodes;
 	private ALTPreProcess preProcess;
+	private ALTPreProcess corePreProcess;
 
 	public boolean hasRoute;
 	public boolean pivoted;
+
+	private double routeDistance;
 
 	private ArrayList<Searcher> searcherList;
 
@@ -78,8 +81,15 @@ public class Model {
 			e.printStackTrace();
 		}
 
+//		try{
+//			preProcess = new ALTPreProcess(graph, false);
+//		} catch(IOException e){
+//			System.out.println("IO error in ALTPreProcess.");
+//			System.exit(0);
+//		}
+
 		try{
-			preProcess = new ALTPreProcess(graph);
+			corePreProcess = new ALTPreProcess(graph, true);
 		} catch(IOException e){
 			System.out.println("IO error in ALTPreProcess.");
 			System.exit(0);
@@ -108,6 +118,8 @@ public class Model {
 		origin = map.getOrigin();
 
 		closestNodes = new HashMap<>();
+
+		routeDistance = 0;
 
 	}
 
@@ -271,7 +283,7 @@ public class Model {
 				searcherList.clear();
 				searcherList.add(new Dijkstra(graph));
 				searcherList.add(new Dijkstra(graph));
-				return;
+				break;
 
 			case BIDIJKSTRA:
 				searcherList.clear();
@@ -279,41 +291,43 @@ public class Model {
 				System.out.println(searcherList.size());
 				searcherList.add(new BiDijkstra(graph));
 				searcherList.add(new BiDijkstra(graph));
-				return;
+				break;
 
 			case CONCURRENT_BIDIJKSTRA:
 				searcherList.clear();
 				searcherList.add(new ConcurrentBiDijkstra(graph));
 				searcherList.add(new ConcurrentBiDijkstra(graph));
-				return;
+				break;
 
 			case ALT:
 				searcherList.clear();
 				searcherList.add(new ALT(graph, preProcess));
 				searcherList.add(new ALT(graph, preProcess));
-				return;
+				break;
 
 			case BIALT:
 				searcherList.clear();
 				searcherList.add(new BiALT(graph, preProcess));
 				searcherList.add(new BiALT(graph, preProcess));
-				return;
+				break;
 
 			case CONCURRENT_BIALT:
 				searcherList.clear();
 				searcherList.add(new ConcurrentBiALT(graph, preProcess));
 				searcherList.add(new ConcurrentBiALT(graph, preProcess));
-				return;
+				break;
 
 			case CONTRACTION_DIJKSTRA:
 //				searcherList.add(new Con)
 
 			case CONTRACTION_ALT:
 				searcherList.clear();
-				searcherList.add(new ContractionALT(graph, preProcess));
-				searcherList.add(new ContractionALT(graph, preProcess));
-				return;
-
+				searcherList.add(new ContractionALT(graph, corePreProcess));
+				searcherList.add(new ContractionALT(graph, corePreProcess));
+				break;
+		}
+		if(hasRoute){
+			betterFindRoutes();
 		}
 
 	}
@@ -375,7 +389,7 @@ public class Model {
 	}
 
 	public void zoomOut() {
-		if(zoom.multiply(BigDecimal.valueOf(1.1)).compareTo(BigDecimal.valueOf(9)) < 0){
+		if(zoom.multiply(BigDecimal.valueOf(1.1)).compareTo(BigDecimal.valueOf(10)) < 0){
 			zoom = zoom.add(BigDecimal.valueOf(0.05));
 		}
 
@@ -388,7 +402,7 @@ public class Model {
 		double yDif = zoomPoint[1] - centreCoord.getY();
 
 		double oldZoom = modZoom;
-		if(zoom.multiply(BigDecimal.valueOf(1.1)).compareTo(BigDecimal.valueOf(9)) < 0){
+		if(zoom.multiply(BigDecimal.valueOf(1.1)).compareTo(BigDecimal.valueOf(10)) < 0){
 			zoom = zoom.add(BigDecimal.valueOf(0.05));
 		}
 
@@ -444,6 +458,7 @@ public class Model {
 	}
 
 	public void clearMarkers(){
+		routeDistance = 0;
 		markers.clear();
 		flags = new ArrayList<>();
 		pivoted = false;
@@ -454,6 +469,7 @@ public class Model {
 		return markers;
 	}
 
+	public double getRouteDistance() { return routeDistance; }
 
 //	public void findRouteAlternate() {
 //		if(markers.size() > 1){
@@ -571,6 +587,7 @@ public class Model {
 
 
 	public void betterFindRoutes() {
+		routeDistance = 0;
 		System.out.println();
 		ArrayList<Thread> routeThreads = new ArrayList<>();
 		if (markers.size() > 1) {
@@ -580,6 +597,7 @@ public class Model {
 				final int z = x;
 				if (!flags.get(x)) {
 					Runnable routeSegmentThread = () -> {
+						long startTime = System.nanoTime();
 						int src, dst;
 						if (!closestNodes.containsKey(markers.get(z))) {
 							src = graph.findClosest(markers.get(z));
@@ -597,13 +615,31 @@ public class Model {
 //                        System.out.println("before " + Thread.currentThread().getId());
 						searcher.search(src, dst);
 //                        System.out.println("after " + Thread.currentThread().getId());
-						System.out.println("getting nodes...");
+						long endTime = System.nanoTime();
+						System.out.println("	search time: " + (((float) endTime - (float) startTime) / 1000000000));
+//						System.out.println("getting nodes...");
+						startTime = System.nanoTime();
 						if(routeNodes.size() > z){
-                            routeNodes.set(z, graph.wayListToNodes(searcher.getRouteAsWays()));
+//                            routeNodes.set(z, graph.wayListToNodes(searcher.getRouteAsWays()));
+							routeNodes.set(z, graph.refsToNodes(searcher.getRoute()));
                         } else {
-						    routeNodes.add(graph.wayListToNodes(searcher.getRouteAsWays()));
+//						    routeNodes.add(graph.wayListToNodes(searcher.getRouteAsWays()));
+							routeNodes.add(graph.refsToNodes(searcher.getRoute()));
                         }
-						System.out.println("				...got nodes.");
+                        endTime = System.nanoTime();
+						System.out.println("	points time: " + (((float) endTime - (float) startTime) / 1000000000));
+
+						routeDistance += searcher.getDist();
+
+//						Runnable getFulRouteThread = () -> {
+//							if(routeNodes.size() > z){
+//								routeNodes.set(z, graph.wayListToFirstNodes(searcher.getRouteAsWays()));
+//							} else {
+//								routeNodes.add(graph.wayListToFirstNodes(searcher.getRouteAsWays()));
+//							}
+//						}
+
+//						System.out.println("				...got nodes.");
 						flags.set(z, true);
 //						System.out.println("before clear");
 						searcher.clear();
@@ -629,23 +665,26 @@ public class Model {
 
 			boolean running = true;
 
-			for(Thread t : routeThreads){
-				try{
-					System.out.println("join wait");
-					t.join();
-				} catch(InterruptedException e){
-					System.out.println("Error with thread " + t.getId());
-				}
-			}
-
-
-//			while(running){
-//				running = false;
-//				for(Thread routeThread : routeThreads){
-//					System.out.println("waiting");
-//					running = (running || routeThread.isAlive());
+//			for(Thread t : routeThreads){
+//				try{
+//					System.out.println("join wait");
+//					t.join();
+//				} catch(InterruptedException e){
+//					System.out.println("Error with thread " + t.getId());
 //				}
 //			}
+
+
+			while(running){
+//				try{
+//					Thread.sleep(50);
+//				}catch(InterruptedException e){}
+				running = false;
+				for(Thread routeThread : routeThreads){
+//					System.out.println("waiting");
+					running = (running || routeThread.isAlive());
+				}
+			}
 
             System.out.println("Finished.");
 		}

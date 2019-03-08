@@ -53,7 +53,6 @@ public class ALT implements Searcher {
         explored = 0;
 
         OUTER: while(!pq.isEmpty()){
-            System.out.println("searching");
             explored++;
             int v = pq.poll().getNode();
             for (double[] e : graph.fwdAdj(v)){

@@ -4,9 +4,7 @@ import project.controller.Controller;
 import project.model.Model;
 
 import javax.swing.event.MouseInputListener;
-import java.awt.Color;
 import java.awt.Graphics;
-import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 
 /**
@@ -56,7 +54,7 @@ class CanvasMouseListener implements MouseInputListener
 //			g.setColor(col);
 
 //			controller.moveMap(x2 - x1, y2 - y1);
-			view.getCanvas().repaint();
+			view.getMapPane().repaint();
 		}
 	}
 
@@ -74,6 +72,7 @@ class CanvasMouseListener implements MouseInputListener
 			model.addMarker(loc);
 //			System.out.println("getClick: " + (((float) endTime - (float)startTime) / 1000000000));
 			view.repaint();
+			view.updateInfo();
 		}
 //		long endTime = System.nanoTime();
 //		System.out.println("mouseClicked: " + (((float) endTime - (float)startTime) / 1000000000));
@@ -82,7 +81,7 @@ class CanvasMouseListener implements MouseInputListener
 	@Override
 	public void mousePressed(MouseEvent e)
 	{
-		if(view.getCanvas().clickedRoute(e)){
+		if(view.getMapPane().clickedRoute(e)){
 			draggingMap = false;
 		} else {
 			draggingMap = true;
@@ -92,7 +91,7 @@ class CanvasMouseListener implements MouseInputListener
 		x1 = e.getX();
 		y1 = e.getY();
 		mouseDown = true;
-		view.getCanvas().addMouseMotionListener(this);
+		view.getMapPane().addMouseMotionListener(this);
 	}
 
 	@Override
@@ -100,7 +99,7 @@ class CanvasMouseListener implements MouseInputListener
 	{
 		if (!model.isActive())
 			return;
-		view.getCanvas().removeMouseMotionListener(this);
+		view.getMapPane().removeMouseMotionListener(this);
 		mouseDown = false;
 		x2 = e.getX();
 		y2 = e.getY();
@@ -136,7 +135,8 @@ class CanvasMouseListener implements MouseInputListener
 		}
 		x1 = x2;
 		y1 = y2;
-		view.getCanvas().repaint();
+		view.getMapPane().repaint();
+		view.updateInfo();
 	}
 
 	@Override

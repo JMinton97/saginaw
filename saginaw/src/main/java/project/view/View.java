@@ -1,14 +1,16 @@
 package project.view;
 
+import com.google.common.math.DoubleMath;
 import project.controller.Controller;
 import project.model.Model;
 import project.search.SearchType;
 import project.view.actions.*;
 
 import javax.swing.*;
-import java.awt.BorderLayout;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.*;
+import java.awt.event.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 
 /**
@@ -20,61 +22,79 @@ public class View extends JFrame
 	 * 
 	 */
 	private static final long	serialVersionUID	= -6963519874728205328L;
-	private Canvas				canvas				= null;
-	private JScrollPane			canvasScrollPane;
+	private MapPane mapPane = null;
+	private JPanel infoPane = null;
+	private JLabel distance;
+	private JFrame frame;
+	private JToolBar toolBar;
+	private Model model;
 
 	public View(Model model, Controller controller)
 	{
 		super("Saginaw v0.1");
 		controller.addView(this);
 
-		// We will use the default BorderLayout, with a scrolled panel in
+		frame = this;
+
+		this.model = model;
+
+		// We will use the default BorderLayout, with a panel in
 		// the centre area, a tool bar in the NORTH area and a menu bar
 
-		canvasScrollPane = new HVMouseWheelScrollPane();
+		mapPane = new MapPane(model, this, controller);
+		getContentPane().add(mapPane, BorderLayout.CENTER);
 
-		// The default when scrolling is very slow. Set the increment as
-		// follows:
-		canvasScrollPane.getVerticalScrollBar().setUnitIncrement(16);
-		canvasScrollPane.getHorizontalScrollBar().setUnitIncrement(16);
-
-		canvas = new Canvas(model, this, controller);
-		canvasScrollPane.setViewportView(canvas);
-		getContentPane().add(canvasScrollPane, BorderLayout.CENTER);
+		infoPane = new InfoPane();
 
 		// exitAction has to be final because we reference it from within
 		// an inner class
 
-		final AbstractAction exitAction = new ExitAction(this, controller);
-		AbstractAction openAction = new OpenAction(this, controller);
-		AbstractAction openMapAction = new OpenMapAction(this, controller);
-		AbstractAction longRunningAction = new LongRunningAction(this,
-				controller);
-
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-		addWindowListener(new WindowAdapter()
-		{
-			public void windowClosing(WindowEvent we)
-			{
-				exitAction.actionPerformed(null);
-			}
-		});
+//		addWindowListener(new WindowAdapter()
+//		{
+//			public void windowClosing(WindowEvent we)
+//			{
+//				exitAction.actionPerformed(null);
+//			}
+//		});
 
 		// Set up the menu bar
 		JMenu fileMenu;
         fileMenu = new JMenu("File");
-		fileMenu.add(openAction);
-		fileMenu.add(longRunningAction);
-		fileMenu.add(openMapAction);
 		fileMenu.addSeparator();
-		fileMenu.add(exitAction);
 
         JMenu searchMenu;
         searchMenu = new JMenu("Search method");
 
 		ArrayList<JRadioButtonMenuItem> searchMethods = new ArrayList<>();
 
+		AbstractAction clearRouteAction = new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				controller.clearMarkers();
+				mapPane.repaint();
+			}
+		};
+		clearRouteAction.putValue(Action.SMALL_ICON, new ImageIcon(
+				getClass().getResource("/project/icons/exit.png")));
 
+		AbstractAction showGridAction = new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				mapPane.toggleGrid();
+			}
+		};
+		showGridAction.putValue(Action.SMALL_ICON, new ImageIcon(
+				getClass().getResource("/project/icons/exit.png")));
+
+		AbstractAction repaintMapAction = new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				mapPane.repaint();
+			}
+		};
+		repaintMapAction.putValue(Action.SMALL_ICON, new ImageIcon(
+				getClass().getResource("/project/icons/exit.png")));
 
         ButtonGroup searchMethodGroup = new ButtonGroup();
 		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.DIJKSTRA, "Dijkstra")));
@@ -100,62 +120,81 @@ public class View extends JFrame
 		setJMenuBar(menuBar);
 
 		// Set up the tool bar
-		JToolBar toolBar;
 		toolBar = new JToolBar();
+//		toolBar.setMargin(new Insets(10, 10, 10, 10));
 		toolBar.setFloatable(true);
 		toolBar.setRollover(true);
-		toolBar.add(exitAction);
-		toolBar.add(openMapAction);
 		toolBar.addSeparator();
-		toolBar.add(openAction);
-		toolBar.add(longRunningAction);
+		distance = new JLabel();
+		updateInfo();
+		toolBar.add("distance", distance);
+		toolBar.addSeparator(new Dimension(100, 10));
+		toolBar.add(clearRouteAction);
+		toolBar.add(showGridAction);
+		toolBar.add(repaintMapAction);
 
 		getContentPane().add(toolBar, BorderLayout.NORTH);
+
+		getContentPane().add(makeInfoPane(), BorderLayout.SOUTH);
 
 		pack();
 		setBounds(0, 0, 1200, 800);
 
-		canvas.grabFocus();
+		addComponentListener(new ComponentAdapter() {
+			public void componentResized(ComponentEvent componentEvent) {
+				mapPane.changeMapSize(frame.getWidth(), frame.getHeight());
+			}
+		});
+
+		mapPane.grabFocus();
+		updateInfo();
+		toolBar.updateUI();
 	}
+
+	private JPanel makeInfoPane(){
+		SpringLayout spr = new SpringLayout();
+		JPanel routeInfo = new JPanel(spr);
+		routeInfo.setPreferredSize(new Dimension(1200,100));
+		distance = new JLabel("Distance: ");
+		routeInfo.add(distance);
+		spr.putConstraint(SpringLayout.NORTH, distance, 20,
+				SpringLayout.NORTH, routeInfo);
+		spr.putConstraint(SpringLayout.WEST, distance, 20,
+				SpringLayout.WEST, routeInfo);
+		return routeInfo;
+	}
+
 
 	public void adaptToNewImage()
 	{
 //		setCanvasSize();
 	}
 
-	/**
-	 * Adapt the settings for the ViewPort and scroll bars to the dimensions
-	 * required. This needs to be called any time the image changes size.
-	 */
-	protected void setCanvasSize()
+	protected MapPane getMapPane()
 	{
-		canvas.setSize(canvas.getPreferredSize());
-
-		// need this so that the scroll bars knows the size of the canvas that
-		// has to be
-		// scrolled over
-		canvas.validate();
+		return mapPane;
 	}
 
-	protected Canvas getCanvas()
-	{
-		return canvas;
-	}
-
-	protected JScrollPane getCanvasScrollPane()
-	{
-		return canvasScrollPane;
-	}
-
-	public void upDoug(){
-		canvas.upDoug();
+	public void toggleDoug(){
+		mapPane.toggleDoug();
 	}
 
 	public void downDoug(){
-		canvas.downDoug();
+		mapPane.downDoug();
 	}
 
 	public double[] getClickCoordinate(int x, int y){
-		return canvas.getClickCoordinate(x, y);
+		return mapPane.getClickCoordinate(x, y);
+	}
+
+	public void updateInfo(){
+		double distance  = model.getRouteDistance();
+		if(distance < 1200){
+			this.distance.setText("Distance: " + (int) Math.floor(distance) + "m");
+		} else {
+			distance /= 1000;
+			this.distance.setText("Distance: " + new BigDecimal(distance).setScale(2, RoundingMode.HALF_UP).doubleValue() + "km");
+		}
+		toolBar.repaint();
 	}
 }

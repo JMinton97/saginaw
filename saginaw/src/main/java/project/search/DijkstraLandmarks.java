@@ -17,7 +17,7 @@ public class DijkstraLandmarks {
     public int explored;
     ArrayList<Integer> landmarks;
 
-    public DijkstraLandmarks(project.map.MyGraph graph, ArrayList<Integer> startNodes, boolean forwards){
+    public DijkstraLandmarks(project.map.MyGraph graph, ArrayList<Integer> startNodes, boolean forwards, boolean core){
 
         distTo = new Int2ObjectOpenHashMap<double[]>();
         pq = new PriorityQueue();
@@ -29,46 +29,65 @@ public class DijkstraLandmarks {
             initDistance[x] = Double.MAX_VALUE;
         }
 
-        for(int vert : graph.getFwdGraph().keySet()){
+        if(core){
+            for(int vert : graph.getFwdCore().keySet()){
 //            if(vert == Long.parseLong("749671001")){
 //                System.out.println("here");
 //            }
-            if(vert == Long.parseLong("694020801")){
-                System.out.println("here");
+                if(vert == Long.parseLong("694020801")){
+                    System.out.println("here");
+                }
+                distTo.put(vert, initDistance.clone());
             }
-            distTo.put(vert, initDistance.clone());
-        }
 
-        for(int vert : graph.getBckGraph().keySet()){
+            for(int vert : graph.getBckCore().keySet()){
 //            if(vert == Long.parseLong("749671001")){
 //                System.out.println("here");
 //            }
-            if(vert == Long.parseLong("694020801")){
-                System.out.println("here");
+                if(vert == Long.parseLong("694020801")){
+                    System.out.println("here");
+                }
+                distTo.put(vert, initDistance.clone());
             }
-            distTo.put(vert, initDistance.clone());
+        }else{
+            for(int vert : graph.getFwdGraph().keySet()){
+//            if(vert == Long.parseLong("749671001")){
+//                System.out.println("here");
+//            }
+                if(vert == Long.parseLong("694020801")){
+                    System.out.println("here");
+                }
+                distTo.put(vert, initDistance.clone());
+            }
+
+            for(int vert : graph.getBckGraph().keySet()){
+//            if(vert == Long.parseLong("749671001")){
+//                System.out.println("here");
+//            }
+                if(vert == Long.parseLong("694020801")){
+                    System.out.println("here");
+                }
+                distTo.put(vert, initDistance.clone());
+            }
         }
 
-//        System.exit(0);
+
+
 
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 
         for(int x = 0; x < startNodes.size(); x++){
             Calendar cal = Calendar.getInstance();
             System.out.println(x + 1 + " of " + startNodes.size() + " " + sdf.format(cal.getTime()));
-            DijkstraAlgorithm(graph, startNodes.get(x), x, forwards);
+            DijkstraAlgorithm(graph, startNodes.get(x), x, forwards, core);
         }
 
     }
 
-    public void DijkstraAlgorithm(MyGraph graph, int startNode, int index, boolean forwards){
-//        System.out.println();
-//        System.out.println("Start " + startNode + " Index " + index);
+    public void DijkstraAlgorithm(MyGraph graph, int startNode, int index, boolean forwards, boolean core){
 
         double[] distToStart = (double[]) distTo.get(startNode);
-//        System.out.println(Arrays.toString(distToStart));
         distToStart[index] = 0.0;
-//        System.out.println(Arrays.toString(distToStart));
         distTo.put(startNode, distToStart);
 
         Comparator<DijkstraEntry> comparator = new DistanceComparator();
@@ -76,29 +95,30 @@ public class DijkstraLandmarks {
 
         pq.add(new DijkstraEntry(startNode, 0.0));
 
-//        System.out.println(pq.peek().getNode());
-
-        relaxTimeStart = System.nanoTime();
         while(!pq.isEmpty()){
-//            System.out.println("get");
             int v = pq.poll().getNode();
-//            System.out.println(v);
             if(forwards){
-                for (double[] e : graph.fwdAdj(v)){
-//                System.out.println("relax");
-                    relax(v, e, index);
+                if(core){
+                    for (double[] e : graph.fwdCoreAdj(v)){
+                        relax(v, e, index);
+                    }
+                } else {
+                    for (double[] e : graph.fwdAdj(v)){
+                        relax(v, e, index);
+                    }
                 }
             } else {
-                for (double[] e : graph.bckAdj(v)){
-//                System.out.println("relax");
-                    relax(v, e, index);
+                if(core){
+                    for (double[] e : graph.bckCoreAdj(v)){
+                        relax(v, e, index);
+                    }
+                } else {
+                    for (double[] e : graph.bckAdj(v)){
+                        relax(v, e, index);
+                    }
                 }
             }
-
         }
-        relaxTimeEnd = System.nanoTime();
-//        System.out.println("Landmark time: " + (((float) relaxTimeEnd - (float)relaxTimeStart) / 1000000000));
-
         pq = null;
     }
 
@@ -110,21 +130,10 @@ public class DijkstraLandmarks {
         double weight = edge[1];
         double distToV = ((double[]) (distTo.get(v)))[index];
         double[] distToW = (double[]) distTo.get(w);
-//        System.out.println();
-//        System.out.println(v);
-//        System.out.println(w);
-//        System.out.println(index);
-//        System.out.println(distToW[index]);
         if (distToW[index] > (distToV + weight)){
-            putTimeStart = System.nanoTime();
             distToW[index] = distToV + weight;
             distTo.put(w, distToW);
-            putTimeEnd = System.nanoTime();
-            totalPutTime += (putTimeEnd - putTimeStart);
-            addTimeStart = System.nanoTime();
             pq.add(new DijkstraEntry(w, distToV + weight)); //inefficient?
-            addTimeEnd = System.nanoTime();
-            totalAddTime += (addTimeEnd - addTimeStart);
         }
     }
 

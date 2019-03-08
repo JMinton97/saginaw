@@ -26,6 +26,7 @@ public class MyGraph {
 //    public static BTreeMap<Long, double[]> dictionary; //maps a node id to a double array containing the coordinates of the node
     public static ArrayList<double[]> dictionary;
     private static Map<Long, int[]> mapRoads; //a list of all connections between nodes. Later becomes all graph edges.
+    private static Map<Long, int[]> coreMapRoads; //a list of all connections between nodes, in the core.
     private static ConcurrentMap<Integer, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a counter of the number of ways each one is part of
     private static boolean parsingNodes;
 //    private static HashSet<Long> junctions;
@@ -46,6 +47,8 @@ public class MyGraph {
 
     private long startTime;
     private long endTime;
+
+    private float totalMapDBTime;
 
     private String filePrefix, region;
 
@@ -69,6 +72,8 @@ public class MyGraph {
                 .make();
 
         mapRoads = db3.treeMap("map", Serializer.LONG, Serializer.INT_ARRAY).createOrOpen();
+
+        coreMapRoads = db3.treeMap("coreMap", Serializer.LONG, Serializer.INT_ARRAY).createOrOpen();
 
         makeDictionary(file);
 
@@ -140,15 +145,27 @@ public class MyGraph {
             } else {
                 System.out.println("No core found, making now.");
                 contract();
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 timerStart();
-                FileOutputStream fileOut = new FileOutputStream(fwdCoreDir);
-                FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
-                objectOut.writeObject(fwdCore);
-                objectOut.close();
-                fileOut = new FileOutputStream(bckCoreDir);
-                objectOut = new FSTObjectOutput(fileOut);
-                objectOut.writeObject(bckCore);
-                objectOut.close();
+                System.out.println(fwdCore.size());
+                System.out.println(bckCore.size());
+                try{
+                    FileOutputStream fileOut = new FileOutputStream(fwdCoreDir);
+                    FSTObjectOutput objectOut = new FSTObjectOutput(fileOut);
+                    objectOut.writeObject(fwdCore);
+                    objectOut.flush();
+                    fileOut = new FileOutputStream(bckCoreDir);
+                    objectOut = new FSTObjectOutput(fileOut);
+                    objectOut.writeObject(bckCore);
+                    objectOut.flush();
+                }catch(IOException e){
+                    e.printStackTrace();
+                    System.out.println("AHAFIUHDSFIUHSDFIUHDF");
+                }
                 timerEnd("Writing core");
             }
 
@@ -189,10 +206,14 @@ public class MyGraph {
             contract();
 
             timerStart();
-            fileOut = new FileOutputStream(treeDir);
+            fileOut = new FileOutputStream(fwdCoreDir);
             objectOut = new FSTObjectOutput(fileOut);
-            objectOut.writeObject(tree);
-            objectOut.close();
+            objectOut.writeObject(fwdCore);
+            objectOut.flush();
+            fileOut = new FileOutputStream(bckCoreDir);
+            objectOut = new FSTObjectOutput(fileOut);
+            objectOut.writeObject(bckCore);
+            objectOut.flush();
             timerEnd("Writing core");
         }
     }
@@ -375,7 +396,7 @@ public class MyGraph {
         while (!heap.isEmpty()) {
             i++;
 //            System.out.println(i);
-            if (i % 100000 == 0) {
+            if (i % 500000 == 0) {
 //                    System.out.println(i + " " + fwdCore.size() + " " + totalHeapTime + " " + totalNonHeapTime + " " + sdf.format(cal.getTime()));
                 System.out.println(i + " " + (100 * ((float) fwdCore.size() / (float) originalSize)) + "%. Heap size " + heap.size());
             }
@@ -895,11 +916,21 @@ public class MyGraph {
 //        System.out.println();
         int[] first = mapRoads.get(fst);
         int[] second = mapRoads.get(snd);
-        if(first[first.length - 1] == second[0]){
-            mapRoads.put(id, concat(first, second));
-        } else {
-            mapRoads.put(id, concat(second, first));
+
+        if(first == null){
+            first = coreMapRoads.get(fst);
         }
+        if(second == null){
+            second = coreMapRoads.get(snd);
+        }
+
+        if(first[first.length - 1] == second[0]){
+            coreMapRoads.put(id, concat(first, second));
+        } else {
+            coreMapRoads.put(id, concat(second, first));
+        }
+
+
         return id;
     }
 
@@ -1120,13 +1151,14 @@ public class MyGraph {
                                 addWay(w, oneWay, lastRef);
                             } else if (value.matches("secondary|secondary_link")){
                                 addWay(w, oneWay, lastRef);
-                            } else if (value.matches("tertiary|unclassified|residential|service|tertiary_link|road")){
-                                addWay(w, oneWay, lastRef);
-                            } else if(value.matches("motorway|motorway_link")){
-                                addWay(w, oneWay, lastRef);
-                            } else if (value.matches("trunk|trunk_link")) {
+                            } else if (value.matches("tertiary|unclassified|residential|service|tertiary_link|road|cycleway")) {
                                 addWay(w, oneWay, lastRef);
                             }
+//                            } else if(value.matches("motorway|motorway_link")){
+//                                addWay(w, oneWay, lastRef);
+//                            } else if (value.matches("trunk|trunk_link")) {
+//                                addWay(w, oneWay, lastRef);
+//                            }
                         }
                     }
                 }
@@ -1314,9 +1346,41 @@ public class MyGraph {
 
     public ArrayList<Point2D.Double> wayListToNodes(ArrayList<Long> wayList){
         ArrayList<Point2D.Double> points = new ArrayList<>();
+        totalMapDBTime = 0;
+        ArrayList<int[]> allIDs = new ArrayList();
+        for(Long wayId : wayList) {
+            if(coreMapRoads.containsKey(wayId)){
+                allIDs.add(coreMapRoads.get(wayId));
+            } else {
+                allIDs.add(mapRoads.get(wayId));
+            }
+        }
+
+        for(int[] ids : allIDs){
+            for(int i : ids){
+                double[] point = dictionary.get(i);
+                points.add(new Point2D.Double(point[0], point[1]));
+            }
+        }
+//
+//
+//
+//            startTime = System.nanoTime();
+//            int[] ids = mapRoads.get(wayId);
+//            endTime = System.nanoTime();
+//            totalMapDBTime += (((float) endTime - (float) startTime) / 1000000000);
+//
+//
+//        }
+//        System.out.println("MapDB time: " + totalMapDBTime);
+        return points;
+    }
+
+    public ArrayList<Point2D.Double> wayListToFirstNodes(ArrayList<Long> wayList){
+        ArrayList<Point2D.Double> points = new ArrayList<>();
         for(Long wayId : wayList){
             int[] ids = mapRoads.get(wayId);
-            for(int i = 0; i < ids.length; i++){
+            for(int i = 0; i < 1; i++){
                 double[] point = dictionary.get(ids[i]);
                 points.add(new Point2D.Double(point[0], point[1]));
             }

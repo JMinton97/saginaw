@@ -6,9 +6,6 @@ import crosby.binary.Osmformat.*;
 import crosby.binary.file.BlockInputStream;
 import crosby.binary.file.BlockReaderAdapter;
 import net.coobird.thumbnailator.Thumbnails;
-import org.mapdb.DB;
-import org.mapdb.DBMaker;
-import org.mapdb.Serializer;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -18,7 +15,6 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.ConcurrentMap;
 
 //import gnu.trove.map.hash.THashMap;
 //import gnu.trove.set.hash.THashSet;
@@ -31,7 +27,7 @@ public class MyMap2 {
     private double spaceModifierY;
     private static double interval;
     private static boolean parsingNodes;
-    private static boolean parsingPlaces;
+    private static boolean parsingPlacesAndRelations;
     private static boolean parsingWays;
     private static int counter;
     private static int linesDrawn, maxEdge;
@@ -39,6 +35,7 @@ public class MyMap2 {
     public long startTime, endTime;
     public static HashMap<Long, double[]> tileNodes;
     public static HashMap<Long, MyWay>[][] tileWays;
+    public static HashMap<Long, Integer> allRelations;
     private int xDimension, yDimension;
     private int scale;
     private double height, width;
@@ -101,6 +98,11 @@ public class MyMap2 {
             westMost = -8;
             southMost = 49.5;   //BRITAIN
             eastMost = 2;
+        } else if (region == "london") {
+            northMost = 51.8;
+            westMost = -0.7;
+            southMost = 51.2;   //LONDON
+            eastMost = 0.49;
         }
 
         counter = 0;
@@ -161,10 +163,11 @@ public class MyMap2 {
 
         tileNodes = new HashMap<>();
         tileWays = new HashMap[j][j];
+        allRelations = new HashMap<>();
         towns = new ArrayList<>();
         cities = new ArrayList<>();
 
-        parsingPlaces = true;
+        parsingPlacesAndRelations = true;
         parsingWays = false;
         parsingNodes = false;
         InputStream placeInput = new FileInputStream(file);
@@ -227,7 +230,7 @@ public class MyMap2 {
                 System.out.println("bX1: " + bX1 + " bX2: " + bX2 + " bY1: " + bY1 + " bY2: " + bY2);
                 tileNodes.clear();
                 parsingNodes = true;
-                parsingPlaces = false;
+                parsingPlacesAndRelations = false;
                 parsingWays = false;
                 input = new FileInputStream(file);
                 brad = new TestBinaryParser();
@@ -244,7 +247,7 @@ public class MyMap2 {
                     }
                     parsingNodes = false;                                   //or just have a jxj array of hashmaps and put it into the appropriate one.
                     parsingWays = true;
-                    parsingPlaces = false;
+                    parsingPlacesAndRelations = false;
                     input = new FileInputStream(file);
                     brad = new TestBinaryParser();
                     reader = new BlockInputStream(input, brad);
@@ -644,38 +647,66 @@ public class MyMap2 {
 
         @Override
         protected void parseRelations(List<Relation> rels) {
-//            if(!parsingNodes){
-//                if (!rels.isEmpty()) {
-////                    System.out.println("Got some relations to parse.");
-//
-//                    for (Relation r : rels){
-//                        if(r.getId() == Long.parseLong("3084421")){
-//                            System.out.println("TRAWS");
-//                        }
-//                        for (int i = 0; i < r.getKeysCount(); i++) {
-//                            if(getStringById(r.getKeys(i)).equals("natural") && getStringById(r.getVals(i)).equals("water")){
-//                                System.out.println("YES");
-//                                long lastRef = 0;
-//                                for (int k = 0; k < r.getMemidsCount(); k++) { //SMALLER THAN OR EQUAL TO OR NOT?
-//                                    lastRef += (r.getMemids(k));
-//                                    if (getStringById(r.getRolesSid(k)).equals("outer")){
-//                                        System.out.println("Found reservoir: " + lastRef);
-//                                    }
-//                                }
-//                            }
-////                            System.out.println(getStringById(r.getKeys(i)) + " " + getStringById(r.getVals(i)));
-//
-//                        }
-//                        for (int i = 0; i < r.getRolesSidCount(); i++) {
-////                            System.out.println(getStringById(r.getRolesSid(i)));
-//                        }
-////                        System.out.println(r.getRolesSidList());
-////                        System.out.println();
-//                    }
-//
-//                    Relation r = null;
-//                }
-//            }
+            if(parsingPlacesAndRelations){
+                if (!rels.isEmpty()) {
+//                    System.out.println("Got some relations to parse.");
+                    for (Relation r : rels){
+                        int relationType = -1;
+                        String key, value;
+                        for (int i=0 ; i<r.getKeysCount() ; i++) {
+                            key = getStringById(r.getKeys(i));
+                            value = getStringById(r.getVals(i));
+                            if ((key.equals("natural") && value.equals("grass"))
+                                    || (key.equals("leisure") && value.equals("common"))
+                                    || (key.equals("leisure") && value.equals("park"))
+                                    || (key.equals("leisure") && value.equals("golf_course"))
+                                    || value.equals("meadow")
+                                    || value.equals("recreation_ground")
+                                    || value.equals("conservation")
+                                    || value.equals("park")) {
+                                relationType = 0;
+                            }
+
+                            if (key.equals("natural") && (value.equals("moor") || value.equals("heath"))) {
+                                relationType = 1;
+                            }
+
+                            if (key.equals("waterway") && (value.matches("river|stream|canal"))) {
+                                relationType = 2;
+                            }
+
+                            if ((key.equals("natural") && value.equals("water"))
+                                    || value.matches("reservoir|basin")) {
+                                relationType = 3;
+                            }
+
+                            if ((key.equals("natural") && value.equals("wood"))
+                                    || (key.equals("landuse") && value.equals("forest"))) {
+                                relationType = 4;
+                            }
+
+                            if (key.equals("landuse") && (value.equals("residential") || value.equals("retail") ||
+                                    value.equals("school") || value.equals("industrial"))) {
+                                relationType = 5;
+                            }
+
+                        }
+
+                        if(relationType != -1){
+                            for (int j = 0; j < r.getKeysCount(); j++) {
+                                long lastRef = 0;
+                                for (int k = 0; k < r.getMemidsCount(); k++) { //SMALLER THAN OR EQUAL TO OR NOT?
+                                    lastRef += (r.getMemids(k));
+                                    if (getStringById(r.getRolesSid(k)).equals("outer")){
+                                        System.out.println("OUTER: " + lastRef + " " + r.getId());
+                                        allRelations.put(lastRef, relationType);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         @Override
@@ -707,7 +738,7 @@ public class MyMap2 {
                     }
                 }
             }
-            if(parsingPlaces){
+            if(parsingPlacesAndRelations){
                 long lastId = 0;
                 long lastLat = 0;
                 long lastLon = 0;
@@ -749,12 +780,10 @@ public class MyMap2 {
                         towns.add(new Place(name, parseLon(lastLon), parseLat(lastLat)));
                         System.out.println(name);
                     }
-                    if(saveCity){
+                    if(saveCity) {
                         cities.add(new Place(name, parseLon(lastLon), parseLat(lastLat)));
                         System.out.println(name);
                     }
-//                    System.out.println(getStringById(nodes.getKeysValsList().get(i)));
-//                    System.out.println("------------------------");
                 }
             }
         }
@@ -775,19 +804,52 @@ public class MyMap2 {
                 for (Way w : ways) {
                     long lastRef = 0;
                     WAY: for (Long ref : w.getRefsList()) {
+//                        w.
                         lastRef += ref;
                         if (tileNodes.containsKey(lastRef)) {
 //                            if(w.getId() == Long.parseLong("22815916")){
 //                                System.out.println("found ref at x " + bX1 + " y " + bY1);
 //                            }
                             double[] data = tileNodes.get(lastRef);
+
+                            if(allRelations.containsKey(w.getId())){
+                                System.out.println("yup, " + w.getId());
+                                int wayType = allRelations.get(w.getId());
+                                MyWay tempWay = buildMyWay(w);
+                                switch(wayType){
+                                    case 0: //grass
+                                        tempWay.setType(WayType.GREEN);
+                                        tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
+                                        break;
+                                    case 1:
+                                        tempWay.setType(WayType.MOOR);
+                                        tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
+                                        break;
+                                    case 2:
+                                        tempWay.setType(WayType.WATERWAY);
+                                        tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
+                                        break;
+                                    case 3:
+                                        tempWay.setType(WayType.WATERBODY);
+                                        tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
+                                        break;
+                                    case 4:
+                                        tempWay.setType(WayType.TREE);
+                                        tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
+                                        break;
+                                    case 5:
+                                        tempWay.setType(WayType.CITY);
+                                        tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
+                                        break;
+                                }
+                            }
+
                             String key;
                             String value;
                             for (int i=0 ; i<w.getKeysCount() ; i++) {
                                 key = getStringById(w.getKeys(i));
                                 value = getStringById(w.getVals(i));
                                 if(key.equals("highway")){
-//                            System.out.println("GOT A ROAD");
                                     if(value.matches("motorway|motorway_link")){
                                         MyWay tempWay = buildMyWay(w);
                                         tempWay.setType(WayType.ROAD);
@@ -863,7 +925,6 @@ public class MyMap2 {
                                 if(key.equals("landuse") && (value.equals("residential") || value.equals("retail") || value.equals("school") || value.equals("industrial"))){
                                     MyWay tempWay = buildMyWay(w);
                                     tempWay.setType(WayType.CITY);
-//                                    System.out.println("CITY: " + w.getId());
                                     tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
                             }

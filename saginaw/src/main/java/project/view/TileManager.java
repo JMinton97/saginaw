@@ -3,11 +3,11 @@ package project.view;
 public class TileManager implements Runnable {
 
     Tile[][] grid;
-    Canvas canvas;
+    MapPane mapPane;
 
-    public TileManager(Tile[][] grid, Canvas canvas){
+    public TileManager(Tile[][] grid, MapPane mapPane){
         this.grid = grid;
-        this.canvas = canvas;
+        this.mapPane = mapPane;
     }
 
     public void run() {
@@ -15,9 +15,9 @@ public class TileManager implements Runnable {
             for(int x = 0; x < grid.length; x++){
                 for(int y = 0; y < grid[0].length; y++){
 //                    System.out.println(grid[x][y]);
-//                    System.out.println(canvas.getBottomRight());
-                    if(canvas.getBottomRight() != null){
-                        grid[x][y].check(canvas);
+//                    System.out.println(mapPane.getBottomRight());
+                    if(mapPane.getBottomRight() != null){
+                        grid[x][y].check(mapPane);
                     }
                 }
             }

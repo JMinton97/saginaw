@@ -40,7 +40,7 @@ public class ComparisonTest {
             endTime = System.nanoTime();
             System.out.println("Making graph time: " + (((float) endTime - (float) startTime) / 1000000000));
 
-            ALTPreProcess altPreProcess = new ALTPreProcess(graph);
+            ALTPreProcess altPreProcess = new ALTPreProcess(graph, false);
 
             float avg = 0, eps = 0;
 
