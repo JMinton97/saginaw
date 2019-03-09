@@ -81,6 +81,7 @@ public class BiALT implements Searcher {
         explored = 0;
 
         OUTER: while(!(uPq.isEmpty()) && !(vPq.isEmpty())) { //check
+            System.out.println("loop");
             explored += 2;
             int v1 = uPq.poll().getNode();
             for (double[] e : graph.fwdAdj(v1)) {
@@ -216,20 +217,24 @@ public class BiALT implements Searcher {
     }
 
     public ArrayList<Integer> getRoute(){
-        ArrayList<Integer> route = new ArrayList<>();
-        int node = overlapNode;
-        route.add(overlapNode);
-        while(node != start){
-            node = uNodeTo.get(node);
-            route.add(node);
+        if(routeFound){
+            ArrayList<Integer> route = new ArrayList<>();
+            int node = overlapNode;
+            route.add(overlapNode);
+            while(node != start){
+                node = uNodeTo.get(node);
+                route.add(node);
+            }
+            Collections.reverse(route);
+            node = overlapNode;
+            while(node != end){
+                node = vNodeTo.get(node);
+                route.add(node);
+            }
+            return route;
+        }else{
+            return new ArrayList<>();
         }
-        Collections.reverse(route);
-        node = overlapNode;
-        while(node != end){
-            node = vNodeTo.get(node);
-            route.add(node);
-        }
-        return route;
     }
 
     public ArrayList<Long> getRouteAsWays(){
@@ -263,6 +268,8 @@ public class BiALT implements Searcher {
     public void clear(){
         uDistTo.clear();
         uEdgeTo.clear();
+        uNodeTo.clear();
+        vNodeTo.clear();
         vDistTo.clear();
         vEdgeTo.clear();
         vPq.clear();

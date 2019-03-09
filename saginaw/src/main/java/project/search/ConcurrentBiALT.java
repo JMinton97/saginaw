@@ -74,6 +74,7 @@ public class ConcurrentBiALT implements Searcher {
 
         Runnable s = () -> {
             while (!uPq.isEmpty() && !Thread.currentThread().isInterrupted()) {
+                System.out.println("loop");
                 int v1 = uPq.poll().getNode();
                 for (double[] e : myGraph.fwdAdj(v1)) {
                     if (!Thread.currentThread().isInterrupted()) {
@@ -101,6 +102,7 @@ public class ConcurrentBiALT implements Searcher {
 
         Runnable t = () -> {
             while (!vPq.isEmpty() && !Thread.currentThread().isInterrupted()) {
+                System.out.println("loop");
                 int v2 = vPq.poll().getNode();
                 for (double[] e : myGraph.bckAdj(v2)) {
                     if (!Thread.currentThread().isInterrupted()) {

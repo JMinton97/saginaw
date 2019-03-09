@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import project.map.MyGraph;
 
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 public class Dijkstra implements Searcher {
@@ -52,12 +53,12 @@ public class Dijkstra implements Searcher {
         OUTER: while(!pq.isEmpty()){
             explored++;
             int v = pq.poll().getNode();
+            if(v == dst){
+                routeFound = true;
+                return;
+            }
             for (double[] e : graph.fwdAdj(v)){
                 relax(v, e);
-                if(v == dst){
-                    routeFound = true;
-                    return;
-                }
             }
         }
 
@@ -91,15 +92,20 @@ public class Dijkstra implements Searcher {
     }
 
     public ArrayList<Integer> getRoute(){
-        ArrayList<Integer> route = new ArrayList<>();
-        int node = dst;
-        route.add(node);
-        while(node != dst){
-            node = nodeTo.get(node);
+        if(routeFound){
+            ArrayList<Integer> route = new ArrayList<>();
+            int node = dst;
             route.add(node);
+            while(node != src){
+                node = nodeTo.get(node);
+                route.add(node);
+            }
+            Collections.reverse(route);
+            return route;
+        }else{
+            return new ArrayList<>();
         }
-        Collections.reverse(route);
-        return route;
+
     }
 
     public ArrayList<Long> getRouteAsWays(){

@@ -21,6 +21,7 @@ public class ALT implements Searcher {
     private Int2ObjectOpenHashMap distancesTo;
     private Int2ObjectOpenHashMap distancesFrom;
     private boolean routeFound;
+    private double[] dTV, dFV;
 
     public ALT(MyGraph graph, ALTPreProcess altPreProcess){
         this.graph = graph;
@@ -38,6 +39,10 @@ public class ALT implements Searcher {
     }
 
     public void search(int src, int dst){
+
+        dTV = (double[]) distancesTo.get(dst);
+        dFV = (double[]) distancesFrom.get(dst);
+
         pq = new PriorityQueue();
 
         this.startNode = src;
@@ -53,14 +58,15 @@ public class ALT implements Searcher {
         explored = 0;
 
         OUTER: while(!pq.isEmpty()){
+            System.out.println("search");
             explored++;
             int v = pq.poll().getNode();
+            if(v == endNode){
+                routeFound = true;
+                return;
+            }
             for (double[] e : graph.fwdAdj(v)){
                 relax(v, e);
-                if(v == dst){
-                    routeFound = true;
-                    return;
-                }
             }
         }
 
@@ -70,24 +76,24 @@ public class ALT implements Searcher {
 
     private void relax(int v, double[] edge){
         int w = (int) edge[0];
+        System.out.println(w);
         double weight = edge[1];
         double distToV = distTo.getOrDefault(v, Double.MAX_VALUE);
         if (distTo.getOrDefault(w, Double.MAX_VALUE) > (distToV + weight)){
+            System.out.println(distTo.getOrDefault(w, Double.MAX_VALUE) + " > " + (distToV + weight));
             distTo.put(w, distToV + weight);
             edgeTo.put(w, (long) edge[2]); //should be 'nodeBefore'
             nodeTo.put(w, v);
-            pq.add(new DijkstraEntry(w, distToV + weight + lowerBound(w, endNode))); //inefficient?
+            pq.add(new DijkstraEntry(w, distToV + weight + lowerBound(w))); //inefficient?
         }
     }
 
 
-    public double lowerBound(int u, int v){
+    public double lowerBound(int u){
         double max = 0;
-        double[] dTU, dFU, dTV, dFV;
+        double[] dTU, dFU;
         dTU = (double[]) distancesTo.get(u);
         dFU = (double[]) distancesFrom.get(u);
-        dTV = (double[]) distancesTo.get(v);
-        dFV = (double[]) distancesFrom.get(v);
 
         for(int l = 0; l < landmarks.size(); l++){
             max = Math.max(max, Math.max(dTU[l] - dTV[l], dFV[l] - dFU[l]));
@@ -108,15 +114,19 @@ public class ALT implements Searcher {
     }
 
     public ArrayList<Integer> getRoute(){
-        ArrayList<Integer> route = new ArrayList<>();
-        int node = endNode;
-        route.add(node);
-        while(node != startNode){
-            node = nodeTo.get(node);
+        if(routeFound) {
+            ArrayList<Integer> route = new ArrayList<>();
+            int node = endNode;
             route.add(node);
+            while (node != startNode) {
+                node = nodeTo.get(node);
+                route.add(node);
+            }
+            Collections.reverse(route);
+            return route;
+        }else{
+            return new ArrayList<>();
         }
-        Collections.reverse(route);
-        return route;
     }
 
     public ArrayList<Long> getRouteAsWays(){

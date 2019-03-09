@@ -9,8 +9,13 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 
 import java.awt.*;
+import java.awt.font.FontRenderContext;
+import java.awt.font.GlyphVector;
+import java.awt.font.TextLayout;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -121,7 +126,7 @@ class MapPane extends JPanel
 			TileManager tm = new TileManager(tileGrid, this);
 			if(l == 1){
 				Thread t = new Thread(tm);
-//				t.start();
+				t.start();
 			}
 //			System.out.println(l + " is " +  (int) Math.ceil(xDimension / (double) l) + ", " + (int) Math.ceil(yDimension / (double) l));
 			for(int x = 0; x < tileGrid.length; x++){
@@ -200,19 +205,22 @@ class MapPane extends JPanel
 
 		drawMarkers((Graphics2D) g);
 
-		if(model.hasRoute){
-			drawRoute(model.getRoute(), (Graphics2D) g);
-			g.setColor(new Color(0, 0, 0));
-			g.setFont(new Font("Ubuntu", Font.BOLD, 30));
-			g.drawString("Route length: " + String.valueOf(Math.round(model.getRouteDistance() / 1000) + "km"), 50, 50);
-		}
-
 		g.setColor(Color.RED);
 		((Graphics2D) g).setStroke(new BasicStroke(6));
 
 		// The ViewPort is the part of the mapPane that is displayed.
 		// By scrolling the ViewPort, you move it across the full size mapPane,
 		// showing only the ViewPort sized window of the mapPane at any one time.
+
+        if(model.hasRoute){
+            drawRoute(model.getRoute(), (Graphics2D) g);
+            g.setColor(new Color(0, 0, 0));
+            g.setFont(new Font("Ubuntu", Font.BOLD, 30));
+            g.drawString("Route length: " + String.valueOf(Math.round(model.getRouteDistance() / 1000) + "km"), 50, 50);
+        }
+
+//        drawPlaces();
+
 
 		if (model.isActive())
 		{
@@ -224,8 +232,6 @@ class MapPane extends JPanel
 			// paint the intermediate images
 			mouseListener.paint(g);
 		}
-
-		drawPlaces((Graphics2D) g);
 
 		gOld.drawImage(image, 0, 0, null);
 	}
@@ -288,20 +294,56 @@ class MapPane extends JPanel
 		}
 	}
 
-	public void drawPlaces(Graphics2D g){
-		g.setFont(new Font("Ubuntu", Font.BOLD, 10));
-		g.setColor(Color.BLACK);
+	public void drawPlaces(){
 		if(zoom <= 32) {
 			for (Place p : model.getMap().getTowns()) {
 				Point2D loc = geoToCanvas(p.getLocation());
-				g.drawString(p.getName(), (int) loc.getX(), (int) loc.getY());
+				if(loc.getX() < paneX + 100 && loc.getX() > -100 && loc.getY() < paneY + 100 && loc.getY() > -100){
+					writeTextNicely(p.getName(), loc);
+				}
+
 			}
 		} else {
 			for(Place p : model.getMap().getCities()){
 				Point2D loc = geoToCanvas(p.getLocation());
-				g.drawString(p.getName(), (int) loc.getX(), (int) loc.getY());
+				if(loc.getX() < paneX + 100 && loc.getX() > -100 && loc.getY() < paneY + 100 && loc.getY() > -100){
+					writeTextNicely(p.getName(), loc);
+				}
 			}
 		}
+
+	}
+
+	public void writeTextNicely(String text, Point2D location){
+		Graphics2D g = (Graphics2D) image.getGraphics();
+		Font f = new Font("Montserrat-Regular", Font.BOLD, 14);
+
+		GlyphVector glyphVector = f.createGlyphVector(g.getFontRenderContext(), text);
+		Rectangle2D box = glyphVector.getVisualBounds();
+
+		double x = location.getX() - box.getWidth() / 2;
+		double y = location.getY() - box.getHeight() / 2;
+		// create a glyph vector from your text
+
+		AffineTransform transform = g.getTransform();
+		transform.translate(x, y);
+		g.transform(transform);
+
+
+		// get the shape object
+		Shape textShape = glyphVector.getOutline();
+
+		// activate anti aliasing for text rendering (if you want it to look nice)
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+				RenderingHints.VALUE_ANTIALIAS_ON);
+		g.setRenderingHint(RenderingHints.KEY_RENDERING,
+				RenderingHints.VALUE_RENDER_QUALITY);
+
+		g.setColor(Color.WHITE);
+		g.setStroke(new BasicStroke(3.0f));
+		g.draw(textShape); // draw outline
+		g.setColor(Color.BLACK);
+		g.fill(textShape); // fill the shape
 
 	}
 

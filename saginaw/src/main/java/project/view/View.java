@@ -9,6 +9,9 @@ import project.view.actions.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -22,11 +25,10 @@ public class View extends JFrame
 	 * 
 	 */
 	private static final long	serialVersionUID	= -6963519874728205328L;
-	private MapPane mapPane = null;
-	private JPanel infoPane = null;
+	private MapPane mapPane;
+	private JPanel infoPanel = null;
 	private JLabel distance;
 	private JFrame frame;
-	private JToolBar toolBar;
 	private Model model;
 
 	public View(Model model, Controller controller)
@@ -43,8 +45,6 @@ public class View extends JFrame
 
 		mapPane = new MapPane(model, this, controller);
 		getContentPane().add(mapPane, BorderLayout.CENTER);
-
-		infoPane = new InfoPane();
 
 		// exitAction has to be final because we reference it from within
 		// an inner class
@@ -76,7 +76,8 @@ public class View extends JFrame
 			}
 		};
 		clearRouteAction.putValue(Action.SMALL_ICON, new ImageIcon(
-				getClass().getResource("/project/icons/exit.png")));
+				getClass().getResource("/project/icons/cancel.png")));
+
 
 		AbstractAction showGridAction = new AbstractAction() {
 			@Override
@@ -85,7 +86,8 @@ public class View extends JFrame
 			}
 		};
 		showGridAction.putValue(Action.SMALL_ICON, new ImageIcon(
-				getClass().getResource("/project/icons/exit.png")));
+				getClass().getResource("/project/icons/grid.png")));
+
 
 		AbstractAction repaintMapAction = new AbstractAction() {
 			@Override
@@ -94,7 +96,28 @@ public class View extends JFrame
 			}
 		};
 		repaintMapAction.putValue(Action.SMALL_ICON, new ImageIcon(
-				getClass().getResource("/project/icons/exit.png")));
+				getClass().getResource("/project/icons/redraw.png")));
+
+		AbstractAction undoAction = new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				controller.undoLastMarker();
+			}
+		};
+		undoAction.putValue(Action.SMALL_ICON, new ImageIcon(
+				getClass().getResource("/project/icons/undo.png")));
+
+		AbstractAction freshSearchAction = new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				controller.freshSearch();
+			}
+		};
+		freshSearchAction.putValue(Action.SMALL_ICON, new ImageIcon(
+				getClass().getResource("/project/icons/search.png")));
+
+
+
 
         ButtonGroup searchMethodGroup = new ButtonGroup();
 		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.DIJKSTRA, "Dijkstra")));
@@ -119,23 +142,40 @@ public class View extends JFrame
 
 		setJMenuBar(menuBar);
 
-		// Set up the tool bar
-		toolBar = new JToolBar();
-//		toolBar.setMargin(new Insets(10, 10, 10, 10));
-		toolBar.setFloatable(true);
-		toolBar.setRollover(true);
-		toolBar.addSeparator();
-		distance = new JLabel();
-		updateInfo();
-		toolBar.add("distance", distance);
-		toolBar.addSeparator(new Dimension(100, 10));
-		toolBar.add(clearRouteAction);
-		toolBar.add(showGridAction);
-		toolBar.add(repaintMapAction);
+//		// Set up the tool bar
+//		toolBar = new JToolBar();
+////		toolBar.setMargin(new Insets(10, 10, 10, 10));
+//		toolBar.setFloatable(true);
+//		toolBar.setRollover(true);
+//		toolBar.addSeparator();
+//
+//		toolBar.addSeparator(new Dimension(100, 10));
+//		toolBar.add(clearRouteAction);
+//		toolBar.add(showGridAction);
+//		toolBar.add(repaintMapAction);
+//
+//		getContentPane().add(toolBar, BorderLayout.NORTH);
 
-		getContentPane().add(toolBar, BorderLayout.NORTH);
+		infoPanel = new JPanel(new FlowLayout());
+		infoPanel.setPreferredSize(new Dimension(1200,60));
+		distance = new JLabel("Distance: ");
 
-		getContentPane().add(makeInfoPane(), BorderLayout.SOUTH);
+        try {
+            GraphicsEnvironment ge =
+                    GraphicsEnvironment.getLocalGraphicsEnvironment();
+            ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, new File("/res/fonts/Montserrat-Regular.ttf")));
+        } catch (IOException|FontFormatException e) {
+        }
+		distance.setFont(new Font("Montserrat-Regular", Font.BOLD, 20));
+		infoPanel.add(distance);
+        infoPanel.add(new JButton(undoAction));
+		infoPanel.add(new JButton(clearRouteAction));
+		infoPanel.add(new JButton(freshSearchAction));
+		infoPanel.add(new JButton(showGridAction));
+		infoPanel.add(new JButton(repaintMapAction));
+
+
+		getContentPane().add(infoPanel, BorderLayout.SOUTH);
 
 		pack();
 		setBounds(0, 0, 1200, 800);
@@ -148,21 +188,8 @@ public class View extends JFrame
 
 		mapPane.grabFocus();
 		updateInfo();
-		toolBar.updateUI();
 	}
 
-	private JPanel makeInfoPane(){
-		SpringLayout spr = new SpringLayout();
-		JPanel routeInfo = new JPanel(spr);
-		routeInfo.setPreferredSize(new Dimension(1200,100));
-		distance = new JLabel("Distance: ");
-		routeInfo.add(distance);
-		spr.putConstraint(SpringLayout.NORTH, distance, 20,
-				SpringLayout.NORTH, routeInfo);
-		spr.putConstraint(SpringLayout.WEST, distance, 20,
-				SpringLayout.WEST, routeInfo);
-		return routeInfo;
-	}
 
 
 	public void adaptToNewImage()
@@ -195,6 +222,6 @@ public class View extends JFrame
 			distance /= 1000;
 			this.distance.setText("Distance: " + new BigDecimal(distance).setScale(2, RoundingMode.HALF_UP).doubleValue() + "km");
 		}
-		toolBar.repaint();
+		infoPanel.repaint();
 	}
 }

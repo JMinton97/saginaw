@@ -82,18 +82,6 @@ public class Controller
 	}
 
 	/**
-	 * Add a new rectangle to the model and update the view accordingly
-	 * 
-	 * @param rect
-	 *            the rectangle to be added
-	 */
-	public void addRect(Rectangle rect)
-	{
-		model.addRect(rect);
-		view.repaint();
-	}
-
-	/**
 	 * Handle an exit request
 	 * 
 	 * @param exitStatus
@@ -180,6 +168,7 @@ public class Controller
 
 	public void clearMarkers(){
 		model.clearMarkers();
+		view.updateInfo();
 	}
 
 	public void toggleDoug(){
@@ -199,4 +188,15 @@ public class Controller
 	}
 
 
+    public void undoLastMarker() {
+		model.undoLastMarker();
+		view.updateInfo();
+		view.repaint();
+    }
+
+	public void freshSearch() {
+		model.freshSearch();
+		view.updateInfo();
+		view.repaint();
+	}
 }

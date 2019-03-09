@@ -71,6 +71,7 @@ public class ConcurrentBiDijkstra implements Searcher {
 
         Runnable s = () -> {
             while(!uPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+                System.out.println("loop");
                 exploredA++;
                 int v1 = uPq.poll().getNode();
                 for (double[] e : graph.fwdAdj(v1)){
@@ -99,6 +100,7 @@ public class ConcurrentBiDijkstra implements Searcher {
 
         Runnable t = () -> {
             while(!vPq.isEmpty() && !Thread.currentThread().isInterrupted()){
+                System.out.println("loop");
                 exploredB++;
                 int v2 = vPq.poll().getNode();
                 for (double[] e : graph.bckAdj(v2)) {
@@ -200,20 +202,25 @@ public class ConcurrentBiDijkstra implements Searcher {
     }
 
     public ArrayList<Integer> getRoute(){
-        ArrayList<Integer> route = new ArrayList<>();
-        int node = overlapNode;
-        route.add(overlapNode);
-        while(node != startNode){
-            node = uNodeTo.get(node);
-            route.add(node);
-        }
-        Collections.reverse(route);
-        node = overlapNode;
-        while(node != endNode){
-            node = vNodeTo.get(node);
-            route.add(node);
-        }
-        return route;
+        if(routeFound) {
+            ArrayList<Integer> route = new ArrayList<>();
+            int node = overlapNode;
+            route.add(overlapNode);
+            while (node != startNode) {
+                node = uNodeTo.get(node);
+                route.add(node);
+            }
+            Collections.reverse(route);
+            node = overlapNode;
+            while (node != endNode) {
+                node = vNodeTo.get(node);
+                route.add(node);
+            }
+            return route;
+        }else{
+        return new ArrayList<>();
+    }
+
     }
 
     public ArrayList<Long> getRouteAsWays(){

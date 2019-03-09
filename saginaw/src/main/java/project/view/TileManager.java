@@ -12,6 +12,7 @@ public class TileManager implements Runnable {
 
     public void run() {
         while(!Thread.currentThread().isInterrupted()){
+            mapPane.repaint();
             for(int x = 0; x < grid.length; x++){
                 for(int y = 0; y < grid[0].length; y++){
 //                    System.out.println(grid[x][y]);

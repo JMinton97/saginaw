@@ -1,5 +1,6 @@
 package project.map;
 
+import java.awt.*;
 import java.awt.geom.Point2D;
 import java.io.Serializable;
 
@@ -22,9 +23,5 @@ public class Place implements Serializable{
 
     public void setName(String name){
         this.name = name;
-    }
-
-    public void setLocation(Point2D.Double location){
-        this.location = location;
     }
 }

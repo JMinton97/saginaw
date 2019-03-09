@@ -129,6 +129,9 @@ public class ContractionALT implements Searcher {
                             } else {
                                 overlapNode = bestPathNode;
                             }
+                            System.out.println(bestSeen);
+                            System.out.println(coreSQ.peek().getDistance());
+                            System.out.println(coreTQ.peek().getDistance());
                             if(bestSeen < (coreSQ.peek().getDistance() + coreTQ.peek().getDistance())){
                                 routeFound = true;
                                 break STAGE1;
@@ -163,6 +166,9 @@ public class ContractionALT implements Searcher {
                             } else {
                                 overlapNode = bestPathNode;
                             }
+                            System.out.println(bestSeen);
+                            System.out.println(coreSQ.peek().getDistance());
+                            System.out.println(coreTQ.peek().getDistance());
                             if(bestSeen < (coreSQ.peek().getDistance() + coreTQ.peek().getDistance())){
                                 routeFound = true;
                                 break STAGE1;
@@ -181,6 +187,8 @@ public class ContractionALT implements Searcher {
                 System.out.println("No route found.");
                 routeFound = false;
             }
+        } else {
+            System.out.println("NO SECOND STAGE");
         }
 
         System.out.println("Ended search");
