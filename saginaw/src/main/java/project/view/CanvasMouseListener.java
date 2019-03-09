@@ -3,8 +3,10 @@ package project.view;
 import project.controller.Controller;
 import project.model.Model;
 
+import javax.swing.*;
 import javax.swing.event.MouseInputListener;
 import java.awt.Graphics;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /**
@@ -69,9 +71,37 @@ class CanvasMouseListener implements MouseInputListener
 //			long endTime = System.nanoTime();
 //			System.out.println("getClick: " + (((float) endTime - (float)startTime) / 1000000000));
 //			System.out.println(loc[0] + " " + loc[1]);
-			model.addMarker(loc);
+			Marker addedMarker = model.addMarker(loc);
+			addedMarker.addMouseMotionListener(new MouseAdapter()
+			{
+				public void mouseClicked(MouseEvent e)
+				{
+					model.removeMarker(addedMarker);
+				}
+
+				@Override
+				public void mouseDragged(MouseEvent e)
+				{
+					if(view.getMapPane().getComponentAt(e.getPoint()) == addedMarker){
+						x2 = e.getX();
+						y2 = e.getY();
+						System.out.println("DRAG " + x2 + " " + y2);
+						double[] loc = view.getClickCoordinate(x2, y2);
+						addedMarker.setGeoLocation(loc);
+						addedMarker.findClosestNode();
+						model.betterFindRoutes();
+//					x1 = x2;
+//					y1 = y2;
+						view.getMapPane().moveMarkers();
+						view.getMapPane().repaint();
+						view.updateInfo();
+					}
+				}
+
+			});
 //			System.out.println("getClick: " + (((float) endTime - (float)startTime) / 1000000000));
-			view.repaint();
+			view.getMapPane().moveMarkers();
+			view.revalidate();
 			view.updateInfo();
 		}
 //		long endTime = System.nanoTime();
@@ -105,6 +135,8 @@ class CanvasMouseListener implements MouseInputListener
 		y2 = e.getY();
 
 		controller.moveMap(x2 - x1, y2 - y1);
+		view.getMapPane().moveMarkers();
+		view.getMapPane().repaint();
 	}
 
 	@Override
@@ -135,7 +167,9 @@ class CanvasMouseListener implements MouseInputListener
 		}
 		x1 = x2;
 		y1 = y2;
+		view.getMapPane().moveMarkers();
 		view.getMapPane().repaint();
+		view.getMapPane().revalidate();
 		view.updateInfo();
 	}
 

@@ -197,4 +197,7 @@ public class View extends JFrame
 		}
 		toolBar.repaint();
 	}
+
+	public void repaint(){}
+
 }

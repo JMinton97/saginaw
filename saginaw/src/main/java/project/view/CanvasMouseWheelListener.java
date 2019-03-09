@@ -28,6 +28,7 @@ public class CanvasMouseWheelListener implements MouseWheelListener
 //            model.zoomIn();
             model.zoomIn(view.getMapPane().canvasToGeo(e.getX(), e.getY()));
         }
+        view.getMapPane().moveMarkers();
         view.getMapPane().repaint();
     }
 }

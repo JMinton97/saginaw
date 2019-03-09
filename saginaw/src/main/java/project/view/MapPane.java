@@ -55,8 +55,9 @@ class MapPane extends JPanel
 	private double dougTolerance;
 	private boolean simplifyRoute;
 	private boolean grid;
+	private ArrayList<Marker> currentMarkers;
 
-	private BufferedImage start, end;
+	private BufferedImage start, middle, end;
 
 	/**
 	 * The default constructor should NEVER be called. It has been made private
@@ -82,6 +83,8 @@ class MapPane extends JPanel
 	 */
 	public MapPane(Model model, View view, Controller controller)
 	{
+		setLayout(null);
+
 		this.view = view;
 		this.model = model;
 		mouseListener = new CanvasMouseListener(this.model, this.view,
@@ -102,6 +105,8 @@ class MapPane extends JPanel
 
 		grid = false;
 
+		currentMarkers = new ArrayList<>();
+
 		try{
 			String filename = "res/icon/start.png";
 			File inputfile = new File(filename);
@@ -109,6 +114,9 @@ class MapPane extends JPanel
 			filename = "res/icon/finish.png";
 			inputfile = new File(filename);
 			end = ImageIO.read(inputfile);
+			filename = "res/icon/middle.png";
+			inputfile = new File(filename);
+			middle = ImageIO.read(inputfile);
 		}catch(IOException e){
 			System.out.println("Failed image load.");
 		}
@@ -198,8 +206,6 @@ class MapPane extends JPanel
 //		g.drawString(String.valueOf(centre.getX()) + " " + String.valueOf(centre.getY()), 50, 100);
 //		g.drawString(String.valueOf(dougTolerance), 50, 150);
 
-		drawMarkers((Graphics2D) g);
-
 		if(model.hasRoute){
 			drawRoute(model.getRoute(), (Graphics2D) g);
 			g.setColor(new Color(0, 0, 0));
@@ -273,19 +279,40 @@ class MapPane extends JPanel
 //		System.out.print(System.nanoTime());
 	}
 
-	public void drawMarkers(Graphics2D g){
-		boolean first = true;
-		for(double[] m : model.getMarkers()){
-//			System.out.println(m[0] + m[1]);
-			Point2D marker = geoToCanvas(m);
-//			System.out.println(marker.getX() + " " + marker.getY());
-			if(first){
-				g.drawImage(start, (int) marker.getX() - (start.getWidth() / 2), (int) marker.getY() - start.getHeight(), start.getWidth(), start.getHeight(), null, null);
-				first = false;
+	public void moveMarkers(){
+		for(Marker marker : model.getMarkers()){
+//			System.out.println(marker.getGeoLocation()[0] + " " + marker.getGeoLocation()[1]);
+			Point2D canvasLocation = geoToCanvas(marker.getGeoLocation());
+//			System.out.println(canvasLocation.getX() + " " + canvasLocation.getY());
+			if(marker.isStart()){
+				marker.setIcon(new ImageIcon(start));
+			} else if(marker.isEnd()){
+				marker.setIcon(new ImageIcon(end));
 			} else {
-				g.drawImage(end, (int) marker.getX() - (end.getWidth() / 2), (int) marker.getY() - end.getHeight(), end.getWidth(), end.getHeight(), null, null);
+				marker.setIcon(new ImageIcon(middle));
+			}
+			marker.setBounds((int) canvasLocation.getX(), (int) canvasLocation.getY(), marker.getIcon().getIconWidth(), marker.getIcon().getIconHeight());
+//			marker.setLocation(new Point((int) canvasLocation.getX(), (int) canvasLocation.getY()));
+			if(marker.getParent() != this){
+				this.add(marker);
+				currentMarkers.add(marker);
 			}
 		}
+
+
+//		for(double[] m : model.getMarkers()){
+////			System.out.println(m[0] + m[1]);
+//			Point2D marker = geoToCanvas(m);
+////			System.out.println(marker.getX() + " " + marker.getY());
+//			if(first){
+//				Marker m2 = new Marker(new ArrayList<Marker>());
+//				this.add(m2);
+//				g.drawImage(start, (int) marker.getX() - (start.getWidth() / 2), (int) marker.getY() - start.getHeight(), start.getWidth(), start.getHeight(), null, null);
+//				first = false;
+//			} else {
+//				g.drawImage(end, (int) marker.getX() - (end.getWidth() / 2), (int) marker.getY() - end.getHeight(), end.getWidth(), end.getHeight(), null, null);
+//			}
+//		}
 	}
 
 	public void drawPlaces(Graphics2D g){
@@ -311,7 +338,7 @@ class MapPane extends JPanel
 		return new Point2D.Double(x, y);
 	}
 
-	public Point2D.Double geoToCanvas(double[] geoCoord){
+	public Point2D geoToCanvas(double[] geoCoord){
 		Double x = (geoCoord[0] - topLeft.getX()) * (scale / zoom);
 		Double y = (topLeft.getY() - geoCoord[1]) * (scale / zoom);
 		return new Point2D.Double(x, y);

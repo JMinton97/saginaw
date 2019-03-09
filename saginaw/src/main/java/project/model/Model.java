@@ -5,6 +5,7 @@ import project.map.*;
 import project.search.*;
 import project.utils.ImageFile;
 import project.utils.UnsupportedImageTypeException;
+import project.view.Marker;
 
 import java.awt.Dimension;
 import java.awt.Rectangle;
@@ -35,7 +36,7 @@ public class Model {
 	private BufferedImage image = null;
 	private MyMap2 map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
-	private String region = "england";
+	private String region = "london";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
 	private BigDecimal zoom, baseScale;
@@ -44,7 +45,7 @@ public class Model {
 	private Point2D.Double origin;
 	private double geomXD, geomYD;
 	private int imageEdge = 1024;
-	private ArrayList<double[]> markers;
+	private ArrayList<Marker> markers;
 	private ArrayList<Boolean> flags;
 	public double[] pivot;
 	private double modZoom;
@@ -429,21 +430,24 @@ public class Model {
 		return map;
 	}
 
-	public void addMarker(double[] location){
+	public Marker addMarker(double[] location){
 //		if(markers.size() > 1){
 //			markers.clear();
 //		}
 //		System.out.println(location[0] + " " + location[1]);
-		markers.add(location);
+		Marker newMarker = new Marker(location, markers, graph);
+		newMarker.findClosestNode();
+		markers.add(newMarker);
 		flags.add(false);
 		betterFindRoutes();
+		return newMarker;
 	}
 
 	public void addPivot(double[] location){
 		if(pivoted){
-			markers.set(1, location);
+			markers.set(1, new Marker(location, markers, graph));
 		} else {
-			markers.add(1, location);
+			markers.add(1, new Marker(location, markers, graph));
 		}
 		pivoted = true;
 		flags.set(0, false);
@@ -465,7 +469,7 @@ public class Model {
 		hasRoute = false;
 	}
 
-	public ArrayList<double[]> getMarkers() {
+	public ArrayList<Marker> getMarkers() {
 		return markers;
 	}
 
@@ -599,18 +603,20 @@ public class Model {
 					Runnable routeSegmentThread = () -> {
 						long startTime = System.nanoTime();
 						int src, dst;
-						if (!closestNodes.containsKey(markers.get(z))) {
-							src = graph.findClosest(markers.get(z));
-							closestNodes.put(markers.get(z), src);
-						} else {
-							src = closestNodes.get(markers.get(z));
-						}
-						if (!closestNodes.containsKey(markers.get(z + 1))) {
-							dst = graph.findClosest(markers.get(z + 1));
-							closestNodes.put(markers.get(z + 1), dst);
-						} else {
-							dst = closestNodes.get(markers.get(z + 1));
-						}
+//						if (!closestNodes.containsKey(markers.get(z))) {
+//							src = graph.findClosest(markers.get(z));    //put this in marker code
+//							closestNodes.put(markers.get(z), src);
+//						} else {
+//							src = closestNodes.get(markers.get(z));
+//						}
+//						if (!closestNodes.containsKey(markers.get(z + 1))) {
+//							dst = graph.findClosest(markers.get(z + 1));
+//							closestNodes.put(markers.get(z + 1), dst);
+//						} else {
+//							dst = closestNodes.get(markers.get(z + 1));
+//						}
+						src = markers.get(z).getClosestNode();
+						dst = markers.get(z + 1).getClosestNode();
 						Searcher searcher = searcherList.get(z);
 //                        System.out.println("before " + Thread.currentThread().getId());
 						searcher.search(src, dst);
@@ -640,7 +646,7 @@ public class Model {
 //						}
 
 //						System.out.println("				...got nodes.");
-						flags.set(z, true);
+//						flags.set(z, true);
 //						System.out.println("before clear");
 						searcher.clear();
 //						System.out.println("after clear");
@@ -690,7 +696,9 @@ public class Model {
 		}
 	}
 
-
+	public void removeMarker(Marker addedMarker) {
+		markers.remove(addedMarker);
+	}
 
 
 //	public void findRouteThreads() {
