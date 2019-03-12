@@ -35,7 +35,7 @@ public class Model {
 	private BufferedImage image = null;
 	private MyMap2 map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
-	private String region = "london";
+	private String region = "britain";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
 	private BigDecimal zoom, baseScale;
@@ -49,8 +49,9 @@ public class Model {
 	private int pivotOnSegment;
 	private double modZoom;
 
+	private Route route;
+
 	private ContractionALT c1, c2;
-	private MyGraph graph;
 	private ArrayList<ArrayList<Long>> segments;
 	private ArrayList<ArrayList<Point2D.Double>> routeNodes;
 	private ArrayList<Double> segmentDistances;
@@ -67,7 +68,7 @@ public class Model {
 	private double routeDistance;
 
 	private ArrayList<Searcher> searcherList;
-	private Stack<Searcher> searcherStack;
+
 
 	private Tree routeTree;
 
@@ -85,36 +86,20 @@ public class Model {
 		markers = new ArrayList<>();
 
 		File f = new File(mapDir.concat(region).concat(".osm.pbf"));
+		MyGraph graph;
 		try {
-			graph = new MyGraph(f, region);
+			route = new Route(new MyGraph(f, region));
 			map = new MyMap2(f, region, imageEdge, false);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
-//		try{
-//			preProcess = new ALTPreProcess(graph, false);
-//		} catch(IOException e){
-//			System.out.println("IO error in ALTPreProcess.");
-//			System.exit(0);
-//		}
-
-		try{
-			corePreProcess = new ALTPreProcess(graph, true);
-		} catch(IOException e){
-			System.out.println("IO error in ALTPreProcess.");
-			System.exit(0);
-		}
 
 		routeNodes = new ArrayList<>();
 		segments = new ArrayList<>();
 		segmentDistances = new ArrayList<>();
 		segmentFlags = new ArrayList<>();
 		pivotMode = false;
-		markerStack = new Stack<>();
-
-		searcherStack = new Stack<>();
-		switchSearchers(SearchType.CONTRACTION_ALT);
 
 //		Long src = Long.parseLong("1349207723"); //wales
 		Long src, dst;
@@ -134,6 +119,8 @@ public class Model {
 		closestNodes = new HashMap<>();
 
 		routeDistance = 0;
+
+
 
 	}
 
@@ -173,9 +160,6 @@ public class Model {
 		return baseScale;
 	}
 
-	public ArrayList<ArrayList<Point2D.Double>> getRoute() {
-		return routeNodes;
-	}
 
 	/**
 	 * Get the list of rectangles currently set in the model.
@@ -261,19 +245,6 @@ public class Model {
 		setImage(bi);
 	}
 
-	public void loadMap(File file)
-			throws IOException
-	{
-//		this.map = null;
-//		this.map = new MyGraph(file); //note - loading file twice
-	//		int numImages = newImageFile.getNumImages();
-	//		if (numImages == 0)
-	//			throw new IOException("Image file contains no images");
-	//		map.drawMap(0);
-	//		BufferedImage bi = map.getMap();
-	//		setImage(bi);
-	}
-
 	public void moveMap(double xD, double yD) {
 		xD = modZoom * modZoom * xD;
 		yD = modZoom * modZoom * yD;
@@ -291,83 +262,6 @@ public class Model {
 		centreCoord.setLocation(geomXD, geomYD);
 	}
 
-	public void switchSearchers(SearchType s){
-		switch(s){
-			case DIJKSTRA:
-				searcherStack.clear();
-				for(int x = 0; x < SEARCHER_COUNT; x++){
-					searcherStack.add(new Dijkstra(graph));
-				}
-				System.out.println("switched");
-				break;
-
-			case BIDIJKSTRA:
-				searcherStack.clear();
-				for(int x = 0; x < SEARCHER_COUNT; x++){
-					searcherStack.add(new BiDijkstra(graph));
-				}
-				break;
-
-			case CONCURRENT_BIDIJKSTRA:
-				searcherStack.clear();
-				for(int x = 0; x < SEARCHER_COUNT; x++){
-					searcherStack.add(new ConcurrentBiDijkstra(graph));
-				}
-				break;
-
-			case ALT:
-				searcherStack.clear();
-				for(int x = 0; x < SEARCHER_COUNT; x++){
-					searcherStack.add(new ALT(graph, preProcess));
-				}
-				break;
-
-			case BIALT:
-				searcherStack.clear();
-				for(int x = 0; x < SEARCHER_COUNT; x++){
-					searcherStack.add(new BiALT(graph, preProcess));
-				}
-				break;
-
-			case CONCURRENT_BIALT:
-				searcherStack.clear();
-				for(int x = 0; x < SEARCHER_COUNT; x++){
-					searcherStack.add(new ConcurrentBiALT(graph, preProcess));
-				}
-				break;
-
-			case CONTRACTION_DIJKSTRA:
-//				searcherList.add(new Con)
-
-			case CONTRACTION_ALT:
-				searcherStack.clear();
-				for(int x = 0; x < SEARCHER_COUNT; x++){
-					searcherStack.add(new ContractionALT(graph, corePreProcess));
-				}
-				break;
-		}
-		if(hasRoute){
-			freshSearch();
-		}
-
-	}
-
-//	public void findRandomRoute(){
-//		Random generator = new Random();
-//		Object[] keys = graph.getFwdGraph().keySet().toArray();
-//		Object randomSrc = keys[generator.nextInt(keys.length)];
-//		Object randomDst = keys[generator.nextInt(keys.length)];
-//		System.out.println(randomSrc + "    " + randomDst);
-//		c1.search((int) randomSrc, (int) randomDst);
-//		System.out.println("Distance: " + c1.getDist());
-//		routeNodes = new ArrayList<>();
-//		for(Long w : routeWays){
-////			System.out.println(w);
-////			System.out.println(graph.wayToNodes(w));
-//			routeNodes.addAll(graph.refsToNodes(graph.wayToRefs(w)));
-////			System.out.println();
-//		}
-//	}
 
 	public void zoomIn() {
 //        System.out.println(zoom);
@@ -449,224 +343,19 @@ public class Model {
 		return map;
 	}
 
-	public void addMarker(double[] location){
-//		if(markers.size() > 1){
-//			markers.clear();
-//		}
-//		System.out.println(location[0] + " " + location[1]);
-		markers.add(location);
-		markerStack.add(location);
-		routeNodes.add(new ArrayList<>());
-		segments.add(new ArrayList<>());
-		if(markers.size() > 1){
-			segmentFlags.add(false);
-		}
-		betterFindRoutes();
-	}
-
-	public void addPivot(double[] location){
-		if(pivotMode){
-			markers.set(pivotOnSegment + 1, location);
-			segmentFlags.set(pivotOnSegment, false);
-			segmentFlags.set(pivotOnSegment + 1, false);
-		} else {
-			markers.add(pivotOnSegment + 1, location);
-			segments.add(pivotOnSegment + 1, new ArrayList<>());
-			segmentFlags.add(pivotOnSegment, false);
-			segmentFlags.set(pivotOnSegment + 1, false);
-			routeNodes.add(pivotOnSegment, new ArrayList<>());
-		}
-		markerStack.pop();
-		markerStack.add(location);
-		pivotMode = true;
-		betterFindRoutes();
-	}
-
-	public void clearMarkers(){
-		routeTree = null;
-		routeDistance = 0;
-		markers = new ArrayList<>();
-		segmentDistances = new ArrayList<>();
-		routeNodes= new ArrayList<>();
-		segmentFlags = new ArrayList<>();
-		pivotMode = false;
-		hasRoute = false;
-		markerStack = new Stack<>();
-		segments = new ArrayList<>();
-	}
-
-	public void undoLastMarker(){
-
-		int index = markers.indexOf(markerStack.peek());
-		markers.remove(markerStack.pop());
-		segmentFlags.set(index - 1, false);
-		segmentFlags.remove(index);
-		segments.remove(index);
-		routeNodes.remove(index);
-		if(markers.size() < 2){
-			double[] firstMarker = markerStack.pop();
-			clearMarkers();
-			addMarker(firstMarker);
-		}
-		betterFindRoutes();
-
-	}
-
-	public ArrayList<double[]> getMarkers() {
-		return markers;
-	}
-
-	public double getRouteDistance() {
-		double distance = 0.0;
-		for(double d : segmentDistances){
-			distance += d;
-		}
-		return distance;
-	}
-
-	public void betterFindRoutes() {
-		System.out.println();
-		ArrayList<Thread> routeThreads = new ArrayList<>();
-		if (markers.size() > 1) {
-			hasRoute = true;
-			for (int x = 0; x < markers.size() - 1; x++) {
-//                System.out.println(x);
-				final int z = x;
-				if (!segmentFlags.get(x)) {
-					Runnable routeSegmentThread = () -> {
-						long startTime = System.nanoTime();
-						int src, dst;
-						if (!closestNodes.containsKey(markers.get(z))) {
-							src = graph.findClosest(markers.get(z));
-							closestNodes.put(markers.get(z), src);
-						} else {
-							src = closestNodes.get(markers.get(z));
-						}
-						if (!closestNodes.containsKey(markers.get(z + 1))) {
-							dst = graph.findClosest(markers.get(z + 1));
-							closestNodes.put(markers.get(z + 1), dst);
-						} else {
-							dst = closestNodes.get(markers.get(z + 1));
-						}
-						while(searcherStack.isEmpty()){
-							try {
-								Thread.sleep(10);
-							} catch (InterruptedException e) {
-								e.printStackTrace();
-							}
-						}
-						Searcher searcher = searcherStack.pop();
-						searcher.search(src, dst);
-						if(routeNodes.size() > z){
-							routeNodes.set(z, graph.refsToNodes(searcher.getRoute()));
-//							segmentDistances.set(z, searcher.getDist());
-                        }
-
-						routeDistance += searcher.getDist();
-
-						ArrayList<Long> segmentWays = searcher.getRouteAsWays();
-
-						if(segments.size() > z){
-							segments.set(z, segmentWays);
-							System.out.println("setting segment " + z);
-						} else {
-							segments.add(segmentWays);
-							System.out.println("adding segment " + z);
-						}
-
-						segmentFlags.set(z, true);
-						searcher.clear();
-						searcherStack.push(searcher);
-					};
-
-					Thread searchThread = new Thread(routeSegmentThread);
-					routeThreads.add(searchThread);
-					searchThread.start();
-				} else {
-					System.out.println("UNTOUCHED");
-				}
-			}
-
-			for(int x = 0; x < routeNodes.size(); x++){
-				if(x >= markers.size() - 1){
-					routeNodes.remove(x);
-					if(segmentDistances.size() > x){
-						segmentDistances.remove(x);
-					}
-					x--;
-				}
-			}
-
-
-			System.out.println("Thread count: " + routeThreads.size());
-
-			boolean running = true;
-
-			while(running){
-//				try{
-//					Thread.sleep(50);
-//				}catch(InterruptedException e){}
-				running = false;
-				for(Thread routeThread : routeThreads){
-//					System.out.println("waiting");
-					running = (running || routeThread.isAlive());
-				}
-			}
-
-            System.out.println("Finished.");
-		}
-		System.out.println(segmentFlags);
-		System.out.println(routeNodes.size());
-	}
-
-	public void freshSearch() {
-		for(int x = 0; x < segmentFlags.size(); x++){
-			segmentFlags.set(x, false);
-		}
-		betterFindRoutes();
+	public Route getRoute(){
+		return route;
 	}
 
 	public void loadFullRoute(){
-		int z = 0;
-		for(ArrayList<Long> segment : segments) {
-			if (routeNodes.size() > z) {
-				routeNodes.set(z, graph.wayListToNodes(segment));
-			} else {
-				routeNodes.add(graph.wayListToNodes(segment));
-			}
-			z++;
-		}
-		pivotMode = false;
+		route.loadFullRoute();
 	}
 
 	public boolean clickedRoute(double[] clickPoint, double dragThreshold){
-		if(hasRoute){
-			System.out.println(clickPoint[0] + "," + clickPoint[1]);
+		return route.addPivot(clickPoint, dragThreshold);
+	}
 
-			double minDist = Double.MAX_VALUE;
-			int minSegment = 0;
-			int segmentNum = 0;
-			double distFromLine;
-
-			for(ArrayList<Point2D.Double> segment : routeNodes){
-				for(Point2D.Double point : segment){
-					distFromLine = MyGraph.haversineDistance(clickPoint, new double[]{point.getX(), point.getY()});
-					if(distFromLine < minDist){
-						minDist = distFromLine;
-						minSegment = segmentNum;
-					}
-				}
-				segmentNum++;
-			}
-			if(minDist < dragThreshold){
-				pivotOnSegment = minSegment;
-				return true;
-			} else {
-				return false;
-			}
-		} else {
-			return false;
-		}
-
+	public double getRouteDistance(){
+		return 0.0;
 	}
 }

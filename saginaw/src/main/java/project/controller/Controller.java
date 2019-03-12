@@ -76,11 +76,6 @@ public class Controller
 		view.adaptToNewImage();
 	}
 
-	public void loadMap(File file) throws IOException {
-		model.loadMap(file);
-		view.adaptToNewImage();
-	}
-
 	/**
 	 * Handle an exit request
 	 * 
@@ -167,7 +162,7 @@ public class Controller
 	}
 
 	public void clearMarkers(){
-		model.clearMarkers();
+		model.getRoute().clear();
 		view.updateInfo();
 	}
 
@@ -184,18 +179,18 @@ public class Controller
 	}
 
 	public void switchSearchers(SearchType s){
-		model.switchSearchers(s);
+		model.getRoute().switchSearchers(s);
 	}
 
 
     public void undoLastMarker() {
-		model.undoLastMarker();
+		model.getRoute().undo();
 		view.updateInfo();
 		view.repaint();
     }
 
 	public void freshSearch() {
-		model.freshSearch();
+		model.getRoute().freshSearch();
 		view.updateInfo();
 		view.repaint();
 	}

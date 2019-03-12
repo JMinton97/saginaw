@@ -5,6 +5,8 @@ import project.douglas.DouglasPeucker;
 import project.map.MyMap2;
 import project.map.Place;
 import project.model.Model;
+import project.model.Route;
+import project.model.Segment;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -62,7 +64,7 @@ class MapPane extends JPanel
 	private boolean simplifyRoute;
 	private boolean grid;
 
-	private BufferedImage start, end;
+	private BufferedImage start, middle, end;
 
 	/**
 	 * The default constructor should NEVER be called. It has been made private
@@ -112,9 +114,12 @@ class MapPane extends JPanel
 			String filename = "res/icon/start.png";
 			File inputfile = new File(filename);
 			start = ImageIO.read(inputfile);
-			filename = "res/icon/finish.png";
+			filename = "res/icon/middle.png";
 			inputfile = new File(filename);
-			end = ImageIO.read(inputfile);
+			middle = ImageIO.read(inputfile);
+            filename = "res/icon/finish.png";
+            inputfile = new File(filename);
+            end = ImageIO.read(inputfile);
 		}catch(IOException e){
 			System.out.println("Failed image load.");
 		}
@@ -206,11 +211,8 @@ class MapPane extends JPanel
 		((Graphics2D) g).setStroke(new BasicStroke(6));
 
 
-        if(model.hasRoute){
+        if(model.getRoute().hasRoute()){
             drawRoute(model.getRoute(), (Graphics2D) g);
-            g.setColor(new Color(0, 0, 0));
-            g.setFont(new Font("Ubuntu", Font.BOLD, 30));
-            g.drawString("Route length: " + String.valueOf(Math.round(model.getRouteDistance() / 1000) + "km"), 50, 50);
         }
 
 //        drawPlaces();
@@ -242,18 +244,19 @@ class MapPane extends JPanel
 		return model.getDimensions();
 	}
 
-	public void drawRoute(ArrayList<ArrayList<Point2D.Double>> route, Graphics2D g){
+	public void drawRoute(Route route, Graphics2D g){
 //
 		ArrayList<Point2D.Double> fullRoute = new ArrayList<>();
 
-		for(ArrayList<Point2D.Double> subRoute : route) {
-			fullRoute.addAll(subRoute);
+		for(Segment segment : route.getSegments()) {
+		    if(segment.hasPoints()){
+                fullRoute.addAll(segment.getPoints());
+            }
 		}
 
 		if(fullRoute.size() > 0){
 			if(simplifyRoute){
 				fullRoute = DouglasPeucker.simplify(fullRoute, zoom / 50000);
-				System.out.println(zoom / 50000);
 			}
 			Path2D path = new Path2D.Double();
 			Point2D first = geoToCanvas(fullRoute.get(0));
@@ -277,16 +280,17 @@ class MapPane extends JPanel
 
 	public void drawMarkers(Graphics2D g){
 		boolean first = true;
-		for(double[] m : model.getMarkers()){
+		for(double[] m : model.getRoute().getWaypoints()){
 //			System.out.println(m[0] + m[1]);
 			Point2D marker = geoToCanvas(m);
 //			System.out.println(marker.getX() + " " + marker.getY());
-			if(first){
+			if(model.getRoute().getWaypoints().indexOf(m) == 0){
 				g.drawImage(start, (int) marker.getX() - (start.getWidth() / 2), (int) marker.getY() - start.getHeight(), start.getWidth(), start.getHeight(), null, null);
-				first = false;
-			} else {
+			} else if(model.getRoute().getWaypoints().indexOf(m) == (model.getRoute().getWaypoints().size() - 1)){
 				g.drawImage(end, (int) marker.getX() - (end.getWidth() / 2), (int) marker.getY() - end.getHeight(), end.getWidth(), end.getHeight(), null, null);
-			}
+			} else {
+                g.drawImage(middle, (int) marker.getX() - (end.getWidth() / 2), (int) marker.getY() - end.getHeight(), end.getWidth(), end.getHeight(), null, null);
+            }
 		}
 	}
 

@@ -37,7 +37,7 @@ public class View extends JFrame
 	public View(Model model, Controller controller) {
 		super("Saginaw v0.1");
 		controller.addView(this);
-		setBounds(10, 10, 1200, 800);
+		setBounds(100, 10, 1200, 800);
 //		setBackground(Color.MAGENTA);
 		frame = this;
 

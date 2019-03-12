@@ -76,8 +76,6 @@ public class ContractionALT implements Searcher {
 
     public void search(int startNode, int endNode){
 
-//        System.out.println("Begun search");
-
         explored = 0;
         exploredA = 0;
         exploredB = 0;
@@ -269,7 +267,6 @@ public class ContractionALT implements Searcher {
 
         Runnable t = () -> {
             while(!coreTQ.isEmpty() && !Thread.currentThread().isInterrupted()){
-
                 exploredB++;
                 int v2 = coreTQ.poll().getNode();
                 for (double[] e : graph.bckCoreAdj(v2)){
