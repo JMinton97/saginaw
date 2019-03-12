@@ -71,7 +71,7 @@ public class ConcurrentBiDijkstra implements Searcher {
 
         Runnable s = () -> {
             while(!uPq.isEmpty() && !Thread.currentThread().isInterrupted()){
-                System.out.println("loop");
+//                System.out.println("loop");
                 exploredA++;
                 int v1 = uPq.poll().getNode();
                 for (double[] e : graph.fwdAdj(v1)){
@@ -100,7 +100,7 @@ public class ConcurrentBiDijkstra implements Searcher {
 
         Runnable t = () -> {
             while(!vPq.isEmpty() && !Thread.currentThread().isInterrupted()){
-                System.out.println("loop");
+//                System.out.println("loop");
                 exploredB++;
                 int v2 = vPq.poll().getNode();
                 for (double[] e : graph.bckAdj(v2)) {

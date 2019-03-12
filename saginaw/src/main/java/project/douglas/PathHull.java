@@ -24,9 +24,9 @@ public class PathHull {
     private int phTag;
 
     PathHull(Integer e1, Integer e2){
-        top = 5000;
-        bot = 5000;
-        deque = new int[10000];
+        top = 50000;
+        bot = 50000;
+        deque = new int[100000];
         deque[top] = e1;
         top++;
         bot--;

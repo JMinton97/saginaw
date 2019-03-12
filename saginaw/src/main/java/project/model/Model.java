@@ -1,6 +1,7 @@
 package project.model;
 
 import javafx.util.Pair;
+import project.kdtree.Tree;
 import project.map.*;
 import project.search.*;
 import project.utils.ImageFile;
@@ -35,7 +36,7 @@ public class Model {
 	private BufferedImage image = null;
 	private MyMap2 map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
-	private String region = "britain";
+	private String region = "london";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
 	private BigDecimal zoom, baseScale;
@@ -51,7 +52,7 @@ public class Model {
 
 	private ContractionALT c1, c2;
 	private MyGraph graph;
-	private ArrayList<Long> routeWays;
+	private ArrayList<ArrayList<Long>> segments;
 	private ArrayList<ArrayList<Point2D.Double>> routeNodes;
 	private ArrayList<Double> segmentDistances;
 	private HashMap<double[], Integer> closestNodes;
@@ -69,7 +70,13 @@ public class Model {
 	private ArrayList<Searcher> searcherList;
 	private Stack<Searcher> searcherStack;
 
+	private Tree routeTree;
+
 	public Model() {
+
+	}
+
+	public void startUp(){
 		x = 1;
 		y = 1;
 		baseScale = BigDecimal.valueOf(40000);
@@ -101,6 +108,7 @@ public class Model {
 		}
 
 		routeNodes = new ArrayList<>();
+		segments = new ArrayList<>();
 		segmentDistances = new ArrayList<>();
 		flags = new ArrayList<>();
 		pivoted = false;
@@ -287,42 +295,43 @@ public class Model {
 	public void switchSearchers(SearchType s){
 		switch(s){
 			case DIJKSTRA:
-				searcherList.clear();
+				searcherStack.clear();
 				for(int x = 0; x < SEARCHER_COUNT; x++){
 					searcherStack.add(new Dijkstra(graph));
 				}
+				System.out.println("switched");
 				break;
 
 			case BIDIJKSTRA:
-				searcherList.clear();
+				searcherStack.clear();
 				for(int x = 0; x < SEARCHER_COUNT; x++){
 					searcherStack.add(new BiDijkstra(graph));
 				}
 				break;
 
 			case CONCURRENT_BIDIJKSTRA:
-				searcherList.clear();
+				searcherStack.clear();
 				for(int x = 0; x < SEARCHER_COUNT; x++){
 					searcherStack.add(new ConcurrentBiDijkstra(graph));
 				}
 				break;
 
 			case ALT:
-				searcherList.clear();
+				searcherStack.clear();
 				for(int x = 0; x < SEARCHER_COUNT; x++){
 					searcherStack.add(new ALT(graph, preProcess));
 				}
 				break;
 
 			case BIALT:
-				searcherList.clear();
+				searcherStack.clear();
 				for(int x = 0; x < SEARCHER_COUNT; x++){
 					searcherStack.add(new BiALT(graph, preProcess));
 				}
 				break;
 
 			case CONCURRENT_BIALT:
-				searcherList.clear();
+				searcherStack.clear();
 				for(int x = 0; x < SEARCHER_COUNT; x++){
 					searcherStack.add(new ConcurrentBiALT(graph, preProcess));
 				}
@@ -332,6 +341,7 @@ public class Model {
 //				searcherList.add(new Con)
 
 			case CONTRACTION_ALT:
+				searcherStack.clear();
 				for(int x = 0; x < SEARCHER_COUNT; x++){
 					searcherStack.add(new ContractionALT(graph, corePreProcess));
 				}
@@ -544,28 +554,25 @@ public class Model {
 						startTime = System.nanoTime();
 						if(routeNodes.size() > z){
 							routeNodes.set(z, graph.refsToNodes(searcher.getRoute()));
-							segmentDistances.set(z, searcher.getDist());
+//							segmentDistances.set(z, searcher.getDist());
                         } else {
 							routeNodes.add(graph.refsToNodes(searcher.getRoute()));
-							segmentDistances.add(searcher.getDist());
+//							segmentDistances.add(searcher.getDist());
                         }
                         endTime = System.nanoTime();
 //						System.out.println("	points time: " + (((float) endTime - (float) startTime) / 1000000000));
 
 						routeDistance += searcher.getDist();
 
-						ArrayList<Long> routeWays = searcher.getRouteAsWays();
+						ArrayList<Long> segmentWays = searcher.getRouteAsWays();
 
-						Runnable getFullRoute = () -> {
-							if(routeNodes.size() > z){
-								routeNodes.set(z, graph.wayListToNodes(routeWays));
-							} else {
-								routeNodes.add(graph.wayListToNodes(routeWays));
-							}
-						};
-
-						Thread getFullRouteThread = new Thread(getFullRoute);
-						getFullRouteThread.start();
+						if(segments.size() > z){
+							segments.set(z, segmentWays);
+							System.out.println("setting segment " + z);
+						} else {
+							segments.add(segmentWays);
+							System.out.println("adding segment " + z);
+						}
 
 						flags.set(z, true);
 						searcher.clear();
@@ -583,7 +590,9 @@ public class Model {
 			for(int x = 0; x < routeNodes.size(); x++){
 				if(x >= markers.size() - 1){
 					routeNodes.remove(x);
-					segmentDistances.remove(x);
+					if(segmentDistances.size() > x){
+						segmentDistances.remove(x);
+					}
 					x--;
 				}
 			}
@@ -613,5 +622,25 @@ public class Model {
 			flags.set(x, false);
 		}
 		betterFindRoutes();
+	}
+
+	public void loadFullRoute(){
+		routeTree = new Tree(12);
+		int z = 0;
+		for(ArrayList<Long> segment : segments) {
+			if (routeNodes.size() > z) {
+				routeNodes.set(z, graph.wayListToNodes(segment));
+				for (Point2D node : routeNodes.get(z)) {
+					routeTree.insert(z, new double[]{node.getX(), node.getY()});
+				}
+			} else {
+				routeNodes.add(graph.wayListToNodes(segment));
+				for (Point2D node : routeNodes.get(z)) {
+					routeTree.insert(z, new double[]{node.getX(), node.getY()});
+				}
+			}
+			z++;
+		}
+		System.out.println("TREE SIZE: " + routeTree.size());
 	}
 }

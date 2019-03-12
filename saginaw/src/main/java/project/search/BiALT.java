@@ -81,7 +81,7 @@ public class BiALT implements Searcher {
         explored = 0;
 
         OUTER: while(!(uPq.isEmpty()) && !(vPq.isEmpty())) { //check
-            System.out.println("loop");
+//            System.out.println("loop");
             explored += 2;
             int v1 = uPq.poll().getNode();
             for (double[] e : graph.fwdAdj(v1)) {

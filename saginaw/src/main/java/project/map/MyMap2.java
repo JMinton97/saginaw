@@ -42,6 +42,7 @@ public class MyMap2 {
     private Point2D.Double centre, origin;
     private static ArrayList<Place> cities;
     private static ArrayList<Place> towns;
+    public static final int MAX_LEVEL = 2048;
 
     private static File file;
     public static double[][][] bounds;
@@ -564,7 +565,7 @@ public class MyMap2 {
         File inputfile, outputfile;
         BufferedImage map;
         try{
-            for(int z = 2; z < 4096; z = z * 2){
+            for(int z = 2; z < (MAX_LEVEL * 2); z = z * 2){
                 new File("draw/" + region + "/" + z + "/").mkdirs();
 //                if(Math.max(tiles.length, tiles[0].length))
                 System.out.println("z" + z);

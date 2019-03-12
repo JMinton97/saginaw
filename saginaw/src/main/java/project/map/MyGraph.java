@@ -1349,6 +1349,7 @@ public class MyGraph {
         totalMapDBTime = 0;
         ArrayList<int[]> allIDs = new ArrayList();
         for(Long wayId : wayList) {
+            Thread.yield();
             if(coreMapRoads.containsKey(wayId)){
                 allIDs.add(coreMapRoads.get(wayId));
             } else {
@@ -1357,6 +1358,7 @@ public class MyGraph {
         }
 
         for(int[] ids : allIDs){
+            Thread.yield();
             for(int i : ids){
                 double[] point = dictionary.get(i);
                 points.add(new Point2D.Double(point[0], point[1]));

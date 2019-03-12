@@ -6,9 +6,11 @@ import project.model.Model;
 import project.search.SearchType;
 import project.view.actions.*;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,15 +32,45 @@ public class View extends JFrame
 	private JLabel distance;
 	private JFrame frame;
 	private Model model;
+	private Controller controller;
 
-	public View(Model model, Controller controller)
-	{
+	public View(Model model, Controller controller) {
 		super("Saginaw v0.1");
 		controller.addView(this);
-
+		setBounds(10, 10, 1200, 800);
+//		setBackground(Color.MAGENTA);
 		frame = this;
 
+//		try{
+//			final BufferedImage splashImg = ImageIO.read(new File(System.getProperty("user.dir").concat("/res/icon/splash.png")));
+//			SplashPanel splashPanel = new SplashPanel(splashImg);
+//			getContentPane().add(splashPanel);
+//			System.out.println(splashPanel.getWidth());
+//			splashPanel.repaint();
+//			splashPanel.updateUI();
+//			splashPanel.paintImmediately(0, 0, 1200, 800);
+//		}catch(IOException e){
+//			e.printStackTrace();
+//		}
+
 		this.model = model;
+		this.controller = controller;
+
+		;
+
+		revalidate();
+		repaint();
+
+
+		frame.setVisible(true);
+
+	}
+
+
+
+
+	public void startMap(){
+
 
 		// We will use the default BorderLayout, with a panel in
 		// the centre area, a tool bar in the NORTH area and a menu bar
@@ -49,7 +81,7 @@ public class View extends JFrame
 		// exitAction has to be final because we reference it from within
 		// an inner class
 
-		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 //		addWindowListener(new WindowAdapter()
 //		{
 //			public void windowClosing(WindowEvent we)
@@ -177,8 +209,7 @@ public class View extends JFrame
 
 		getContentPane().add(infoPanel, BorderLayout.SOUTH);
 
-		pack();
-		setBounds(0, 0, 1200, 800);
+//		pack();
 
 		addComponentListener(new ComponentAdapter() {
 			public void componentResized(ComponentEvent componentEvent) {
@@ -223,5 +254,24 @@ public class View extends JFrame
 			this.distance.setText("Distance: " + new BigDecimal(distance).setScale(2, RoundingMode.HALF_UP).doubleValue() + "km");
 		}
 		infoPanel.repaint();
+	}
+}
+
+class SplashPanel extends JPanel {
+
+	private BufferedImage image;
+
+	public SplashPanel(BufferedImage image){
+		this.image = image;
+		setPreferredSize(new Dimension(image.getWidth(), image.getHeight()));
+		System.out.println(image.getWidth());
+	}
+
+	@Override
+	protected void paintComponent(Graphics g) {
+		System.out.println("PAINT");
+		Thread.dumpStack();
+		super.paintComponent(g);
+		g.drawImage(image, 0, 0, null);
 	}
 }

@@ -2,6 +2,7 @@ package project.view;
 
 import project.controller.Controller;
 import project.douglas.DouglasPeucker;
+import project.map.MyMap2;
 import project.map.Place;
 import project.model.Model;
 
@@ -121,11 +122,12 @@ class MapPane extends JPanel
 		xDimension = model.getMap().getTileWidth();
 		yDimension = model.getMap().getTileHeight();
 		this.scale = model.getScale().doubleValue();
-		for(int l = 1; l < 512; l *= 2){
+		for(int l = 1; l < (MyMap2.MAX_LEVEL); l *= 2){
 			tileGrid = new Tile[(int) Math.ceil(xDimension / (double) l)][(int) Math.ceil(yDimension / (double) l)];
 			TileManager tm = new TileManager(tileGrid, this);
 			if(l == 1){
 				Thread t = new Thread(tm);
+				t.setPriority(Thread.MIN_PRIORITY);
 				t.start();
 			}
 //			System.out.println(l + " is " +  (int) Math.ceil(xDimension / (double) l) + ", " + (int) Math.ceil(yDimension / (double) l));
@@ -179,7 +181,7 @@ class MapPane extends JPanel
 		modifier = level;
 
 		tileGrid = layers.get(modifier);
-//		System.out.println("Level = " + level);
+		System.out.println("Level = " + level);
 
 		LOOP: for(int x = 0; x < tileGrid.length; x++){
 			for(int y = 0; y < tileGrid[0].length; y++){
@@ -199,18 +201,11 @@ class MapPane extends JPanel
 			}
 		}
 
-//		g.drawString(String.valueOf(zoom), 50, 50);
-//		g.drawString(String.valueOf(centre.getX()) + " " + String.valueOf(centre.getY()), 50, 100);
-//		g.drawString(String.valueOf(dougTolerance), 50, 150);
-
 		drawMarkers((Graphics2D) g);
 
 		g.setColor(Color.RED);
 		((Graphics2D) g).setStroke(new BasicStroke(6));
 
-		// The ViewPort is the part of the mapPane that is displayed.
-		// By scrolling the ViewPort, you move it across the full size mapPane,
-		// showing only the ViewPort sized window of the mapPane at any one time.
 
         if(model.hasRoute){
             drawRoute(model.getRoute(), (Graphics2D) g);
@@ -256,9 +251,12 @@ class MapPane extends JPanel
 			fullRoute.addAll(subRoute);
 		}
 
-		if(simplifyRoute){ fullRoute = DouglasPeucker.simplify(fullRoute, zoom / 50000); }
-
 		if(fullRoute.size() > 0){
+			if(simplifyRoute){
+				fullRoute = DouglasPeucker.simplify(fullRoute, zoom / 50000);
+				System.out.println(zoom / 50000);
+			}
+			System.out.println("SIZE: " + fullRoute.size());
 			Path2D path = new Path2D.Double();
 			Point2D first = geoToCanvas(fullRoute.get(0));
 			path.moveTo((int) first.getX(), (int) first.getY());

@@ -71,7 +71,7 @@ public class BiDijkstra implements Searcher {
         explored = 0;
 
         while(!(uPq.isEmpty()) && !(vPq.isEmpty())){ //check
-            System.out.println("searching");
+//            System.out.println("searching");
             explored += 2;
             int v1 = uPq.poll().getNode();
             for (double[] e : graph.fwdAdj(v1)){

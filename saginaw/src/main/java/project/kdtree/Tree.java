@@ -184,4 +184,12 @@ public class Tree implements Serializable{
             System.out.println("0");
         }
     }
+
+    public int size(){
+        if(root != null){
+            return root.size();
+        } else {
+            return 0;
+        }
+    }
 }

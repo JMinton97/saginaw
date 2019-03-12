@@ -5,6 +5,7 @@ import project.model.Model;
 import project.view.View;
 
 import javax.swing.*;
+import java.io.IOException;
 
 /**
  * User: Alan P. Sexton
@@ -50,8 +51,9 @@ public class Main extends JFrame
 				Model model = new Model();
 				Controller controller = new Controller(model);
 				View view = new View(model, controller);
-
 				view.setVisible(true);
+				model.startUp();
+				view.startMap();
 			}
 		});
 

@@ -76,7 +76,7 @@ public class ContractionALT implements Searcher {
 
     public void search(int startNode, int endNode){
 
-        System.out.println("Begun search");
+//        System.out.println("Begun search");
 
         explored = 0;
         exploredA = 0;
@@ -191,7 +191,7 @@ public class ContractionALT implements Searcher {
             System.out.println("NO SECOND STAGE");
         }
 
-        System.out.println("Ended search");
+//        System.out.println("Ended search");
 
     }
 
@@ -237,7 +237,7 @@ public class ContractionALT implements Searcher {
         backDTV = (double[]) distancesTo.get(proxyStart);
         backDFV = (double[]) distancesFrom.get(proxyStart);
 
-        System.out.println("stage 2");
+//        System.out.println("stage 2");
 
         Runnable s = () -> {
             while(!coreSQ.isEmpty() && !Thread.currentThread().isInterrupted()){

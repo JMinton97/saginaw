@@ -96,4 +96,19 @@ public class Node implements Serializable{
     public ArrayList<Integer> getIds() {
         return ids;
     }
+
+    public int size(){
+        int size = 1;
+        if(isLeaf()){
+            return size;
+        } else {
+            if(getLeft() != null){
+                size += getLeft().size();
+            }
+            if(getRight() != null){
+                size += getRight().size();
+            }
+        }
+        return size;
+    }
 }
