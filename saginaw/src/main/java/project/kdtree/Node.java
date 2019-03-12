@@ -2,6 +2,7 @@ package project.kdtree;
 
 import javafx.util.Pair;
 import org.mapdb.BTreeMap;
+import project.map.MyGraph;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -79,18 +80,14 @@ public class Node implements Serializable{
         double closestDistance = Double.MAX_VALUE;
         double thisDist;
         for(int id : ids){
-            thisDist = distance(searchLoc, dictionary.get(id));
+            thisDist = MyGraph.haversineDistance(searchLoc, dictionary.get(id));
             if(thisDist < closestDistance){
                 closest = id;
                 closestDistance = thisDist;
-
             }
         }
+        System.out.println("Closest: " + closestDistance);
         return new Pair<>(closest, closestDistance);
-    }
-
-    public double distance(double[] a, double[] b){
-        return (((b[0] - a[0]) * (b[0] - a[0])) + ((b[1] - a[1]) * (b[1] - a[1])));
     }
 
     public ArrayList<Integer> getIds() {
@@ -100,7 +97,7 @@ public class Node implements Serializable{
     public int size(){
         int size = 1;
         if(isLeaf()){
-            return size;
+            return ids.size();
         } else {
             if(getLeft() != null){
                 size += getLeft().size();

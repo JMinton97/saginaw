@@ -128,7 +128,7 @@ class MapPane extends JPanel
 			if(l == 1){
 				Thread t = new Thread(tm);
 				t.setPriority(Thread.MIN_PRIORITY);
-				t.start();
+//				t.start();
 			}
 //			System.out.println(l + " is " +  (int) Math.ceil(xDimension / (double) l) + ", " + (int) Math.ceil(yDimension / (double) l));
 			for(int x = 0; x < tileGrid.length; x++){
@@ -181,7 +181,6 @@ class MapPane extends JPanel
 		modifier = level;
 
 		tileGrid = layers.get(modifier);
-		System.out.println("Level = " + level);
 
 		LOOP: for(int x = 0; x < tileGrid.length; x++){
 			for(int y = 0; y < tileGrid[0].length; y++){
@@ -256,7 +255,6 @@ class MapPane extends JPanel
 				fullRoute = DouglasPeucker.simplify(fullRoute, zoom / 50000);
 				System.out.println(zoom / 50000);
 			}
-			System.out.println("SIZE: " + fullRoute.size());
 			Path2D path = new Path2D.Double();
 			Point2D first = geoToCanvas(fullRoute.get(0));
 			path.moveTo((int) first.getX(), (int) first.getY());

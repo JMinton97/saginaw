@@ -1031,7 +1031,7 @@ public class MyGraph {
         return length;
     }
 
-    private double haversineDistance(double[] nodeA, double[] nodeB){
+    public static double haversineDistance(double[] nodeA, double[] nodeB){
         double rad = 6371000; //radius of earth in metres
         double aLatRadians = Math.toRadians(nodeA[1]); //0 = latitude, 1 = longitude
         double bLatRadians = Math.toRadians(nodeB[1]);
@@ -1438,7 +1438,8 @@ public class MyGraph {
     }
 
     public int findClosest(double[] loc){
-        return tree.nearest(loc, dictionary);
+        System.out.println(tree.nearest(loc, dictionary).getValue());
+        return tree.nearest(loc, dictionary).getKey();
     }
 
     class SortByLong implements Comparator<Pair<Integer, Integer>>

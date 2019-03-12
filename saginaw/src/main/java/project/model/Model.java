@@ -1,6 +1,5 @@
 package project.model;
 
-import javafx.util.Pair;
 import project.kdtree.Tree;
 import project.map.*;
 import project.search.*;
@@ -46,8 +45,8 @@ public class Model {
 	private double geomXD, geomYD;
 	private int imageEdge = 1024;
 	private ArrayList<double[]> markers;
-	private ArrayList<Boolean> flags;
-	public double[] pivot;
+	private ArrayList<Boolean> segmentFlags;
+	private int pivotOnSegment;
 	private double modZoom;
 
 	private ContractionALT c1, c2;
@@ -63,7 +62,7 @@ public class Model {
 	private Stack<double[]> markerStack;
 
 	public boolean hasRoute;
-	public boolean pivoted;
+	public boolean pivotMode;
 
 	private double routeDistance;
 
@@ -110,8 +109,8 @@ public class Model {
 		routeNodes = new ArrayList<>();
 		segments = new ArrayList<>();
 		segmentDistances = new ArrayList<>();
-		flags = new ArrayList<>();
-		pivoted = false;
+		segmentFlags = new ArrayList<>();
+		pivotMode = false;
 		markerStack = new Stack<>();
 
 		searcherStack = new Stack<>();
@@ -457,41 +456,53 @@ public class Model {
 //		System.out.println(location[0] + " " + location[1]);
 		markers.add(location);
 		markerStack.add(location);
-		flags.add(false);
+		routeNodes.add(new ArrayList<>());
+		segments.add(new ArrayList<>());
+		if(markers.size() > 1){
+			segmentFlags.add(false);
+		}
 		betterFindRoutes();
 	}
 
 	public void addPivot(double[] location){
-		if(pivoted){
-			markers.set(1, location);
+		if(pivotMode){
+			markers.set(pivotOnSegment + 1, location);
+			segmentFlags.set(pivotOnSegment, false);
+			segmentFlags.set(pivotOnSegment + 1, false);
 		} else {
-			markers.add(1, location);
+			markers.add(pivotOnSegment + 1, location);
+			segments.add(pivotOnSegment + 1, new ArrayList<>());
+			segmentFlags.add(pivotOnSegment, false);
+			segmentFlags.set(pivotOnSegment + 1, false);
+			routeNodes.add(pivotOnSegment, new ArrayList<>());
 		}
 		markerStack.pop();
 		markerStack.add(location);
-		pivoted = true;
-		flags.set(0, false);
-		flags.set(1, false);
+		pivotMode = true;
 		betterFindRoutes();
 	}
 
 	public void clearMarkers(){
+		routeTree = null;
 		routeDistance = 0;
-		markers.clear();
-		segmentDistances.clear();
-		routeNodes.clear();
-		flags = new ArrayList<>();
-		pivoted = false;
+		markers = new ArrayList<>();
+		segmentDistances = new ArrayList<>();
+		routeNodes= new ArrayList<>();
+		segmentFlags = new ArrayList<>();
+		pivotMode = false;
 		hasRoute = false;
-		markerStack.clear();
+		markerStack = new Stack<>();
+		segments = new ArrayList<>();
 	}
 
 	public void undoLastMarker(){
 
 		int index = markers.indexOf(markerStack.peek());
 		markers.remove(markerStack.pop());
-		flags.set(index - 1, false);
-		flags.set(index, false);
+		segmentFlags.set(index - 1, false);
+		segmentFlags.remove(index);
+		segments.remove(index);
+		routeNodes.remove(index);
 		if(markers.size() < 2){
 			double[] firstMarker = markerStack.pop();
 			clearMarkers();
@@ -521,7 +532,7 @@ public class Model {
 			for (int x = 0; x < markers.size() - 1; x++) {
 //                System.out.println(x);
 				final int z = x;
-				if (!flags.get(x)) {
+				if (!segmentFlags.get(x)) {
 					Runnable routeSegmentThread = () -> {
 						long startTime = System.nanoTime();
 						int src, dst;
@@ -545,22 +556,11 @@ public class Model {
 							}
 						}
 						Searcher searcher = searcherStack.pop();
-//                        System.out.println("before " + Thread.currentThread().getId());
 						searcher.search(src, dst);
-//                        System.out.println("after " + Thread.currentThread().getId());
-						long endTime = System.nanoTime();
-//						System.out.println("	search time: " + (((float) endTime - (float) startTime) / 1000000000));
-//						System.out.println("getting nodes...");
-						startTime = System.nanoTime();
 						if(routeNodes.size() > z){
 							routeNodes.set(z, graph.refsToNodes(searcher.getRoute()));
 //							segmentDistances.set(z, searcher.getDist());
-                        } else {
-							routeNodes.add(graph.refsToNodes(searcher.getRoute()));
-//							segmentDistances.add(searcher.getDist());
                         }
-                        endTime = System.nanoTime();
-//						System.out.println("	points time: " + (((float) endTime - (float) startTime) / 1000000000));
 
 						routeDistance += searcher.getDist();
 
@@ -574,7 +574,7 @@ public class Model {
 							System.out.println("adding segment " + z);
 						}
 
-						flags.set(z, true);
+						segmentFlags.set(z, true);
 						searcher.clear();
 						searcherStack.push(searcher);
 					};
@@ -615,32 +615,58 @@ public class Model {
 
             System.out.println("Finished.");
 		}
+		System.out.println(segmentFlags);
+		System.out.println(routeNodes.size());
 	}
 
 	public void freshSearch() {
-		for(int x = 0; x < flags.size(); x++){
-			flags.set(x, false);
+		for(int x = 0; x < segmentFlags.size(); x++){
+			segmentFlags.set(x, false);
 		}
 		betterFindRoutes();
 	}
 
 	public void loadFullRoute(){
-		routeTree = new Tree(12);
 		int z = 0;
 		for(ArrayList<Long> segment : segments) {
 			if (routeNodes.size() > z) {
 				routeNodes.set(z, graph.wayListToNodes(segment));
-				for (Point2D node : routeNodes.get(z)) {
-					routeTree.insert(z, new double[]{node.getX(), node.getY()});
-				}
 			} else {
 				routeNodes.add(graph.wayListToNodes(segment));
-				for (Point2D node : routeNodes.get(z)) {
-					routeTree.insert(z, new double[]{node.getX(), node.getY()});
-				}
 			}
 			z++;
 		}
-		System.out.println("TREE SIZE: " + routeTree.size());
+		pivotMode = false;
+	}
+
+	public boolean clickedRoute(double[] clickPoint, double dragThreshold){
+		if(hasRoute){
+			System.out.println(clickPoint[0] + "," + clickPoint[1]);
+
+			double minDist = Double.MAX_VALUE;
+			int minSegment = 0;
+			int segmentNum = 0;
+			double distFromLine;
+
+			for(ArrayList<Point2D.Double> segment : routeNodes){
+				for(Point2D.Double point : segment){
+					distFromLine = MyGraph.haversineDistance(clickPoint, new double[]{point.getX(), point.getY()});
+					if(distFromLine < minDist){
+						minDist = distFromLine;
+						minSegment = segmentNum;
+					}
+				}
+				segmentNum++;
+			}
+			if(minDist < dragThreshold){
+				pivotOnSegment = minSegment;
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+
 	}
 }

@@ -2,6 +2,7 @@ package project.kdtree;
 
 import javafx.util.Pair;
 import org.mapdb.BTreeMap;
+import project.map.MyGraph;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -102,15 +103,15 @@ public class Tree implements Serializable{
         }
     }
 
-    public int nearest(double[] point, ArrayList<double[]> dictionary){
+    public Pair<Integer, Double> nearest(double[] point, ArrayList<double[]> dictionary){
 //        System.out.println("Nearest to " + point[0] + " " + point[1]);
         nearestId = 0;
         if(root == null){
-            return -1;                      //reserved?
+            return new Pair<>(-1, null);     //reserved?
         } else {
             minDist = Double.MAX_VALUE;
             find(point, root, true, dictionary);
-            return nearestId;
+            return new Pair<>(nearestId, minDist);
         }
     }
 
@@ -118,8 +119,7 @@ public class Tree implements Serializable{
         if(node != null){
 //            System.out.println("Trying " + node.getPoint()[0] + "," + node.getPoint()[1]);
             if(node.isLeaf()){
-//                System.out.println("true");
-                System.out.println("LEAF SIZE: " + node.getIds().size());
+//                System.out.println("LEAF SIZE: " + node.getIds().size());
                 Pair<Integer, Double> leafClosest = node.findClosest(p, dictionary);
 //                System.out.println(d);
                 if (minDist > leafClosest.getValue()) {
@@ -137,7 +137,7 @@ public class Tree implements Serializable{
                 }
                 if (p[x] >= node.getPoint()[x]) { //search left
                     find(p, node.getLeft(), !vertical, dictionary);
-                    double d = distance(p, node.getPoint());
+                    double d = MyGraph.haversineDistance(p, node.getPoint());
 //                    System.out.println(d);
                     if (minDist > d) {
 //                        System.out.println("yeah!");
@@ -150,7 +150,7 @@ public class Tree implements Serializable{
                     }
                 } else {
                     find(p, node.getRight(), !vertical, dictionary);
-                    double d = distance(p, node.getPoint());
+                    double d = MyGraph.haversineDistance(p, node.getPoint());
 //                    System.out.println(d);
                     if (minDist > d) {
 //                        System.out.println("yeah!");
