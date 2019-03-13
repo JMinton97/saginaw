@@ -1,8 +1,6 @@
 package project.model;
 
-import project.kdtree.Tree;
 import project.map.*;
-import project.search.*;
 import project.utils.ImageFile;
 import project.utils.UnsupportedImageTypeException;
 
@@ -283,9 +281,6 @@ public class Model {
 
 		centreCoord.x += (xDif * (scaleDif / oldZoom));
 		centreCoord.y += (yDif * (scaleDif / oldZoom));
-
-		System.out.println(zoom);
-
 	}
 
 	public int getImageEdge(){
@@ -308,6 +303,6 @@ public class Model {
 
 		double dragThreshold = ((1 / (baseScale.doubleValue() / Math.pow(2, zoom.doubleValue()))) * dragThresholdPx) * 100000;
 		System.out.println("Drag threshold: " + dragThreshold);
-		return route.addPivot(clickPoint, dragThreshold);
+		return route.adjustRoute(clickPoint, dragThreshold);
 	}
 }

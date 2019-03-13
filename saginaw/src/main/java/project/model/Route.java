@@ -13,9 +13,12 @@ public class Route{
 
     private ArrayList<double[]> waypoints;
     private ArrayList<Segment> segments;
-    private int pivotSegment;
+    private int segmentToPivot;
+    private int waypointToMove;
     private Stack<double[]> addedPoints;
     private boolean pivoting;
+    private boolean startPivot;
+    private boolean startMoveWaypoint;
     private MyGraph graph;
     private HashMap<double[], Integer> closestNodes;
     private Stack<Searcher> searcherStack;
@@ -52,47 +55,78 @@ public class Route{
         calculateRoute();
     }
 
-    public boolean addPivot(double[] pivotPoint, double dragThreshold){
+    public boolean adjustRoute(double[] pivotPoint, double dragThreshold){
         if(hasRoute()){
             double minDist = Double.MAX_VALUE;
             int minSegment = 0;
             int segmentNum = 0;
-            double distFromLine;
+            int minWayPoint = 0;
+            double distFromLine, distFromPoint;
 
-            for(Segment segment : segments){
-                for(Point2D.Double point : segment.getPoints()){
-                    distFromLine = MyGraph.haversineDistance(pivotPoint, new double[]{point.getX(), point.getY()});
-                    if(distFromLine < minDist){
-                        minDist = distFromLine;
-                        minSegment = segmentNum;
-                    }
+            for(double[] waypoint : waypoints){
+                distFromPoint = MyGraph.haversineDistance(pivotPoint, waypoint);
+                if(distFromPoint < minDist){
+                    minDist = distFromPoint;
+                    minWayPoint = waypoints.indexOf(waypoint);
                 }
-                segmentNum++;
             }
-            if(minDist < dragThreshold){
-                pivotSegment = minSegment;
+
+            if(minDist < dragThreshold * 2){
+                waypointToMove = minWayPoint;
+                startMoveWaypoint = true;
                 return true;
             } else {
-                return false;
+                minDist = Double.MAX_VALUE;
+                for(Segment segment : segments){
+                    for(Point2D.Double point : segment.getPoints()){
+                        distFromLine = MyGraph.haversineDistance(pivotPoint, new double[]{point.getX(), point.getY()});
+                        if(distFromLine < minDist){
+                            minDist = distFromLine;
+                            minSegment = segmentNum;
+                        }
+                    }
+                    segmentNum++;
+                }
+                if(minDist < dragThreshold){
+                    segmentToPivot = minSegment;
+                    startPivot = true;
+                    return true;
+                } else {
+                    return false;
+                }
             }
         } else {
             return false;
         }
-
     }
+
+    public void makeAdjustment(double[] point){
+        if(startMoveWaypoint){
+            alterWayPoint(point);
+        } else if (startPivot){
+            alterPivot(point);
+        }
+    }
+
 
     public void alterPivot(double[] pivotPoint){
         if(pivoting){
-            waypoints.set(pivotSegment + 1, pivotPoint);
-            segments.get(pivotSegment).setResolved(false);
-            segments.get(pivotSegment + 1).setResolved(false);
+            waypoints.set(segmentToPivot + 1, pivotPoint);
+            segments.get(segmentToPivot).setResolved(false);
+            segments.get(segmentToPivot + 1).setResolved(false);
             addedPoints.pop();
         }else{
             pivoting = true;
-            waypoints.add(pivotSegment + 1, pivotPoint);
-            segments.add(pivotSegment + 1, new Segment(new double[]{}, new double[]{}));
+            waypoints.add(segmentToPivot + 1, pivotPoint);
+            segments.add(segmentToPivot + 1, new Segment(new double[]{}, new double[]{}));
         }
         addedPoints.push(pivotPoint);
+        validateSegments();
+        calculateRoute();
+    }
+
+    public void alterWayPoint(double[] alterPoint){
+        waypoints.set(waypointToMove, alterPoint);
         validateSegments();
         calculateRoute();
     }
@@ -295,6 +329,14 @@ public class Route{
             distance += s.getDistance();
         }
         return distance;
+    }
+
+    public void endAlteration(){
+        pivoting = false;
+        startMoveWaypoint = false;
+        startPivot = false;
+        waypointToMove = 0;
+        segmentToPivot = 0;
     }
 
 }

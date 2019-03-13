@@ -22,7 +22,7 @@ public class TestRun {
     public static void main(String[] args) throws InterruptedException{
 
         long startTime, endTime;
-        String region = "britain";
+        String region = "london";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 
@@ -44,11 +44,11 @@ public class TestRun {
             fe.createNewFile();
 
 
-            startTime = System.nanoTime();
-            MyMap2 map2 = new MyMap2(f, region, 1024, false);
-            map2.draw();
-            endTime = System.nanoTime();
-            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
+//            startTime = System.nanoTime();
+//            MyMap2 map2 = new MyMap2(f, region, 1024, false);
+//            map2.draw();
+//            endTime = System.nanoTime();
+//            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
 
 
             startTime = System.nanoTime();

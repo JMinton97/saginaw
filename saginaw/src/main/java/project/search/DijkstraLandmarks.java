@@ -2,6 +2,8 @@ package project.search;
 
 
 import gnu.trove.map.hash.THashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import project.map.MyGraph;
 
@@ -80,8 +82,18 @@ public class DijkstraLandmarks {
             Calendar cal = Calendar.getInstance();
             System.out.println(x + 1 + " of " + startNodes.size() + " " + sdf.format(cal.getTime()));
             DijkstraAlgorithm(graph, startNodes.get(x), x, forwards, core);
+
         }
 
+        for(int node : distTo.keySet()){
+            double[] distances = (double[]) distTo.get(node);
+            for(int x = 0; x < distances.length; x++){
+                if(distances[x] == Double.MAX_VALUE){
+                    distances[x] = 0;
+                }
+            }
+            distTo.put(node, distances);
+        }
     }
 
     public void DijkstraAlgorithm(MyGraph graph, int startNode, int index, boolean forwards, boolean core){

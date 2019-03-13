@@ -101,8 +101,8 @@ class CanvasMouseListener implements MouseInputListener
 		mouseDown = false;
 		x2 = e.getX();
 		y2 = e.getY();
-
 		controller.moveMap(x2 - x1, y2 - y1);
+		model.getRoute().endAlteration();
 		model.loadFullRoute();
 	}
 
@@ -127,7 +127,7 @@ class CanvasMouseListener implements MouseInputListener
 			double[] loc = view.getClickCoordinate(e.getX(), e.getY());
 //			System.out.println(loc[0] + " " + loc[1]);
 //            long startTime = System.nanoTime();
-			model.getRoute().alterPivot(loc);
+			model.getRoute().makeAdjustment(loc);
 //			long endTime = System.nanoTime();
 //            System.out.println("Route time: " + (((float) endTime - (float)startTime) / 1000000000));
 //			System.out.println(model.getMarkers().get(1)[0] + " " + model.getMarkers().get(1)[1]);

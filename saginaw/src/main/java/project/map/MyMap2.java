@@ -298,7 +298,7 @@ public class MyMap2 {
 
         Graphics2D mapGraphics = tile.createGraphics();
 
-        mapGraphics.setColor(new Color(244, 243, 236));
+        mapGraphics.setColor(new Color(225, 224, 217));
         mapGraphics.fillRect(0, 0, maxEdge, maxEdge);
         BasicStroke bs = new BasicStroke(1);
         mapGraphics.setStroke(bs);

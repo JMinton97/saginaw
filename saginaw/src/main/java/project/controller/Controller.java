@@ -148,7 +148,7 @@ public class Controller
 
 //	public void moveRoute(int x, int y){
 //        double[] loc = view.getClickCoordinate(e.getX(), e.getY());
-//	    model.addPivot(loc);
+//	    model.adjustRoute(loc);
 //	}
 
 	public void zoomOut(){

@@ -16,7 +16,7 @@ public class ComparisonTest {
 
     public static void main(String[] args) throws InterruptedException {
         long startTime, endTime;
-        String region = "london";
+        String region = "britain";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 
@@ -198,9 +198,9 @@ public class ComparisonTest {
                 startTime = System.nanoTime();
                 searcher.search(srcs[x], dsts[x]);
                 endTime = System.nanoTime();
-                System.out.println(startTime + " " + endTime);
-                System.out.println(x + " : " + (endTime - startTime) / 1000000);
-                avg += (endTime - startTime) / 1000000;
+//                System.out.println(startTime + " " + endTime);
+//                System.out.println(x + " : " + (endTime - startTime) / 1000000);
+                avg += (endTime - startTime);
 //                eps += searcher.getExplored() / ((endTime - startTime) / 1000000);
 //                if(x == 5){
 //                    System.out.println(searcher.getDist());
@@ -208,7 +208,7 @@ public class ComparisonTest {
                 searcher.clear();
 
             }
-            System.out.println("Contraction ALT: " + avg / LOOPS);
+            System.out.println("Contraction ALT: " + (avg / LOOPS) / 1000000 + "ms");
             System.out.println("EpS:    " + eps / LOOPS);
 
         } catch (IOException e) {
