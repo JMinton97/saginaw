@@ -250,6 +250,10 @@ public class BiDijkstra implements Searcher {
         return explored;
     }
 
+    public boolean routeFound(){
+        return routeFound;
+    }
+
 }
 
 

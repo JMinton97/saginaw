@@ -9,4 +9,5 @@ public interface Searcher {
     int getExplored();
     ArrayList<Integer> getRoute();
     ArrayList<Long> getRouteAsWays();
+    boolean routeFound();
 }

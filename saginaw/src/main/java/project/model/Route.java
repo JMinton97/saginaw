@@ -132,9 +132,11 @@ public class Route{
         double[] undoPoint = addedPoints.pop();
         int undoIndex = waypoints.indexOf(undoPoint);
         waypoints.remove(undoIndex);
-        segments.remove(undoIndex);
+        if(!segments.isEmpty()){
+            segments.remove(undoIndex - 1);
+        }
         validateSegments();
-
+        calculateRoute();
     }
 
     public void loadFullRoute(){
@@ -145,6 +147,7 @@ public class Route{
     }
 
     public void calculateRoute() {
+        System.out.println();
         ArrayList<Thread> routeThreads = new ArrayList<>();
         if (waypoints.size() > 1) {
             for(Segment segment : segments){
@@ -172,14 +175,17 @@ public class Route{
                         }
                         Searcher searcher = searcherStack.pop();
                         searcher.search(src, dst);
-                        segment.setPoints(graph.refsToNodes(searcher.getRoute()));
 
-//                        routeDistance += searcher.getDist();
+                        if(searcher.routeFound()){
+                            segment.setPoints(graph.refsToNodes(searcher.getRoute()));
+                            segment.setDistance(searcher.getDist());
+                            segment.setHasRoute(true);
+                        }else{
+                            segment.setHasRoute(false);
+                        }
 
                         segment.setWayIds(searcher.getRouteAsWays());
-
                         segment.setResolved(true);
-
                         searcher.clear();
                         searcherStack.push(searcher);
                     };
@@ -202,7 +208,6 @@ public class Route{
 				}catch(InterruptedException e){}
                 running = false;
                 for(Thread routeThread : routeThreads){
-					System.out.println("waiting");
                     running = (running || routeThread.isAlive());
                 }
             }
@@ -282,6 +287,14 @@ public class Route{
         segments = new ArrayList<>();
         addedPoints = new Stack<>();
         pivoting = false;
+    }
+
+    public double getDistance(){
+        double distance = 0;
+        for(Segment s : segments){
+            distance += s.getDistance();
+        }
+        return distance;
     }
 
 }

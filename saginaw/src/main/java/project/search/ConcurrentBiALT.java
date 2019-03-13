@@ -321,4 +321,8 @@ public class ConcurrentBiALT implements Searcher {
     public int getExplored(){
         return explored;
     }
+
+    public boolean routeFound(){
+        return routeFound;
+    }
 }

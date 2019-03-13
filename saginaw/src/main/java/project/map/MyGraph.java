@@ -1438,7 +1438,6 @@ public class MyGraph {
     }
 
     public int findClosest(double[] loc){
-        System.out.println(tree.nearest(loc, dictionary).getValue());
         return tree.nearest(loc, dictionary).getKey();
     }
 

@@ -144,6 +144,10 @@ public class Dijkstra implements Searcher {
     public int getExplored(){
         return explored;
     }
+
+    public boolean routeFound(){
+        return routeFound;
+    }
 }
 
 

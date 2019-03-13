@@ -35,42 +35,19 @@ public class Model {
 	private BufferedImage image = null;
 	private MyMap2 map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
-	private String region = "britain";
+	private String region = "london";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
 	private BigDecimal zoom, baseScale;
 	private Point2D.Double centreCoord;
-//	private Point2D.Double centreCoord = new Point2D.Double(-5.425, 53.425);
 	private Point2D.Double origin;
 	private double geomXD, geomYD;
 	private int imageEdge = 1024;
-	private ArrayList<double[]> markers;
-	private ArrayList<Boolean> segmentFlags;
-	private int pivotOnSegment;
 	private double modZoom;
-
 	private Route route;
-
-	private ContractionALT c1, c2;
-	private ArrayList<ArrayList<Long>> segments;
-	private ArrayList<ArrayList<Point2D.Double>> routeNodes;
-	private ArrayList<Double> segmentDistances;
-	private HashMap<double[], Integer> closestNodes;
-	private ALTPreProcess preProcess;
-	private ALTPreProcess corePreProcess;
-	private final int SEARCHER_COUNT = 4;
-
-	private Stack<double[]> markerStack;
-
-	public boolean hasRoute;
 	public boolean pivotMode;
+	public int dragThresholdPx = 20;
 
-	private double routeDistance;
-
-	private ArrayList<Searcher> searcherList;
-
-
-	private Tree routeTree;
 
 	public Model() {
 
@@ -83,10 +60,8 @@ public class Model {
 		zoom = BigDecimal.valueOf(2);
 		modZoom = Math.pow(2, zoom.doubleValue());
 		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));
-		markers = new ArrayList<>();
 
 		File f = new File(mapDir.concat(region).concat(".osm.pbf"));
-		MyGraph graph;
 		try {
 			route = new Route(new MyGraph(f, region));
 			map = new MyMap2(f, region, imageEdge, false);
@@ -94,33 +69,10 @@ public class Model {
 			e.printStackTrace();
 		}
 
-
-		routeNodes = new ArrayList<>();
-		segments = new ArrayList<>();
-		segmentDistances = new ArrayList<>();
-		segmentFlags = new ArrayList<>();
 		pivotMode = false;
 
-//		Long src = Long.parseLong("1349207723"); //wales
-		Long src, dst;
-
-//		src = Long.parseLong("510837046");
-//		dst = Long.parseLong("3462287546");
-
-//		src = Long.parseLong("370459811"); //wolverton to sheffield
-//		dst = Long.parseLong("1014466202");
-
-//		routeWays = bdijk.search(src, dst);
-//		routeWays = bstar.search(src, dst);
-//		System.out.println("Distance: " + bstar.getDist());
 		centreCoord = map.getCentre();
 		origin = map.getOrigin();
-
-		closestNodes = new HashMap<>();
-
-		routeDistance = 0;
-
-
 
 	}
 
@@ -329,10 +281,11 @@ public class Model {
 
 		double scaleDif = oldZoom - modZoom;
 
-//		System.out.println(centreCoord.x);
 		centreCoord.x += (xDif * (scaleDif / oldZoom));
-//		System.out.println(centreCoord.x);
 		centreCoord.y += (yDif * (scaleDif / oldZoom));
+
+		System.out.println(zoom);
+
 	}
 
 	public int getImageEdge(){
@@ -351,11 +304,10 @@ public class Model {
 		route.loadFullRoute();
 	}
 
-	public boolean clickedRoute(double[] clickPoint, double dragThreshold){
-		return route.addPivot(clickPoint, dragThreshold);
-	}
+	public boolean clickedRoute(double[] clickPoint){
 
-	public double getRouteDistance(){
-		return 0.0;
+		double dragThreshold = ((1 / (baseScale.doubleValue() / Math.pow(2, zoom.doubleValue()))) * dragThresholdPx) * 100000;
+		System.out.println("Drag threshold: " + dragThreshold);
+		return route.addPivot(clickPoint, dragThreshold);
 	}
 }

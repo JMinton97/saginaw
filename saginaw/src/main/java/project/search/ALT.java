@@ -165,6 +165,10 @@ public class ALT implements Searcher {
         return explored;
     }
 
+    public boolean routeFound(){
+        return routeFound;
+    }
+
 }
 
 

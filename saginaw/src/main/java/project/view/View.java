@@ -246,7 +246,7 @@ public class View extends JFrame
 	}
 
 	public void updateInfo(){
-		double distance  = model.getRouteDistance();
+		double distance  = model.getRoute().getDistance();
 		if(distance < 1200){
 			this.distance.setText("Distance: " + (int) Math.floor(distance) + "m");
 		} else {

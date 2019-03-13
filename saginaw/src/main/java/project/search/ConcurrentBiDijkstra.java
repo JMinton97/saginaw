@@ -269,4 +269,8 @@ public class ConcurrentBiDijkstra implements Searcher {
     public int getExplored(){
         return exploredA + exploredB;
     }
+
+    public boolean routeFound(){
+        return routeFound;
+    }
 }

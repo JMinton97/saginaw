@@ -12,6 +12,8 @@ public class Segment {
     private ArrayList<Long> wayIds;
     private boolean routed;
     private boolean resolved;
+    private double distance;
+    private boolean hasRoute;
 
 
     public Segment(double[] startNode, double[] endNode){
@@ -63,10 +65,25 @@ public class Segment {
     public void getFullDetailRoute(MyGraph graph){
         points.clear();
         points.addAll(graph.wayListToNodes(wayIds));
-
     }
 
     public boolean hasPoints(){
         return points != null;
+    }
+
+    public boolean hasRoute(){
+        return hasRoute;
+    }
+
+    public void setHasRoute(boolean bool){
+        this.hasRoute = bool;
+    }
+
+    public double getDistance() {
+        return distance;
+    }
+
+    public void setDistance(double distance) {
+        this.distance = distance;
     }
 }

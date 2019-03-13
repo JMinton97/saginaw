@@ -245,34 +245,44 @@ class MapPane extends JPanel
 	}
 
 	public void drawRoute(Route route, Graphics2D g){
+
+		Color startColor = Color.RED;
+		Color endColor = Color.MAGENTA;
+		int segments = route.getSegments().size();
+		int rDiff, gDiff, bDiff;
+		if(segments > 1){
+			rDiff = (endColor.getRed() - startColor.getRed()) / segments;
+			gDiff = (endColor.getGreen() - startColor.getGreen()) / segments;
+			bDiff = (endColor.getBlue() - startColor.getBlue()) / segments;
+		} else {
+			rDiff = 0;
+			gDiff = 0;
+			bDiff = 0;
+		}
+
 //
-		ArrayList<Point2D.Double> fullRoute = new ArrayList<>();
-
+		int x = 0;
 		for(Segment segment : route.getSegments()) {
-		    if(segment.hasPoints()){
-                fullRoute.addAll(segment.getPoints());
+		    if(segment.hasRoute()){
+				Path2D path = new Path2D.Double();
+				Point2D first = geoToCanvas(segment.getPoints().get(0));
+				path.moveTo((int) first.getX(), (int) first.getY());
+				for(Point2D.Double point : segment.getPoints()){
+					point = geoToCanvas(point);
+					path.lineTo((int) point.getX(), (int) point.getY());
+				}
+				Color segmentColor = new Color(startColor.getRed() + (rDiff * x), startColor.getGreen() + (gDiff * x), startColor.getBlue() + (bDiff * x));
+				g.setColor(segmentColor.darker());
+				g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+				g.draw(path);
+				segmentColor = new Color(startColor.getRed() + (rDiff * x), startColor.getGreen() + (gDiff * x), startColor.getBlue() + (bDiff * x));
+				g.setColor(segmentColor);
+				g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+				g.draw(path);
             }
+            x++;
 		}
 
-		if(fullRoute.size() > 0){
-			if(simplifyRoute){
-				fullRoute = DouglasPeucker.simplify(fullRoute, zoom / 50000);
-			}
-			Path2D path = new Path2D.Double();
-			Point2D first = geoToCanvas(fullRoute.get(0));
-			path.moveTo((int) first.getX(), (int) first.getY());
-			for(Point2D.Double point : fullRoute){
-				point = geoToCanvas(point);
-				path.lineTo((int) point.getX(), (int) point.getY());
-			}
-			g.setColor(Color.RED.darker());
-			g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-			g.draw(path);
-			g.setColor(Color.RED);
-			g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-			g.draw(path);
-
-		}
 		long endTime = System.nanoTime();
 //		System.out.println("drawRoute: " + (((float) endTime - (float)startTime) / 1000000000));
 //		System.out.print(System.nanoTime());

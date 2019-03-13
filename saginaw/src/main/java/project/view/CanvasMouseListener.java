@@ -82,7 +82,7 @@ class CanvasMouseListener implements MouseInputListener
 	public void mousePressed(MouseEvent e)
 	{
 		System.out.println("PRESS");
-		draggingMap = !model.clickedRoute(view.getMapPane().canvasToGeo(e.getX(), e.getY()), 200);
+		draggingMap = !model.clickedRoute(view.getMapPane().canvasToGeo(e.getX(), e.getY()));
 		if (!model.isActive())
 			return;
 		x1 = e.getX();
