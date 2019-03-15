@@ -23,10 +23,11 @@ public class ConcurrentBiDijkstra implements Searcher {
     private int overlapNode;
     private double bestSeen;
     private int bestPathNode;
-    private int exploredA, exploredB;
+    private int explored;
     private int startNode, endNode;
     private MyGraph graph;
     private boolean routeFound;
+    private String name = "conbidijkstra";
 
     public ConcurrentBiDijkstra(MyGraph graph) {
         int size = graph.getFwdGraph().size();
@@ -52,8 +53,7 @@ public class ConcurrentBiDijkstra implements Searcher {
 
     public void search(int startNode, int endNode){
 
-        exploredA = 0;
-        exploredB = 0;
+        explored = 0;
 
         overlapNode = -1;
 
@@ -72,7 +72,7 @@ public class ConcurrentBiDijkstra implements Searcher {
         Runnable s = () -> {
             while(!uPq.isEmpty() && !Thread.currentThread().isInterrupted()){
 //                System.out.println("loop");
-                exploredA++;
+                explored++;
                 int v1 = uPq.poll().getNode();
                 for (double[] e : graph.fwdAdj(v1)){
                     if(!Thread.currentThread().isInterrupted()) {
@@ -101,7 +101,7 @@ public class ConcurrentBiDijkstra implements Searcher {
         Runnable t = () -> {
             while(!vPq.isEmpty() && !Thread.currentThread().isInterrupted()){
 //                System.out.println("loop");
-                exploredB++;
+                explored++;
                 int v2 = vPq.poll().getNode();
                 for (double[] e : graph.bckAdj(v2)) {
                     if(!Thread.currentThread().isInterrupted()){
@@ -139,7 +139,7 @@ public class ConcurrentBiDijkstra implements Searcher {
         tThread.interrupt();
 
         if(overlapNode == -1){
-            System.out.println("No route found.");
+//            System.out.println("No route found.");
             routeFound = false;
         }
     }
@@ -267,10 +267,21 @@ public class ConcurrentBiDijkstra implements Searcher {
     }
 
     public int getExplored(){
-        return exploredA + exploredB;
+        return explored;
     }
 
     public boolean routeFound(){
         return routeFound;
+    }
+
+    public ArrayList<ArrayList<Integer>> getRelaxedNodes() {
+        ArrayList<ArrayList<Integer>> relaxedNodes = new ArrayList();
+        relaxedNodes.add(new ArrayList<>(uRelaxed));
+        relaxedNodes.add(new ArrayList<>(vRelaxed));
+        return relaxedNodes;
+    }
+
+    public String getName(){
+        return name;
     }
 }

@@ -12,7 +12,7 @@ import project.map.MyGraph;
 
 import java.util.*;
 
-public class ContractionALT implements Searcher {
+public class ContractionDijkstra implements Searcher {
     private Int2DoubleOpenHashMap uDistTo;
     private Int2LongOpenHashMap uEdgeTo;
     private Int2IntOpenHashMap uNodeTo;
@@ -28,29 +28,18 @@ public class ContractionALT implements Searcher {
     private int bestPathNode;
     private int explored;
     private MyGraph graph;
-    private ArrayList<Integer> landmarks;
-    private Int2ObjectOpenHashMap distancesTo;
-    private Int2ObjectOpenHashMap distancesFrom;
     private boolean routeFound;
     private int start, end;
-    private int proxyStart, proxyEnd;
-    private double[] forDTV, forDFV, backDTV, backDFV;
-    private String name = "calt";
+    private String name = "cbdijkstra";
 
 
-    public ContractionALT(MyGraph graph, ALTPreProcess altPreProcess) {
+    public ContractionDijkstra(MyGraph graph) {
         int size = graph.getFwdGraph().size();
 
         coreSQ = new PriorityQueue<>(new DistanceComparator());
         coreTQ = new PriorityQueue<>(new DistanceComparator());
 
         this.graph = graph;
-
-        landmarks = new ArrayList<>();
-
-        this.landmarks = altPreProcess.landmarks;
-        this.distancesFrom = altPreProcess.distancesFrom;
-        this.distancesTo = altPreProcess.distancesTo;
 
         uDistTo = new Int2DoubleOpenHashMap();
         uEdgeTo = new Int2LongOpenHashMap();
@@ -108,7 +97,7 @@ public class ContractionALT implements Searcher {
                 }
                 for (double[] e : graph.fwdAdj(v1)){
                     if(!isCore) {
-                        relax(v1, e, true);
+                        relax(v1, e, true, false);
                         if (vRelaxed.contains((int) e[0])) {
                             competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((int) e[0]));
                             if (bestSeen > competitor) {
@@ -146,7 +135,7 @@ public class ContractionALT implements Searcher {
                 }
                 for (double[] e : graph.bckAdj(v2)) {
                     if(!isCore) {
-                        relax(v2, e, false);
+                        relax(v2, e, false, false);
                         if (uRelaxed.contains((int) e[0])) {
                             competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((int) e[0]));
                             if (bestSeen > competitor) {
@@ -191,37 +180,71 @@ public class ContractionALT implements Searcher {
 
     }
 
-    private void relax(int x, double[] edge, boolean u){
-        int w = (int) edge[0];
-        double weight = edge[1];
-        double wayId = edge[2];
-        if(u){
-            double distToX = uDistTo.getOrDefault(x, Double.MAX_VALUE);
-            if (uDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
-                uDistTo.put(w, distToX + weight);
-                uNodeTo.put(w, x); //should be 'nodeBefore'
-                uEdgeTo.put(w, (long) wayId);
-                uPq.add(new DijkstraEntry(w, distToX + weight)); //inefficient?
-            }else{
+    private void relax(int x, double[] edge, boolean u, boolean core){
+        if(core){
+            int w = (int) edge[0];
+            double weight = edge[1];
+            double wayId = edge[2];
+            if(u){
+                double distToX = uDistTo.getOrDefault(x, Double.MAX_VALUE);
+                if (uDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
+                    uDistTo.put(w, distToX + weight);
+                    uNodeTo.put(w, x); //should be 'nodeBefore'
+                    uEdgeTo.put(w, (long) wayId);
+                    coreSQ.add(new DijkstraEntry(w, distToX + weight)); //inefficient?
+                }else{
 //                if(uDistTo.get(x) == null){
 //                    System.out.println("AAAGHHGHH");
 //                }
-            }
-            uRelaxed.add(x);
-        } else {
-            double distToX = vDistTo.getOrDefault(x, Double.MAX_VALUE);
-            if (vDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
-                vDistTo.put(w, distToX + weight);
-                vNodeTo.put(w, x); //should be 'nodeBefore'
-                vEdgeTo.put(w, (long) wayId);
-                vPq.add(new DijkstraEntry(w, distToX + weight)); //inefficient?
-            }else {
+                }
+                uRelaxed.add(x);
+            } else {
+                double distToX = vDistTo.getOrDefault(x, Double.MAX_VALUE);
+                if (vDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
+                    vDistTo.put(w, distToX + weight);
+                    vNodeTo.put(w, x); //should be 'nodeBefore'
+                    vEdgeTo.put(w, (long) wayId);
+                    coreTQ.add(new DijkstraEntry(w, distToX + weight)); //inefficient?
+                }else {
 //                if (vDistTo.get(x) == null) {
 //                    System.out.println("AAAGHHGHH");
 //                }
+                }
+                vRelaxed.add(x);
             }
-            vRelaxed.add(x);
+        } else {
+            int w = (int) edge[0];
+            double weight = edge[1];
+            double wayId = edge[2];
+            if(u){
+                double distToX = uDistTo.getOrDefault(x, Double.MAX_VALUE);
+                if (uDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
+                    uDistTo.put(w, distToX + weight);
+                    uNodeTo.put(w, x); //should be 'nodeBefore'
+                    uEdgeTo.put(w, (long) wayId);
+                    uPq.add(new DijkstraEntry(w, distToX + weight)); //inefficient?
+                }else{
+//                if(uDistTo.get(x) == null){
+//                    System.out.println("AAAGHHGHH");
+//                }
+                }
+                uRelaxed.add(x);
+            } else {
+                double distToX = vDistTo.getOrDefault(x, Double.MAX_VALUE);
+                if (vDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
+                    vDistTo.put(w, distToX + weight);
+                    vNodeTo.put(w, x); //should be 'nodeBefore'
+                    vEdgeTo.put(w, (long) wayId);
+                    vPq.add(new DijkstraEntry(w, distToX + weight)); //inefficient?
+                }else {
+//                if (vDistTo.get(x) == null) {
+//                    System.out.println("AAAGHHGHH");
+//                }
+                }
+                vRelaxed.add(x);
+            }
         }
+
     }
 
     private void secondStage(){
@@ -230,23 +253,13 @@ public class ContractionALT implements Searcher {
 
         bestSeen = Double.MAX_VALUE;
 
-        proxyStart = coreSQ.peek().getNode();
-        proxyEnd = coreTQ.peek().getNode();
-
-        forDTV = (double[]) distancesTo.get(proxyEnd);
-        forDFV = (double[]) distancesFrom.get(proxyEnd);
-        backDTV = (double[]) distancesTo.get(proxyStart);
-        backDFV = (double[]) distancesFrom.get(proxyStart);
-
-//        System.out.println("stage 2");
-
         Runnable s = () -> {
             while(!coreSQ.isEmpty() && !Thread.currentThread().isInterrupted()){
                 explored++;
                 int v1 = coreSQ.poll().getNode();
                 for (double[] e : graph.fwdCoreAdj(v1)){
                     if(!Thread.currentThread().isInterrupted()) {
-                        relaxALT(v1, e, true);
+                        relax(v1, e, true, true);
                         if (vRelaxed.contains((int) e[0])) {
 //                            System.out.println("uDistTo.get(v1) " + uDistTo.get(v1));
 //                            System.out.println("e[1] " + e[1]);
@@ -287,7 +300,7 @@ public class ContractionALT implements Searcher {
                 int v2 = coreTQ.poll().getNode();
                 for (double[] e : graph.bckCoreAdj(v2)){
                     if(!Thread.currentThread().isInterrupted()) {
-                        relaxALT(v2, e, false);
+                        relax(v2, e, false, true);
                         if (uRelaxed.contains((int) e[0])) {
 //                            System.out.println("vDistTo.get(v2) " + vDistTo.get(v2));
 //                            System.out.println("e[1] " + e[1]);
@@ -335,70 +348,6 @@ public class ContractionALT implements Searcher {
         tThread.interrupt();
     }
 
-    private void relaxALT(int x, double[] edge, boolean u){
-        int w = (int) edge[0];
-        double weight = edge[1];
-        double wayId = edge[2];
-        if(u){
-            double distToX = uDistTo.getOrDefault(x, Double.MAX_VALUE);
-            if (uDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
-                uDistTo.put(w, distToX + weight);
-                uNodeTo.put(w, x); //should be 'nodeBefore'
-                uEdgeTo.put(w, (long) wayId); //should be 'nodeBefore'
-                coreSQ.add(new DijkstraEntry(w, distToX + weight + lowerBound(w, true))); //inefficient?
-            }
-            uRelaxed.add(x);
-//            if(uDistTo.get(x) == null){
-//                System.out.println("problem");
-//            }
-        } else {
-            double distToX = vDistTo.getOrDefault(x, Double.MAX_VALUE);
-            if (vDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
-                vDistTo.put(w, distToX + weight);
-                vNodeTo.put(w, x); //should be 'nodeBefore'
-                vEdgeTo.put(w, (long) wayId); //should be 'nodeBefore'
-                coreTQ.add(new DijkstraEntry(w, distToX + weight + lowerBound(w, false))); //inefficient?
-            }
-            vRelaxed.add(x);
-//            if(vDistTo.get(x) == null){
-//                System.out.println("problem");
-//            }
-        }
-    }
-
-    public double lowerBound(int u, boolean forwards){
-//        System.out.println();
-        double maxForward = 0;
-        double maxBackward = 0;
-
-        double[] forDTU = (double[]) distancesTo.get(u);
-        double[] forDFU = (double[]) distancesFrom.get(u);
-
-
-        double[] backDTU = (double[]) distancesTo.get(u);
-        double[] backDFU = (double[]) distancesFrom.get(u);
-
-        for(int l = 0; l < landmarks.size(); l++){
-            maxForward = Math.max(maxForward, Math.max(forDTU[l] - forDTV[l], forDFV[l] - forDFU[l]));
-        }
-
-//        System.out.println("MAXBACKWARD " + maxBackward);
-        for(int l = 0; l < landmarks.size(); l++){
-            maxBackward = Math.max(maxBackward, Math.max(backDTU[l] - backDTV[l], backDFV[l] - backDFU[l]));
-//            System.out.println("A " + backDTU[l] + " " + backDTV[l] + " " + backDFV[l] + " " + backDFU[l]);
-//            System.out.println("B " + Math.max(backDTU[l] - backDTV[l], backDFV[l] - backDFU[l]));
-        }
-//        System.out.println("C " + maxBackward);
-
-        if(forwards){
-//            System.out.println("D " + (maxForward - maxBackward) / 2);
-            return (maxForward - maxBackward) / 2;
-        } else {
-//            System.out.println("D " + (maxForward - maxBackward) / 2);
-            return (maxBackward - maxForward) / 2;
-        }
-    }
-
     public double getDist() {
         return uDistTo.get(overlapNode) + vDistTo.get(overlapNode);
     }
@@ -413,22 +362,6 @@ public class ContractionALT implements Searcher {
             }
             else return 0;
         }
-    }
-
-    private double haversineDistance(long a, long b, BTreeMap<Long, double[]> dictionary){
-        double[] nodeA = dictionary.get(a);
-        double[] nodeB = dictionary.get(b);
-        double rad = 6371000; //radius of earth in metres
-        double aLatRadians = Math.toRadians(nodeA[0]); //0 = latitude, 1 = longitude
-        double bLatRadians = Math.toRadians(nodeB[0]);
-        double deltaLatRadians = Math.toRadians(nodeB[0] - nodeA[0]);
-        double deltaLongRadians = Math.toRadians(nodeB[1] - nodeA[1]);
-
-        double x = Math.sin(deltaLatRadians/2) * Math.sin(deltaLatRadians/2) +
-                Math.cos(aLatRadians) * Math.cos(bLatRadians) *
-                        Math.sin(deltaLongRadians/2) * Math.sin(deltaLongRadians/2);
-        double y = 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
-        return rad * y;
     }
 
     public ArrayList<Integer> getRoute(){

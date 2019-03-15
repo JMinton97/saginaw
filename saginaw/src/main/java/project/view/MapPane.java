@@ -133,7 +133,7 @@ class MapPane extends JPanel
 			if(l == 1){
 				Thread t = new Thread(tm);
 				t.setPriority(Thread.MIN_PRIORITY);
-//				t.start();
+				t.start();
 			}
 //			System.out.println(l + " is " +  (int) Math.ceil(xDimension / (double) l) + ", " + (int) Math.ceil(yDimension / (double) l));
 			for(int x = 0; x < tileGrid.length; x++){
@@ -247,13 +247,13 @@ class MapPane extends JPanel
 	public void drawRoute(Route route, Graphics2D g){
 
 		Color startColor = Color.RED;
-		Color endColor = Color.MAGENTA;
+		Color endColor = Color.YELLOW;
 		int segments = route.getSegments().size();
 		int rDiff, gDiff, bDiff;
 		if(segments > 1){
-			rDiff = (endColor.getRed() - startColor.getRed()) / segments;
-			gDiff = (endColor.getGreen() - startColor.getGreen()) / segments;
-			bDiff = (endColor.getBlue() - startColor.getBlue()) / segments;
+			rDiff = (endColor.getRed() - startColor.getRed()) / (segments - 1);
+			gDiff = (endColor.getGreen() - startColor.getGreen()) / (segments - 1);
+			bDiff = (endColor.getBlue() - startColor.getBlue()) / (segments - 1);
 		} else {
 			rDiff = 0;
 			gDiff = 0;

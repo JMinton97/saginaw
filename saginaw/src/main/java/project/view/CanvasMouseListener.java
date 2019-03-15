@@ -81,7 +81,6 @@ class CanvasMouseListener implements MouseInputListener
 	@Override
 	public void mousePressed(MouseEvent e)
 	{
-		System.out.println("PRESS");
 		draggingMap = !model.clickedRoute(view.getMapPane().canvasToGeo(e.getX(), e.getY()));
 		if (!model.isActive())
 			return;
@@ -94,7 +93,6 @@ class CanvasMouseListener implements MouseInputListener
 	@Override
 	public void mouseReleased(MouseEvent e)
 	{
-		System.out.println("RELEASE");
 		if (!model.isActive())
 			return;
 		view.getMapPane().removeMouseMotionListener(this);

@@ -104,6 +104,11 @@ public class MyMap2 {
             westMost = -0.7;
             southMost = 51.2;   //LONDON
             eastMost = 0.49;
+        } else if (region == "michigan") {
+            northMost = 46.8;
+            westMost = -87;
+            southMost = 41.65;   //MICHIGAN
+            eastMost = -82.3;
         }
 
         counter = 0;
@@ -814,7 +819,7 @@ public class MyMap2 {
                             double[] data = tileNodes.get(lastRef);
 
                             if(allRelations.containsKey(w.getId())){
-                                System.out.println("yup, " + w.getId());
+//                                System.out.println("yup, " + w.getId());
                                 int wayType = allRelations.get(w.getId());
                                 MyWay tempWay = buildMyWay(w);
                                 switch(wayType){

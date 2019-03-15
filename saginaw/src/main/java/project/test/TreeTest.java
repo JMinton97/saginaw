@@ -1,4 +1,6 @@
-package project.kdtree;
+package project.test;
+
+import project.kdtree.Tree;
 
 public class TreeTest {
     public static void main(String[] args) {

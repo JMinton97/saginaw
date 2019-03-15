@@ -31,6 +31,7 @@ public class BiALT implements Searcher {
     private double bestSeen;
     private int bestPathNode;
     private boolean routeFound;
+    private String name = "bialt";
 
     public BiALT(MyGraph graph, ALTPreProcess altPreProcess) {
         this.graph = graph;
@@ -125,7 +126,7 @@ public class BiALT implements Searcher {
             }
         }
 
-        System.out.println("No route found.");
+//        System.out.println("No route found.");
         routeFound = false;
     }
 
@@ -286,5 +287,16 @@ public class BiALT implements Searcher {
 
     public boolean routeFound(){
         return routeFound;
+    }
+
+    public ArrayList<ArrayList<Integer>> getRelaxedNodes() {
+        ArrayList<ArrayList<Integer>> relaxedNodes = new ArrayList();
+        relaxedNodes.add(new ArrayList<>(uRelaxed));
+        relaxedNodes.add(new ArrayList<>(vRelaxed));
+        return relaxedNodes;
+    }
+
+    public String getName(){
+        return name;
     }
 }

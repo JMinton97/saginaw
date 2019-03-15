@@ -1,6 +1,8 @@
-package project.map;
+package project.test;
 
 import javafx.util.Pair;
+import project.map.MyGraph;
+import project.map.MyMap2;
 import project.search.*;
 
 import javax.imageio.ImageIO;
@@ -10,9 +12,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.PriorityQueue;
-import java.util.Random;
 
 public class TestRun {
 
@@ -22,7 +21,7 @@ public class TestRun {
     public static void main(String[] args) throws InterruptedException{
 
         long startTime, endTime;
-        String region = "london";
+        String region = "michigan";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 
@@ -44,11 +43,11 @@ public class TestRun {
             fe.createNewFile();
 
 
-//            startTime = System.nanoTime();
-//            MyMap2 map2 = new MyMap2(f, region, 1024, false);
-//            map2.draw();
-//            endTime = System.nanoTime();
-//            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
+            startTime = System.nanoTime();
+            MyMap2 map2 = new MyMap2(f, region, 1024, false);
+            map2.draw();
+            endTime = System.nanoTime();
+            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
 
 
             startTime = System.nanoTime();

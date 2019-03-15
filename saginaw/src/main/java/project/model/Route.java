@@ -35,7 +35,7 @@ public class Route{
         closestNodes = new HashMap<>();
         searcherStack = new Stack<>();
         try{
-            preProcess = new ALTPreProcess(graph, false);
+//            preProcess = new ALTPreProcess(graph, false);
             corePreProcess = new ALTPreProcess(graph, true);
         }catch(IOException e){
             System.out.println("Problem with ALTPreProcess loading.");
@@ -78,11 +78,13 @@ public class Route{
             } else {
                 minDist = Double.MAX_VALUE;
                 for(Segment segment : segments){
-                    for(Point2D.Double point : segment.getPoints()){
-                        distFromLine = MyGraph.haversineDistance(pivotPoint, new double[]{point.getX(), point.getY()});
-                        if(distFromLine < minDist){
-                            minDist = distFromLine;
-                            minSegment = segmentNum;
+                    if(segment.hasRoute()){
+                        for(Point2D.Double point : segment.getPoints()){
+                            distFromLine = MyGraph.haversineDistance(pivotPoint, new double[]{point.getX(), point.getY()});
+                            if(distFromLine < minDist){
+                                minDist = distFromLine;
+                                minSegment = segmentNum;
+                            }
                         }
                     }
                     segmentNum++;
@@ -132,7 +134,8 @@ public class Route{
     }
 
     public boolean hasRoute(){
-        return segments.size() > 0;
+        return(segments.stream().anyMatch(seg -> seg.hasRoute()));
+
     }
 
     public void endPivot(){
@@ -181,11 +184,11 @@ public class Route{
     }
 
     public void calculateRoute() {
-        System.out.println();
         ArrayList<Thread> routeThreads = new ArrayList<>();
         if (waypoints.size() > 1) {
             for(Segment segment : segments){
                 if (!segment.isResolved()) {
+                    System.out.println("UNRESOLVED....");
                     Runnable routeSegmentThread = () -> {
                         int src, dst;
                         if (!closestNodes.containsKey(segment.getStartNode())) {
@@ -227,12 +230,8 @@ public class Route{
                     Thread searchThread = new Thread(routeSegmentThread);
                     routeThreads.add(searchThread);
                     searchThread.start();
-                } else {
-                    System.out.println("UNTOUCHED");
                 }
             }
-
-            System.out.println("Thread count: " + routeThreads.size());
 
             boolean running = true;
 
@@ -245,8 +244,6 @@ public class Route{
                     running = (running || routeThread.isAlive());
                 }
             }
-
-            System.out.println("Finished.");
         }
     }
 
@@ -264,7 +261,6 @@ public class Route{
                 for(int x = 0; x < SEARCHER_COUNT; x++){
                     searcherStack.add(new Dijkstra(graph));
                 }
-                System.out.println("switched");
                 break;
 
             case BIDIJKSTRA:

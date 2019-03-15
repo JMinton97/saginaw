@@ -33,7 +33,7 @@ public class Model {
 	private BufferedImage image = null;
 	private MyMap2 map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
-	private String region = "london";
+	private String region = "britain";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
 	private int x, y, level;
 	private BigDecimal zoom, baseScale;
@@ -302,7 +302,6 @@ public class Model {
 	public boolean clickedRoute(double[] clickPoint){
 
 		double dragThreshold = ((1 / (baseScale.doubleValue() / Math.pow(2, zoom.doubleValue()))) * dragThresholdPx) * 100000;
-		System.out.println("Drag threshold: " + dragThreshold);
 		return route.adjustRoute(clickPoint, dragThreshold);
 	}
 }

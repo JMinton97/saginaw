@@ -1,5 +1,6 @@
 package project.search;
 
+import gnu.trove.map.hash.THashMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
@@ -31,6 +32,7 @@ public class ConcurrentBiALT implements Searcher {
     private double bestSeen;
     private int bestPathNode;
     private boolean routeFound;
+    private String name = "conbialt";
 
     public ConcurrentBiALT(MyGraph myGraph, ALTPreProcess altPreProcess) {
         this.myGraph = myGraph;
@@ -72,8 +74,11 @@ public class ConcurrentBiALT implements Searcher {
 
         overlapNode = -1;
 
+        explored = 0;
+
         Runnable s = () -> {
             while (!uPq.isEmpty() && !Thread.currentThread().isInterrupted()) {
+                explored++;
 //                System.out.println("loop");
                 int v1 = uPq.poll().getNode();
                 for (double[] e : myGraph.fwdAdj(v1)) {
@@ -102,6 +107,7 @@ public class ConcurrentBiALT implements Searcher {
 
         Runnable t = () -> {
             while (!vPq.isEmpty() && !Thread.currentThread().isInterrupted()) {
+                explored++;
 //                System.out.println("loop");
                 int v2 = vPq.poll().getNode();
                 for (double[] e : myGraph.bckAdj(v2)) {
@@ -142,7 +148,7 @@ public class ConcurrentBiALT implements Searcher {
 
 
         if(overlapNode == -1){
-            System.out.println("No route found.");
+//            System.out.println("No route found.");
             routeFound = false;
         }
     }
@@ -239,35 +245,30 @@ public class ConcurrentBiALT implements Searcher {
             int node = overlapNode;
 //            System.out.println(overlapNode);
             ArrayList<Integer> route = new ArrayList<>();
-            try{
-                long way = 0;
-                while(node != start && node != end){
-                    way = uEdgeTo.get(node);
-                    node = uNodeTo.get(node);
-                    if(node == -1){
-                        break;
-                    }
-                    route.add(node);
-//                    System.out.println(node);
+            long way = 0;
+            while(node != start && node != end){
+                way = uEdgeTo.get(node);
+                node = uNodeTo.get(node);
+                if(node == -1){
+                    break;
                 }
+                route.add(node);
+//                    System.out.println(node);
+            }
 
 //                System.out.println("Done to.");
 
-                Collections.reverse(route);
+            Collections.reverse(route);
 //                System.out.println(overlapNode);
-                node = overlapNode;
-                while(node != start && node != end){
-                    way = vEdgeTo.get(node);
-                    node = vNodeTo.get(node);
-                    if(node == -1){
-                        break;
-                    }
-                    route.add(node);
-//                    System.out.println(node);
+            node = overlapNode;
+            while(node != start && node != end){
+                way = vEdgeTo.get(node);
+                node = vNodeTo.get(node);
+                if(node == -1){
+                    break;
                 }
-
-            }catch(NullPointerException n){
-                System.out.println("null!");
+                route.add(node);
+//                    System.out.println(node);
             }
             return route;
         }else{
@@ -279,23 +280,19 @@ public class ConcurrentBiALT implements Searcher {
         if(routeFound){
             int node = overlapNode;
             ArrayList<Long> route = new ArrayList<>();
-            try{
-                long way = 0;
-                while(node != start && node != end){
-                    way = uEdgeTo.get(node);
-                    node = uNodeTo.get(node);
-                    route.add(way);
-                }
+            long way = 0;
+            while(node != start && node != end){
+                way = uEdgeTo.get(node);
+                node = uNodeTo.get(node);
+                route.add(way);
+            }
 
-                Collections.reverse(route);
-                node = overlapNode;
-                while(node != start && node != end){
-                    way = vEdgeTo.get(node);
-                    node = vNodeTo.get(node);
-                    route.add(way);
-                }
-
-            }catch(NullPointerException n){
+            Collections.reverse(route);
+            node = overlapNode;
+            while(node != start && node != end){
+                way = vEdgeTo.get(node);
+                node = vNodeTo.get(node);
+                route.add(way);
             }
             return route;
         }else{
@@ -324,5 +321,16 @@ public class ConcurrentBiALT implements Searcher {
 
     public boolean routeFound(){
         return routeFound;
+    }
+
+    public ArrayList<ArrayList<Integer>> getRelaxedNodes() {
+        ArrayList<ArrayList<Integer>> relaxedNodes = new ArrayList();
+        relaxedNodes.add(new ArrayList<>(uRelaxed));
+        relaxedNodes.add(new ArrayList<>(vRelaxed));
+        return relaxedNodes;
+    }
+
+    public String getName(){
+        return name;
     }
 }

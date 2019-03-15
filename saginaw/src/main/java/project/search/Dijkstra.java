@@ -23,8 +23,10 @@ public class Dijkstra implements Searcher {
 
     private PriorityQueue<DijkstraEntry> pq;
     public int explored;
+    private ArrayList<Integer> relaxedNodes;
 
     private boolean routeFound;
+    private String name = "dijkstra";
 
     public Dijkstra(project.map.MyGraph graph) {
 
@@ -46,13 +48,16 @@ public class Dijkstra implements Searcher {
         this.dst = dst;
         this.src = src;
 
+        relaxedNodes = new ArrayList<>();
+
         distTo.put(src, 0.0);
 
         pq.add(new DijkstraEntry(src, 0.0));
 
-        OUTER: while(!pq.isEmpty()){
+        while(!pq.isEmpty()){
             explored++;
             int v = pq.poll().getNode();
+            relaxedNodes.add(v);
             if(v == dst){
                 routeFound = true;
                 return;
@@ -105,7 +110,6 @@ public class Dijkstra implements Searcher {
         }else{
             return new ArrayList<>();
         }
-
     }
 
     public ArrayList<Long> getRouteAsWays(){
@@ -120,7 +124,9 @@ public class Dijkstra implements Searcher {
                     route.add(way);
                 }
 
-            }catch(NullPointerException n){ }
+            }catch(NullPointerException n){
+                System.out.println("ERROR");
+            }
             return route;
         }else{
             return new ArrayList<>();
@@ -147,6 +153,16 @@ public class Dijkstra implements Searcher {
 
     public boolean routeFound(){
         return routeFound;
+    }
+
+    public ArrayList<ArrayList<Integer>> getRelaxedNodes() {
+        ArrayList<ArrayList<Integer>> relaxedNodes = new ArrayList();
+        relaxedNodes.add(this.relaxedNodes);
+        return relaxedNodes;
+    }
+
+    public String getName(){
+        return name;
     }
 }
 

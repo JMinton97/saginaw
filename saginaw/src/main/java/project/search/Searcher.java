@@ -10,4 +10,6 @@ public interface Searcher {
     ArrayList<Integer> getRoute();
     ArrayList<Long> getRouteAsWays();
     boolean routeFound();
+    ArrayList<ArrayList<Integer>> getRelaxedNodes();
+    String getName();
 }

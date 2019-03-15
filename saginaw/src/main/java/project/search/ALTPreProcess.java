@@ -42,7 +42,7 @@ public class ALTPreProcess {
             dfDir = new File(filePrefix.concat("distancesFrom.ser"));
         }
         if(dfDir.exists()){
-//            System.out.println("Found distancesFrom.");
+            System.out.print("Loading distances from... ");
             FileInputStream fileIn = new FileInputStream(dfDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
@@ -52,7 +52,9 @@ public class ALTPreProcess {
             }
             fileIn.close();
             objectIn.close();
+            System.out.println("Done.");
         } else {
+            System.out.print("Creating distances from... ");
             dj = new DijkstraLandmarks(graph, landmarks, true, core);
             distancesFrom = dj.getDistTo();
             FileOutputStream fileOut = new FileOutputStream(dfDir);
@@ -60,8 +62,8 @@ public class ALTPreProcess {
             objectOut.writeObject(distancesFrom);
             objectOut.close();
             dj.clear();
+            System.out.println("Done.");
         }
-//        System.out.println("Done first bit");
 
         File dtDir;
         if(core){
@@ -70,7 +72,7 @@ public class ALTPreProcess {
             dtDir = new File(filePrefix.concat("distancesTo.ser"));
         }
         if(dtDir.exists()){
-//            System.out.println("Found distancesTo.");
+            System.out.print("Loading distances to... ");
             FileInputStream fileIn = new FileInputStream(dtDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
@@ -80,7 +82,10 @@ public class ALTPreProcess {
             }
             fileIn.close();
             objectIn.close();
+            System.out.println("Done.");
+
         } else {
+            System.out.print("Creating distances to... ");
             dj = new DijkstraLandmarks(graph, landmarks, false, core);                             // <-- need reverse graph here
             distancesTo = dj.getDistTo();
             FileOutputStream fileOut = new FileOutputStream(dtDir);
@@ -88,6 +93,7 @@ public class ALTPreProcess {
             objectOut.writeObject(distancesTo);
             objectOut.close();
             dj.clear();
+            System.out.print("Done.");
         }
     }
 

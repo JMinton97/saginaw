@@ -63,8 +63,10 @@ public class Segment {
     }
 
     public void getFullDetailRoute(MyGraph graph){
-        points.clear();
-        points.addAll(graph.wayListToNodes(wayIds));
+        if(hasRoute){
+            points.clear();
+            points.addAll(graph.wayListToNodes(wayIds));
+        }
     }
 
     public boolean hasPoints(){

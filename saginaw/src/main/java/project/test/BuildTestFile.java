@@ -15,24 +15,18 @@
 
 */
 
-package project.map;
+package project.test;
 
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
 
 import com.google.protobuf.ByteString;
 
-import crosby.binary.Fileformat.Blob;
-import crosby.binary.Fileformat.BlobHeader;
 import crosby.binary.Osmformat.DenseNodes;
 import crosby.binary.Osmformat.HeaderBlock;
 import crosby.binary.Osmformat.Info;
 import crosby.binary.Osmformat.Node;
 import crosby.binary.Osmformat.PrimitiveBlock;
-import crosby.binary.Osmformat.PrimitiveBlock.Builder;
 import crosby.binary.Osmformat.PrimitiveGroup;
 import crosby.binary.Osmformat.Relation;
 import crosby.binary.Osmformat.Relation.MemberType;

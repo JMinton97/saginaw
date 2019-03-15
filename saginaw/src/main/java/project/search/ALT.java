@@ -6,6 +6,8 @@ import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import project.map.MyGraph;
+
+import java.lang.reflect.Array;
 import java.util.*;
 
 public class ALT implements Searcher {
@@ -22,6 +24,8 @@ public class ALT implements Searcher {
     private Int2ObjectOpenHashMap distancesFrom;
     private boolean routeFound;
     private double[] dTV, dFV;
+    private ArrayList<Integer> relaxedNodes;
+    private String name = "alt";
 
     public ALT(MyGraph graph, ALTPreProcess altPreProcess){
         this.graph = graph;
@@ -57,10 +61,13 @@ public class ALT implements Searcher {
 
         explored = 0;
 
-        OUTER: while(!pq.isEmpty()){
-            System.out.println("search");
+        relaxedNodes = new ArrayList<>();
+
+        while(!pq.isEmpty()){
+//            System.out.println("search");
             explored++;
             int v = pq.poll().getNode();
+            relaxedNodes.add(v);
             if(v == endNode){
                 routeFound = true;
                 return;
@@ -70,17 +77,17 @@ public class ALT implements Searcher {
             }
         }
 
-        System.out.println("No route found.");
+//        System.out.println("No route found.");
         routeFound = false;
     }
 
     private void relax(int v, double[] edge){
         int w = (int) edge[0];
-        System.out.println(w);
+//        System.out.println(w);
         double weight = edge[1];
         double distToV = distTo.getOrDefault(v, Double.MAX_VALUE);
         if (distTo.getOrDefault(w, Double.MAX_VALUE) > (distToV + weight)){
-            System.out.println(distTo.getOrDefault(w, Double.MAX_VALUE) + " > " + (distToV + weight));
+//            System.out.println(distTo.getOrDefault(w, Double.MAX_VALUE) + " > " + (distToV + weight));
             distTo.put(w, distToV + weight);
             edgeTo.put(w, (long) edge[2]); //should be 'nodeBefore'
             nodeTo.put(w, v);
@@ -141,7 +148,9 @@ public class ALT implements Searcher {
                     route.add(way);
                 }
 
-            }catch(NullPointerException n){ }
+            }catch(NullPointerException n){
+                System.out.println("ERROR");
+            }
             return route;
         } else {
             return new ArrayList<>();
@@ -169,6 +178,16 @@ public class ALT implements Searcher {
         return routeFound;
     }
 
+    @Override
+    public ArrayList<ArrayList<Integer>> getRelaxedNodes() {
+        ArrayList<ArrayList<Integer>> relaxedNodes = new ArrayList();
+        relaxedNodes.add(this.relaxedNodes);
+        return relaxedNodes;
+    }
+
+    public String getName(){
+        return name;
+    }
 }
 
 

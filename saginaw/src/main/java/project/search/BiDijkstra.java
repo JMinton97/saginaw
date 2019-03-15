@@ -26,6 +26,7 @@ public class BiDijkstra implements Searcher {
     private long startNode, endNode;
     private MyGraph graph;
     private boolean routeFound;
+    private String name = "bidijkstra";
 
     public BiDijkstra(MyGraph graph) {
         int size = graph.getFwdGraph().size();
@@ -116,7 +117,7 @@ public class BiDijkstra implements Searcher {
             }
         }
         if(uPq.isEmpty() || vPq.isEmpty()) {
-            System.out.println("No route found.");
+//            System.out.println("No route found.");
             routeFound = false;
         }
     }
@@ -252,6 +253,17 @@ public class BiDijkstra implements Searcher {
 
     public boolean routeFound(){
         return routeFound;
+    }
+
+    public ArrayList<ArrayList<Integer>> getRelaxedNodes() {
+        ArrayList<ArrayList<Integer>> relaxedNodes = new ArrayList();
+        relaxedNodes.add(new ArrayList<>(uRelaxed));
+        relaxedNodes.add(new ArrayList<>(vRelaxed));
+        return relaxedNodes;
+    }
+
+    public String getName(){
+        return name;
     }
 
 }
