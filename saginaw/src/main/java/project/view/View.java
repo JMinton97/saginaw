@@ -56,17 +56,9 @@ public class View extends JFrame
 		this.model = model;
 		this.controller = controller;
 
-		;
-
-		revalidate();
-		repaint();
-
-
-		frame.setVisible(true);
+		validate();
 
 	}
-
-
 
 
 	public void startMap(){

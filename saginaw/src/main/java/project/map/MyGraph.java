@@ -43,6 +43,7 @@ public class MyGraph {
     private final double DOU_THRESHOLD = .0001;
     private static HashMap<Long, Integer> nodeLong2Int;
     private static HashMap<Integer, Long> nodeInt2Long;
+    private static HashMap<Integer, Integer> graphNodeMappings;
     private int maxId = 0;
 
     private long startTime;

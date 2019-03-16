@@ -51,6 +51,7 @@ public class Main extends JFrame
 				Model model = new Model();
 				Controller controller = new Controller(model);
 				View view = new View(model, controller);
+				view.validate();
 				view.setVisible(true);
 				model.startUp();
 				view.startMap();

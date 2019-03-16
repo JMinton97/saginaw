@@ -221,6 +221,8 @@ public class Route{
                             segment.setHasRoute(false);
                         }
 
+                        System.out.println(searcher.getExplored());
+
                         segment.setWayIds(searcher.getRouteAsWays());
                         segment.setResolved(true);
                         searcher.clear();

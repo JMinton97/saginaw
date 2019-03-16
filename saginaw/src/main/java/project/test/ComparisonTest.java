@@ -14,7 +14,7 @@ public class ComparisonTest {
 
     public long startTime, endTime;
 
-    private static int LOOPS = 100;
+    private static int LOOPS = 200;
 
     public static void main(String[] args) throws InterruptedException {
         long startTime, endTime;
@@ -43,6 +43,9 @@ public class ComparisonTest {
             endTime = System.nanoTime();
             System.out.println("Making graph time: " + (((float) endTime - (float) startTime) / 1000000000));
 
+            System.out.println(graph.getFwdGraph().size());
+            System.out.println(graph.getDictionary().size());
+
             ALTPreProcess altPreProcess = new ALTPreProcess(graph, false);
             ALTPreProcess altPreProcessCore = new ALTPreProcess(graph, true);
 
@@ -59,22 +62,22 @@ public class ComparisonTest {
                 dsts.add(randomDst);
             }
 
-            removeUnreachables(new Dijkstra(    graph),                     srcs, dsts);
-            clearCache();
+//            removeUnreachables(new Dijkstra(    graph),                     srcs, dsts);
+//            clearCache();
 
-            runTest(new Dijkstra(               graph),                     srcs, dsts);
-            clearCache();
-            runTest(new BiDijkstra(             graph),                     srcs, dsts);
-            clearCache();
-            runTest(new ConcurrentBiDijkstra(   graph),                     srcs, dsts);
-            clearCache();
-            runTest(new ALT(                    graph, altPreProcess),      srcs, dsts);
-            clearCache();
-            runTest(new BiALT(                  graph, altPreProcess),      srcs, dsts);
-            clearCache();
-            runTest(new ConcurrentBiALT(        graph, altPreProcess),      srcs, dsts);
-            clearCache();
-            runTest(new ContractionDijkstra(    graph),                     srcs, dsts);
+//            runTest(new Dijkstra(               graph),                     srcs, dsts);
+//            clearCache();
+//            runTest(new BiDijkstra(             graph),                     srcs, dsts);
+//            clearCache();
+//            runTest(new ConcurrentBiDijkstra(   graph),                     srcs, dsts);
+//            clearCache();
+//            runTest(new ALT(                    graph, altPreProcess),      srcs, dsts);
+//            clearCache();
+//            runTest(new BiALT(                  graph, altPreProcess),      srcs, dsts);
+//            clearCache();
+//            runTest(new ConcurrentBiALT(        graph, altPreProcess),      srcs, dsts);
+//            clearCache();
+//            runTest(new ContractionDijkstra(    graph),                     srcs, dsts);
             clearCache();
             runTest(new ContractionALT(         graph, altPreProcessCore),  srcs, dsts);
 
