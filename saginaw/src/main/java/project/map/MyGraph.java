@@ -1,5 +1,6 @@
 package project.map;
 
+import com.google.common.collect.HashBiMap;
 import crosby.binary.*;
 import crosby.binary.Osmformat.*;
 import crosby.binary.file.*;
@@ -30,12 +31,12 @@ public class MyGraph {
     private static ConcurrentMap<Integer, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a counter of the number of ways each one is part of
     private static boolean parsingNodes;
 //    private static HashSet<Long> junctions;
-    private static Map<Integer, ArrayList<double[]>> fwdGraph;
-    private static Map<Integer, ArrayList<double[]>> bckGraph;
+    private static ArrayList<ArrayList<double[]>> fwdGraph;
+    private static ArrayList<ArrayList<double[]>> bckGraph;
     private static Map<Integer, ArrayList<double[]>> fwdCore;
     private static Map<Integer, ArrayList<double[]>> bckCore;
     private static HashMap<Integer, Double> keys = new HashMap<>();
-    private Pair<Map, Map> graph;
+    private Pair<ArrayList, ArrayList> graph;
     private Tree tree;
     private int bypassNode;
     private double contractionParameter = 2.5;
@@ -76,6 +77,8 @@ public class MyGraph {
 
         coreMapRoads = db3.treeMap("coreMap", Serializer.LONG, Serializer.INT_ARRAY).createOrOpen();
 
+        graphNodeMappings = new HashMap<>();
+
         makeDictionary(file);
 
 //        File fwdGraphDir = new File(filePrefix.concat("fwdGraph.ser"));
@@ -85,20 +88,29 @@ public class MyGraph {
         File treeDir = new File(filePrefix.concat("tree.ser"));
         File fwdCoreDir = new File(filePrefix.concat("fwdCore.ser"));
         File bckCoreDir = new File(filePrefix.concat("bckCore.ser"));
+        File graphNodeMappingsDir = new File(filePrefix.concat("mappings.ser"));
         if(fwdGraphDir.exists()){
             System.out.println("Found graph.");
             timerStart();
             FileInputStream fileIn = new FileInputStream(fwdGraphDir);
             FSTObjectInput objectIn = new FSTObjectInput(fileIn);
             try {
-                fwdGraph = (Map<Integer, ArrayList<double[]>>) objectIn.readObject();
+                fwdGraph = (ArrayList<ArrayList<double[]>>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
             fileIn = new FileInputStream(bckGraphDir);
             objectIn = new FSTObjectInput(fileIn);
             try {
-                bckGraph = (Map<Integer, ArrayList<double[]>>) objectIn.readObject();
+                bckGraph = (ArrayList<ArrayList<double[]>>) objectIn.readObject();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            fileIn = new FileInputStream(graphNodeMappingsDir);
+            objectIn = new FSTObjectInput(fileIn);
+            try {
+                graphNodeMappings = (HashMap<Integer, Integer>) objectIn.readObject();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -191,6 +203,11 @@ public class MyGraph {
             fileOut = new FileOutputStream(bckGraphDir);
             objectOut = new FSTObjectOutput(fileOut);
             objectOut.writeObject(bckGraph);
+            objectOut.close();
+
+            fileOut = new FileOutputStream(graphNodeMappingsDir);
+            objectOut = new FSTObjectOutput(fileOut);
+            objectOut.writeObject(graphNodeMappings);
             objectOut.close();
 
             timerEnd("Writing graph");
@@ -302,9 +319,9 @@ public class MyGraph {
         }
     }
 
-    private Pair<Map, Map> makeDijkstraGraph(Map<Long, int[]> edges, int noOfEdges){
-        fwdGraph = new HashMap<>(noOfEdges);
-        bckGraph = new HashMap<>(noOfEdges);
+    private Pair<ArrayList, ArrayList> makeDijkstraGraph(Map<Long, int[]> edges, int noOfEdges){
+        fwdGraph = new ArrayList<ArrayList<double[]>>();
+        bckGraph = new ArrayList<ArrayList<double[]>>();
 
         timerStart();
         System.out.println("Adding connections");
@@ -318,17 +335,36 @@ public class MyGraph {
 //            System.out.println(way.getWayId());
 
             int[] wayNodes = way.getValue();
+            int fstVert, lstVert;
             if(wayNodes.length > 1){
-                int fstVert = wayNodes[0];
-                int lstVert = wayNodes[wayNodes.length - 1]; //could be .get(1) if we've stripped the ways
+                if(graphNodeMappings.containsKey(wayNodes[0])){
+                    fstVert = graphNodeMappings.get(wayNodes[0]);
+
+                } else {
+                    graphNodeMappings.put(wayNodes[0], graphNodeMappings.size());
+                    fstVert = graphNodeMappings.get(wayNodes[0]);
+                    fwdGraph.add(new ArrayList<>());
+                    bckGraph.add(new ArrayList<>());
+                }
+
+                if(graphNodeMappings.containsKey(wayNodes[wayNodes.length - 1])){
+                    lstVert = graphNodeMappings.get(wayNodes[wayNodes.length - 1]);
+
+                } else {
+                    graphNodeMappings.put(wayNodes[wayNodes.length - 1], graphNodeMappings.size());
+                    lstVert = graphNodeMappings.get(wayNodes[wayNodes.length - 1]);
+                    fwdGraph.add(new ArrayList<>());
+                    bckGraph.add(new ArrayList<>());
+                }
+
                 if(fstVert != lstVert){
 
-                    if(!fwdGraph.containsKey(fstVert)){
-                        fwdGraph.put(fstVert, new ArrayList<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
-                    }
-                    if(!bckGraph.containsKey(lstVert)){
-                        bckGraph.put(lstVert, new ArrayList<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
-                    }
+//                    if(fwdGraph.size() - 1 < fstVert){
+//                        fwdGraph.add(new ArrayList<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
+//                    }
+//                    if(bckGraph.size() - 1 < lstVert){
+//                        bckGraph.add(new ArrayList<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
+//                    }
                     double length = lengthOfEdge(wayNodes);
 //                    double length = 0;
                     fwdGraph.get(fstVert).add(new double[]{(double) lstVert, length, way.getKey().doubleValue(), 1}); //edge array stores target of edge, length of edge,
@@ -345,8 +381,21 @@ public class MyGraph {
             }
         }
         timerEnd("Creating graph");
+
+        graphNodeMappings = invertMappings(graphNodeMappings);
+
         return new Pair<>(fwdGraph, bckGraph);
     }
+
+    private HashMap<Integer, Integer> invertMappings(HashMap<Integer, Integer> graphNodeMappings){
+        HashMap<Integer, Integer> inverseMap = new HashMap<>();
+        for(Map.Entry<Integer, Integer> entry : graphNodeMappings.entrySet()){
+            inverseMap.put(entry.getValue(), entry.getKey());
+        }
+
+        return inverseMap;
+    }
+
 
     private void contract() {
 
@@ -355,15 +404,38 @@ public class MyGraph {
         keys = new HashMap<>(fwdGraph.size());
         boolean stopFlag = true;
 
-        fwdCore = fwdGraph.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> new ArrayList(e.getValue())));
+        fwdCore = new HashMap<>();
+        bckCore = new HashMap<>();
 
-        bckCore = bckGraph.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> new ArrayList(e.getValue())));
+        for(int i = 0; i < fwdGraph.size(); i++){
+            ArrayList<double[]> newEdges = new ArrayList<>();
+            for(double[] edge : fwdGraph.get(i)){
+                double[] newEdge = new double[edge.length];
+                for(int j = 0; j < edge.length; j++){
+                    newEdge[j] = edge[j];
+                }
+                newEdges.add(newEdge);
+            }
+            fwdCore.put(i, newEdges);
+        }
+
+        for(int i = 0; i < bckGraph.size(); i++){
+            ArrayList<double[]> newEdges = new ArrayList<>();
+            for(double[] edge : bckGraph.get(i)){
+                double[] newEdge = new double[edge.length];
+                for(int j = 0; j < edge.length; j++){
+                    newEdge[j] = edge[j];
+                }
+                newEdges.add(newEdge);
+            }
+            bckCore.put(i, newEdges);
+        }
 
         System.out.println("Original size: " + fwdGraph.size() + " " + bckGraph.size());
 
         int edgeCounter = 0;
-        for (Map.Entry<Integer, ArrayList<double[]>> nodeEntry : fwdGraph.entrySet()) {
-            edgeCounter = nodeEntry.getValue().size() + edgeCounter;
+        for (ArrayList<double[]> nodeEntry : fwdGraph) {
+            edgeCounter = nodeEntry.size() + edgeCounter;
         }
 
         int originalSize = fwdGraph.size();
@@ -946,7 +1018,9 @@ public class MyGraph {
         timerStart();
         tree = new Tree(120);
         ArrayList<Integer> nodes = new ArrayList<>();
-        nodes.addAll(fwdGraph.keySet());
+        for(int i = 0; i < fwdGraph.size(); i++){
+            nodes.add(i);
+        }
         System.out.println("done");
         Random rand = new Random();
         boolean vertical = true;
@@ -957,7 +1031,7 @@ public class MyGraph {
         TREE: while(!nodes.isEmpty()){
             if(size < 21){
                 for(int n : nodes){
-                    tree.insert(n, dictionary.get(n));
+                    tree.insert(n, dictionary.get(graphNodeMappings.get(n)));
                     break TREE;
                 }
             } else {
@@ -988,11 +1062,11 @@ public class MyGraph {
                 sort = timerEnd(sort);
                 vertical = !vertical;
                 timerStart();
-                tree.insert(medians.get(10).getKey(), dictionary.get(medians.get(10).getKey()));
+                tree.insert(medians.get(10).getKey(), dictionary.get(graphNodeMappings.get(medians.get(10).getKey())));
 //                System.out.println(dictionary.get(medians.get(10).getKey())[0] + " " + dictionary.get(medians.get(10).getKey())[1]);
                 for(int x = 1; x < 5; x++){
-                    tree.insert(medians.get(10 + x).getKey(), dictionary.get(medians.get(10 + x).getKey()));
-                    tree.insert(medians.get(10 - x).getKey(), dictionary.get(medians.get(10 - x).getKey()));
+                    tree.insert(medians.get(10 + x).getKey(), dictionary.get(graphNodeMappings.get(medians.get(10 + x).getKey())));
+                    tree.insert(medians.get(10 - x).getKey(), dictionary.get(graphNodeMappings.get(medians.get(10 - x).getKey())));
                 }
                 insert = timerEnd(insert);
 //            System.out.println(medians.get(5).getValue());
@@ -1260,11 +1334,11 @@ public class MyGraph {
         mapRoads.put(id, nodes);
     }
 
-    public Map<Integer, ArrayList<double[]>> getFwdGraph() {
+    public ArrayList<ArrayList<double[]>> getFwdGraph() {
         return fwdGraph;
     }
 
-    public Map<Integer, ArrayList<double[]>> getBckGraph() {
+    public ArrayList<ArrayList<double[]>> getBckGraph() {
         return bckGraph;
     }
 
@@ -1319,30 +1393,10 @@ public class MyGraph {
     public ArrayList<Point2D.Double> refsToNodes(ArrayList<Integer> refs){
         ArrayList<Point2D.Double> nodes = new ArrayList<>();
         for(int ref : refs){
-            nodes.add(new Point2D.Double(dictionary.get(ref)[0], dictionary.get(ref)[1]));
+            Integer mapRef = graphNodeMappings.get(ref);
+            nodes.add(new Point2D.Double(dictionary.get(mapRef)[0], dictionary.get(mapRef)[1]));
         }
         return nodes;
-    }
-
-    public ArrayList<Integer> wayToRefs(long wayId){
-        ArrayList<Integer> returnNodes = new ArrayList<>();
-//        System.out.println(mapRoads.containsKey(wayId));
-        int[] nodes = mapRoads.get(wayId);
-        for(int i = 0; i < nodes.length; i++){
-            returnNodes.add(nodes[i]);
-        }
-        return returnNodes;
-    }
-
-
-    public ArrayList<Point2D.Double> wayToNodes(long wayId){
-        ArrayList<Point2D.Double> points = new ArrayList<>();
-        int[] ids = mapRoads.get(wayId);
-        for(int i = 0; i < ids.length; i++){
-            double[] point = dictionary.get(ids[i]);
-            points.add(new Point2D.Double(point[0], point[1]));
-        }
-        return points;
     }
 
     public ArrayList<Point2D.Double> wayListToNodes(ArrayList<Long> wayList){
@@ -1365,48 +1419,8 @@ public class MyGraph {
                 points.add(new Point2D.Double(point[0], point[1]));
             }
         }
-//
-//
-//
-//            startTime = System.nanoTime();
-//            int[] ids = mapRoads.get(wayId);
-//            endTime = System.nanoTime();
-//            totalMapDBTime += (((float) endTime - (float) startTime) / 1000000000);
-//
-//
-//        }
-//        System.out.println("MapDB time: " + totalMapDBTime);
-        return points;
-    }
 
-    public ArrayList<Point2D.Double> wayListToFirstNodes(ArrayList<Long> wayList){
-        ArrayList<Point2D.Double> points = new ArrayList<>();
-        for(Long wayId : wayList){
-            int[] ids = mapRoads.get(wayId);
-            for(int i = 0; i < 1; i++){
-                double[] point = dictionary.get(ids[i]);
-                points.add(new Point2D.Double(point[0], point[1]));
-            }
-        }
         return points;
-    }
-
-    public ArrayList<Point2D.Double> wayToFirstNodes(long wayId){
-        ArrayList<Point2D.Double> points = new ArrayList<>();
-        int[] ids = mapRoads.get(wayId);
-        for(int i = 0; i < 1; i++){
-            double[] point = dictionary.get(ids[i]);
-            points.add(new Point2D.Double(point[0], point[1]));
-        }
-        return points;
-    }
-
-    public ArrayList<Long> nodesToRefs(ArrayList<project.map.MyNode> nodes){
-        ArrayList<Long> refs = new ArrayList<>();
-        for(project.map.MyNode node : nodes){
-            refs.add(node.getNodeId());
-        }
-        return refs;
     }
 
     private void timerStart(){

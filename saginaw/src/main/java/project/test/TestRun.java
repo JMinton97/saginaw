@@ -21,7 +21,7 @@ public class TestRun {
     public static void main(String[] args) throws InterruptedException{
 
         long startTime, endTime;
-        String region = "michigan";
+        String region = "britain";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 
@@ -43,11 +43,11 @@ public class TestRun {
             fe.createNewFile();
 
 
-            startTime = System.nanoTime();
-            MyMap2 map2 = new MyMap2(f, region, 1024, false);
-            map2.draw();
-            endTime = System.nanoTime();
-            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
+//            startTime = System.nanoTime();
+//            MyMap2 map2 = new MyMap2(f, region, 1024, false);
+//            map2.draw();
+//            endTime = System.nanoTime();
+//            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
 
 
             startTime = System.nanoTime();
@@ -112,13 +112,13 @@ public class TestRun {
             } catch (IOException e) {
             }
 
-            BufferedImage graphImg = new DrawGraph(region).draw(graph.getFwdGraph(), graph.getDictionary());
-            try {
-                // retrieve image
-                File outputfile = new File("graph-" + region + ".png");
-                ImageIO.write(graphImg, "png", outputfile);
-            } catch (IOException e) {
-            }
+//            BufferedImage graphImg = new DrawGraph(region).draw(graph.getFwdGraph(), graph.getDictionary());
+//            try {
+//                // retrieve image
+//                File outputfile = new File("graph-" + region + ".png");
+//                ImageIO.write(graphImg, "png", outputfile);
+//            } catch (IOException e) {
+//            }
 
             System.exit(0);
 //

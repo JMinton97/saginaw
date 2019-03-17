@@ -33,47 +33,30 @@ public class DijkstraLandmarks {
 
         if(core){
             for(int vert : graph.getFwdCore().keySet()){
-//            if(vert == Long.parseLong("749671001")){
-//                System.out.println("here");
-//            }
-                if(vert == Long.parseLong("694020801")){
-                    System.out.println("here");
-                }
                 distTo.put(vert, initDistance.clone());
             }
 
             for(int vert : graph.getBckCore().keySet()){
-//            if(vert == Long.parseLong("749671001")){
-//                System.out.println("here");
-//            }
                 if(vert == Long.parseLong("694020801")){
                     System.out.println("here");
                 }
                 distTo.put(vert, initDistance.clone());
             }
         }else{
-            for(int vert : graph.getFwdGraph().keySet()){
-//            if(vert == Long.parseLong("749671001")){
-//                System.out.println("here");
-//            }
+            for(int vert  = 0; vert < graph.getFwdGraph().size(); vert++){
                 if(vert == Long.parseLong("694020801")){
                     System.out.println("here");
                 }
                 distTo.put(vert, initDistance.clone());
             }
 
-            for(int vert : graph.getBckGraph().keySet()){
-//            if(vert == Long.parseLong("749671001")){
-//                System.out.println("here");
-//            }
+            for(int vert  = 0; vert < graph.getBckGraph().size(); vert++){
                 if(vert == Long.parseLong("694020801")){
                     System.out.println("here");
                 }
                 distTo.put(vert, initDistance.clone());
             }
         }
-
-
 
 
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");

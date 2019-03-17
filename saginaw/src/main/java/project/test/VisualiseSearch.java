@@ -47,11 +47,11 @@ public class VisualiseSearch {
             ArrayList<Integer> dsts = new ArrayList<>();
 
             Random generator = new Random(47465346);
-            Object[] keys = graph.getFwdGraph().keySet().toArray();
+
 
             for (int x = 0; x < LOOPS; x++) {
-                Integer randomSrc = (Integer) keys[generator.nextInt(keys.length)];
-                Integer randomDst = (Integer) keys[generator.nextInt(keys.length)];
+                Integer randomSrc = generator.nextInt(graph.getFwdGraph().size() - 1);
+                Integer randomDst = generator.nextInt(graph.getFwdGraph().size() - 1);
                 srcs.add(randomSrc);
                 dsts.add(randomDst);
             }
