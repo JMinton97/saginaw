@@ -233,6 +233,10 @@ public class View extends JFrame
 		mapPane.downDoug();
 	}
 
+	public void upDoug(){
+		mapPane.upDoug();
+	}
+
 	public double[] getClickCoordinate(int x, int y){
 		return mapPane.getClickCoordinate(x, y);
 	}

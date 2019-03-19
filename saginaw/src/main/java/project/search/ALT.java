@@ -26,6 +26,7 @@ public class ALT implements Searcher {
     private double[] dTV, dFV;
     private ArrayList<Integer> relaxedNodes;
     private String name = "alt";
+    private ALTPreProcess alt;
 
     public ALT(MyGraph graph, ALTPreProcess altPreProcess){
         this.graph = graph;
@@ -39,6 +40,8 @@ public class ALT implements Searcher {
         nodeTo = new Int2IntOpenHashMap();
 
         pq = new PriorityQueue();
+
+        this.alt = altPreProcess;
 
     }
 
@@ -188,6 +191,8 @@ public class ALT implements Searcher {
     public String getName(){
         return name;
     }
+
+    public ALTPreProcess getALT() {return alt;}
 }
 
 

@@ -59,7 +59,6 @@ class MapPane extends JPanel
 	private int paneY = 800;
 	private int xDimension, yDimension;
 	private int level, modifier;
-	private DouglasPeucker doug;
 	private double dougTolerance;
 	private boolean simplifyRoute;
 	private boolean grid;
@@ -148,7 +147,6 @@ class MapPane extends JPanel
 //			System.out.println();
 		}
 
-		doug = new DouglasPeucker();
 		dougTolerance = 1;
 	}
 
@@ -246,8 +244,8 @@ class MapPane extends JPanel
 
 	public void drawRoute(Route route, Graphics2D g){
 
-		Color startColor = Color.RED;
-		Color endColor = Color.YELLOW;
+		Color startColor = Color.GREEN;
+		Color endColor = Color.RED;
 		int segments = route.getSegments().size();
 		int rDiff, gDiff, bDiff;
 		if(segments > 1){
@@ -259,23 +257,26 @@ class MapPane extends JPanel
 			gDiff = 0;
 			bDiff = 0;
 		}
-
 //
 		int x = 0;
 		for(Segment segment : route.getSegments()) {
 		    if(segment.hasRoute()){
+		    	ArrayList<Point2D.Double> segmentPoints = segment.getPoints();
+		    	if(simplifyRoute){
+		    		segmentPoints = DouglasPeucker.simplify(segment.getPoints(), dougTolerance);
+				}
 				Path2D path = new Path2D.Double();
-				Point2D first = geoToCanvas(segment.getPoints().get(0));
+				Point2D first = geoToCanvas(segmentPoints.get(0));
 				path.moveTo((int) first.getX(), (int) first.getY());
-				for(Point2D.Double point : segment.getPoints()){
+				for(Point2D.Double point : segmentPoints){
 					point = geoToCanvas(point);
 					path.lineTo((int) point.getX(), (int) point.getY());
 				}
-				Color segmentColor = new Color(startColor.getRed() + (rDiff * x), startColor.getGreen() + (gDiff * x), startColor.getBlue() + (bDiff * x));
+				Color segmentColor = new Color(startColor.getRed() + (rDiff * x), startColor.getGreen() + (gDiff * x), startColor.getBlue() + (bDiff * x), 175);
 				g.setColor(segmentColor.darker());
 				g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 				g.draw(path);
-				segmentColor = new Color(startColor.getRed() + (rDiff * x), startColor.getGreen() + (gDiff * x), startColor.getBlue() + (bDiff * x));
+				segmentColor = new Color(startColor.getRed() + (rDiff * x), startColor.getGreen() + (gDiff * x), startColor.getBlue() + (bDiff * x), 175);
 				g.setColor(segmentColor);
 				g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 				g.draw(path);
@@ -381,15 +382,15 @@ class MapPane extends JPanel
 
 	public void downDoug(){
 		dougTolerance /= 1.25;
+		System.out.println(dougTolerance);
 	}
+
+	public void upDoug() {
+		dougTolerance *= 1.25;
+		System.out.println(dougTolerance);}
 
 	public double[] getClickCoordinate(int x, int y){
 		return canvasToGeo(x, y);
-	}
-
-	public boolean clickedRoute(MouseEvent e){
-//		System.out.println("color " + ((BufferedImage) createImage(700, 800)).getRGB(1, 1));
-		return (image.getRGB(e.getX(), e.getY()) == Color.RED.darker().getRGB()) || (image.getRGB(e.getX(), e.getY()) == Color.RED.getRGB());
 	}
 
 	public Point2D getTopLeft(){

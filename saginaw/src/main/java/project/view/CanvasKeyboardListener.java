@@ -35,9 +35,11 @@ public class CanvasKeyboardListener implements KeyListener {
         } else if(e.getKeyCode() == (KeyEvent.VK_C)){
             controller.zoomIn();
         } else if(e.getKeyCode() == (KeyEvent.VK_R)){
-            controller.toggleDoug();
+            controller.upDoug();
         } else if(e.getKeyCode() == (KeyEvent.VK_F)){
             controller.downDoug();
+        } else if(e.getKeyCode() == (KeyEvent.VK_V)){
+            controller.toggleDoug();
         } else if(e.getKeyCode() == (KeyEvent.VK_K)){
             controller.randomRoute();
         } else if(e.getKeyCode() == (KeyEvent.VK_X)){

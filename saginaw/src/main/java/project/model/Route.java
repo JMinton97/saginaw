@@ -41,7 +41,6 @@ public class Route{
             System.out.println("Problem with ALTPreProcess loading.");
         }
         switchSearchers(SearchType.CONTRACTION_ALT);
-
     }
 
     public void addToEnd(double[] point){
@@ -56,46 +55,45 @@ public class Route{
     }
 
     public boolean adjustRoute(double[] pivotPoint, double dragThreshold){
-        if(hasRoute()){
-            double minDist = Double.MAX_VALUE;
-            int minSegment = 0;
-            int segmentNum = 0;
-            int minWayPoint = 0;
-            double distFromLine, distFromPoint;
 
-            for(double[] waypoint : waypoints){
-                distFromPoint = MyGraph.haversineDistance(pivotPoint, waypoint);
-                if(distFromPoint < minDist){
-                    minDist = distFromPoint;
-                    minWayPoint = waypoints.indexOf(waypoint);
-                }
+        double minDist = Double.MAX_VALUE;
+        int minSegment = 0;
+        int segmentNum = 0;
+        int minWayPoint = 0;
+        double distFromLine, distFromPoint;
+
+        for(double[] waypoint : waypoints){
+            distFromPoint = MyGraph.haversineDistance(pivotPoint, waypoint);
+            if(distFromPoint < minDist){
+                minDist = distFromPoint;
+                minWayPoint = waypoints.indexOf(waypoint);
             }
+        }
 
-            if(minDist < dragThreshold * 2){
-                waypointToMove = minWayPoint;
-                startMoveWaypoint = true;
-                return true;
-            } else {
-                minDist = Double.MAX_VALUE;
-                for(Segment segment : segments){
-                    if(segment.hasRoute()){
-                        for(Point2D.Double point : segment.getPoints()){
-                            distFromLine = MyGraph.haversineDistance(pivotPoint, new double[]{point.getX(), point.getY()});
-                            if(distFromLine < minDist){
-                                minDist = distFromLine;
-                                minSegment = segmentNum;
-                            }
+        if(minDist < dragThreshold * 2){
+            waypointToMove = minWayPoint;
+            startMoveWaypoint = true;
+            return true;
+        } else if(hasRoute()){
+            minDist = Double.MAX_VALUE;
+            for(Segment segment : segments){
+                if(segment.hasRoute()){
+                    for(Point2D.Double point : segment.getPoints()){
+                        distFromLine = MyGraph.haversineDistance(pivotPoint, new double[]{point.getX(), point.getY()});
+                        if(distFromLine < minDist){
+                            minDist = distFromLine;
+                            minSegment = segmentNum;
                         }
                     }
-                    segmentNum++;
                 }
-                if(minDist < dragThreshold){
-                    segmentToPivot = minSegment;
-                    startPivot = true;
-                    return true;
-                } else {
-                    return false;
-                }
+                segmentNum++;
+            }
+            if(minDist < dragThreshold){
+                segmentToPivot = minSegment;
+                startPivot = true;
+                return true;
+            } else {
+                return false;
             }
         } else {
             return false;
@@ -111,7 +109,7 @@ public class Route{
     }
 
 
-    public void alterPivot(double[] pivotPoint){
+    private void alterPivot(double[] pivotPoint){
         if(pivoting){
             waypoints.set(segmentToPivot + 1, pivotPoint);
             segments.get(segmentToPivot).setResolved(false);
@@ -127,7 +125,7 @@ public class Route{
         calculateRoute();
     }
 
-    public void alterWayPoint(double[] alterPoint){
+    private void alterWayPoint(double[] alterPoint){
         waypoints.set(waypointToMove, alterPoint);
         validateSegments();
         calculateRoute();
@@ -183,7 +181,7 @@ public class Route{
         pivoting = false;
     }
 
-    public void calculateRoute() {
+    private void calculateRoute() {
         ArrayList<Thread> routeThreads = new ArrayList<>();
         if (waypoints.size() > 1) {
             for(Segment segment : segments){
@@ -336,5 +334,4 @@ public class Route{
         waypointToMove = 0;
         segmentToPivot = 0;
     }
-
 }

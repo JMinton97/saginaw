@@ -36,6 +36,7 @@ public class ContractionALT implements Searcher {
     private int proxyStart, proxyEnd;
     private double[] forDTV, forDFV, backDTV, backDFV;
     private String name = "calt";
+    private ALTPreProcess alt;
 
 
     public ContractionALT(MyGraph graph, ALTPreProcess altPreProcess) {
@@ -66,6 +67,8 @@ public class ContractionALT implements Searcher {
         Comparator<DijkstraEntry> comparator = new DistanceComparator();
         uPq = new PriorityQueue<DijkstraEntry>(comparator);
         vPq = new PriorityQueue<DijkstraEntry>(comparator);
+
+        this.alt = altPreProcess;
 
     }
 
@@ -551,5 +554,10 @@ public class ContractionALT implements Searcher {
 
     public String getName(){
         return name;
+    }
+
+    @Override
+    public ALTPreProcess getALT() {
+        return alt;
     }
 }

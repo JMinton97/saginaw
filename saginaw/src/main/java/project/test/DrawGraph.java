@@ -1,6 +1,8 @@
 package project.test;
 
 import org.mapdb.BTreeMap;
+import project.map.MyGraph;
+import project.search.ALTPreProcess;
 import project.search.Searcher;
 
 import javax.imageio.ImageIO;
@@ -107,15 +109,19 @@ public class DrawGraph {
         return img;
     }
 
-    public BufferedImage drawSearch(Searcher searcher, ArrayList<double[]> dictionary, int j) throws IOException {
+    public BufferedImage drawSearch(Searcher searcher, MyGraph graph, int j, int level, int src, int dst) throws IOException {
         BufferedImage img = new BufferedImage(1000, 1000, 1);
+        Graphics g = img.getGraphics();
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, 1000, 1000);
+
         for(int node : searcher.getRelaxedNodes().get(0)){
-            double[] loc = dictionary.get(node);
+            double[] loc = graph.getGraphNodeLocation(node);
             double x = loc[0];
             double y = loc[1];
             x = (x - westMost) * xScale;
             y = (northMost - y) * yScale;
-            int red = Color.RED.getRGB();
+            int red = Color.DARK_GRAY.getRGB();
             try{
                 img.setRGB((int) x, (int) y, red);
             }catch(ArrayIndexOutOfBoundsException e){
@@ -124,19 +130,58 @@ public class DrawGraph {
             }
         }
 
+        double[] loc = graph.getGraphNodeLocation(src);
+        double x = loc[0];
+        double y = loc[1];
+        x = (x - westMost) * xScale;
+        y = (northMost - y) * yScale;
+        g.setColor(Color.RED.brighter());
+        g.fillOval((int) x, (int) y, 10, 10);
+
+
         if(searcher.getRelaxedNodes().size() > 1){
             for(int node : searcher.getRelaxedNodes().get(1)){
-                double[] loc = dictionary.get(node);
-                double x = loc[0];
-                double y = loc[1];
+                loc = graph.getGraphNodeLocation(node);
+                x = loc[0];
+                y = loc[1];
                 x = (x - westMost) * xScale;
                 y = (northMost - y) * yScale;
-                int red = Color.BLUE.getRGB();
+                int red = Color.DARK_GRAY.getRGB();
                 img.setRGB((int) x, (int) y, red);
             }
         }
 
-        File outputfile = new File(j + "-" + region + "-" + searcher.getName() + ".png");
+        loc = graph.getGraphNodeLocation(dst);
+        x = loc[0];
+        y = loc[1];
+        x = (x - westMost) * xScale;
+        y = (northMost - y) * yScale;
+        g.setColor(Color.BLUE.brighter());
+        g.fillOval((int) x, (int) y, 10, 10);
+
+        if(searcher.getALT() != null){
+            g.setColor(Color.GREEN);
+
+            for(Integer landmark : searcher.getALT().getLandmarks()){
+                loc = graph.getGraphNodeLocation(landmark);
+                x = loc[0];
+                y = loc[1];
+                x = (x - westMost) * xScale;
+                y = (northMost - y) * yScale;
+                System.out.println(x + " " + y);
+                g.fillOval((int) x, (int) y, 10, 10);
+            }
+        }
+
+
+        g.setColor(Color.BLACK);
+
+        g.setFont(new Font("Courier", Font.PLAIN, 35));
+        g.drawString(searcher.getName(), 10, 40);
+        g.drawString("Explored: " + searcher.getExplored(), 10, 80);
+
+        new File("test/searchDrawings/" + region + "/" + j + "/").mkdirs();
+        File outputfile =  new File("test/searchDrawings/" + region + "/" + j + "/" + level + "-" + searcher.getName() + ".png");
         ImageIO.write(img, "png", outputfile);
         return img;
     }

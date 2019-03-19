@@ -164,6 +164,11 @@ public class Dijkstra implements Searcher {
     public String getName(){
         return name;
     }
+
+    @Override
+    public ALTPreProcess getALT() {
+        return null;
+    }
 }
 
 

@@ -12,4 +12,5 @@ public interface Searcher {
     boolean routeFound();
     ArrayList<ArrayList<Integer>> getRelaxedNodes();
     String getName();
+    ALTPreProcess getALT();
 }

@@ -284,4 +284,9 @@ public class ConcurrentBiDijkstra implements Searcher {
     public String getName(){
         return name;
     }
+
+    @Override
+    public ALTPreProcess getALT() {
+        return null;
+    }
 }

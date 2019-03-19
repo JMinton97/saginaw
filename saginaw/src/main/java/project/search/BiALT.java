@@ -32,6 +32,7 @@ public class BiALT implements Searcher {
     private int bestPathNode;
     private boolean routeFound;
     private String name = "bialt";
+    private ALTPreProcess alt;
 
     public BiALT(MyGraph graph, ALTPreProcess altPreProcess) {
         this.graph = graph;
@@ -57,6 +58,8 @@ public class BiALT implements Searcher {
 
         uRelaxed = new HashSet<>();
         vRelaxed = new HashSet<>();
+
+        this.alt = altPreProcess;
     }
 
     public void search(int start, int end){
@@ -298,5 +301,10 @@ public class BiALT implements Searcher {
 
     public String getName(){
         return name;
+    }
+
+    @Override
+    public ALTPreProcess getALT() {
+        return alt;
     }
 }

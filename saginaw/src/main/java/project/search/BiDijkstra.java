@@ -266,6 +266,8 @@ public class BiDijkstra implements Searcher {
         return name;
     }
 
+    public ALTPreProcess getALT() {return null;}
+
 }
 
 

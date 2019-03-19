@@ -56,15 +56,15 @@ public class VisualiseSearch {
                 dsts.add(randomDst);
             }
 
-            DrawGraph draw = new DrawGraph("britain");
+            DrawGraph draw = new DrawGraph(region);
 
             ArrayList<Searcher> searchers = new ArrayList<>();
 
             searchers.add(new Dijkstra(             graph));
             searchers.add(new BiDijkstra(           graph));
+            searchers.add(new ContractionDijkstra(  graph));
             searchers.add(new ALT(                  graph, altPreProcess));
             searchers.add(new BiALT(                graph, altPreProcess));
-            searchers.add(new ContractionDijkstra(  graph));
             searchers.add(new ContractionALT(       graph, altPreProcessCore));
 
             Iterator srcIt = srcs.iterator();
@@ -73,11 +73,15 @@ public class VisualiseSearch {
             while(srcIt.hasNext()){
                 int src = (int) srcIt.next();
                 int dst = (int) dstIt.next();
+                int level = 0;
                 for(Searcher searcher : searchers){
                     searcher.search(src, dst);
-                    draw.drawSearch(searcher, graph.getDictionary(), x);
+                    draw.drawSearch(searcher, graph, x, level, src, dst);
+                    searcher.clear();
+                    level++;
                 }
                 x++;
+
             }
         }catch(IOException e){
             System.out.println("IO Exception!");

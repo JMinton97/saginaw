@@ -33,6 +33,7 @@ public class ConcurrentBiALT implements Searcher {
     private int bestPathNode;
     private boolean routeFound;
     private String name = "conbialt";
+    private ALTPreProcess alt;
 
     public ConcurrentBiALT(MyGraph myGraph, ALTPreProcess altPreProcess) {
         this.myGraph = myGraph;
@@ -57,6 +58,8 @@ public class ConcurrentBiALT implements Searcher {
 
         uPq = new PriorityQueue<>(new DistanceComparator());
         vPq = new PriorityQueue<>(new DistanceComparator());
+
+        this.alt = altPreProcess;
     }
 
     public void search(int start, int end) {
@@ -332,5 +335,10 @@ public class ConcurrentBiALT implements Searcher {
 
     public String getName(){
         return name;
+    }
+
+    @Override
+    public ALTPreProcess getALT() {
+        return alt;
     }
 }

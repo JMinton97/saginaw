@@ -54,7 +54,7 @@ public class Model {
 	public void startUp(){
 		x = 1;
 		y = 1;
-		baseScale = BigDecimal.valueOf(40000);
+		baseScale = BigDecimal.valueOf(MyMap2.scale);
 		zoom = BigDecimal.valueOf(2);
 		modZoom = Math.pow(2, zoom.doubleValue());
 		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));

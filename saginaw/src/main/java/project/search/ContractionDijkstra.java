@@ -485,4 +485,9 @@ public class ContractionDijkstra implements Searcher {
     public String getName(){
         return name;
     }
+
+    @Override
+    public ALTPreProcess getALT() {
+        return null;
+    }
 }

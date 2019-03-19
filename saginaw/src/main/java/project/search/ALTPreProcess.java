@@ -20,6 +20,8 @@ public class ALTPreProcess {
     Int2ObjectOpenHashMap distancesTo;
     Int2ObjectOpenHashMap distancesFrom;
 
+    final int NUM_LANDMARKS = 8;
+
     ArrayList<Integer> landmarks;
 
     MyGraph graph;
@@ -135,6 +137,11 @@ public class ALTPreProcess {
 
         size = fwdNodes.size();
 
+
+
+
+
+
 //        if(graph.getRegion().equals("englande")){
 ////            landmarks.add(Long.parseLong("27103812"));
 ////            landmarks.add(Long.parseLong("299818750"));
@@ -181,5 +188,9 @@ public class ALTPreProcess {
             }
         }
 
+    }
+
+    public ArrayList<Integer> getLandmarks() {
+        return landmarks;
     }
 }

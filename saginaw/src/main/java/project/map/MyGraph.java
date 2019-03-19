@@ -1423,6 +1423,10 @@ public class MyGraph {
         return points;
     }
 
+    public double[] getGraphNodeLocation(int node){
+        return dictionary.get(graphNodeMappings.get(node));
+    }
+
     private void timerStart(){
         startTime = System.nanoTime();
     }

@@ -37,7 +37,7 @@ public class MyMap2 {
     public static HashMap<Long, MyWay>[][] tileWays;
     public static HashMap<Long, Integer> allRelations;
     private int xDimension, yDimension;
-    private int scale;
+    public static final int scale = 80000; //pixels per degree!
     private double height, width;
     private Point2D.Double centre, origin;
     private static ArrayList<Place> cities;
@@ -67,7 +67,6 @@ public class MyMap2 {
 
         counter = 0;
         this.file = file;
-        scale = 40000; //pixels per degree!
 
         if (region == "wales") {
             northMost = 53.5; //56;
@@ -165,7 +164,7 @@ public class MyMap2 {
 
         PngEncoder encoder = new PngEncoder();
 
-        int j = 32;
+        int j = 64;
 
         tileNodes = new HashMap<>();
         tileWays = new HashMap[j][j];
@@ -180,114 +179,114 @@ public class MyMap2 {
         BlockReaderAdapter placeBrad = new TestBinaryParser();
         BlockInputStream placeReader = new BlockInputStream(placeInput, placeBrad);
 
-        placeReader.process();
+//        placeReader.process();
+//
+//        FileOutputStream fos = null;
+//        ObjectOutputStream out = null;
+//        try {
+//            fos = new FileOutputStream("files/" + region + "/towns.ser");
+//            out = new ObjectOutputStream(fos);
+//            out.writeObject(towns);
+//            out.close();
+//            fos = new FileOutputStream("files/" + region + "/cities.ser");
+//            out = new ObjectOutputStream(fos);
+//            out.writeObject(cities);
+//            out.close();
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//        }
 
-        FileOutputStream fos = null;
-        ObjectOutputStream out = null;
-        try {
-            fos = new FileOutputStream("files/" + region + "/towns.ser");
-            out = new ObjectOutputStream(fos);
-            out.writeObject(towns);
-            out.close();
-            fos = new FileOutputStream("files/" + region + "/cities.ser");
-            out = new ObjectOutputStream(fos);
-            out.writeObject(cities);
-            out.close();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-
-        InputStream input = new FileInputStream(file);
-        BlockReaderAdapter brad = new TestBinaryParser();
-        BlockInputStream reader = new BlockInputStream(input, brad);
-
-        for(int x = 0; x < bounds.length; x++){
-            for(int y = 0; y < bounds[0].length; y++){
-                if(!(x == 0 && y == 0)) {
-                    Double lat, lon;
-                    if (x == 0) {
-                        lon = westMost ; //only works in northern hemisphere????
-                    } else {
-                        lon = bounds[x - 1][y][1] + interval;
-                    }
-                    if (y == 0) {
-                        lat = northMost;
-                    } else {
-                        lat = bounds[x][y - 1][0] - interval;
-                    }
-
-                    bounds[x][y][0] = lat;
-                    bounds[x][y][1] = lon;
-//                    System.out.print("(" + x + " " + y + " " + bounds[x][y][0] + " " + bounds[x][y][1] + ")");
-
-//                    drawArray();
-                }
-            }
-        }
-
-        counter = 0;
-        System.out.println("up to " + xDimension);
-        for(int x = 0; x < xDimension; x = x + j){
-            for(int y = 0; y < yDimension; y = y + j){
-                bX1 = x;
-                bX2 = x + j;
-                bY1 = y;
-                bY2 = y + j;
-                System.out.println("bX1: " + bX1 + " bX2: " + bX2 + " bY1: " + bY1 + " bY2: " + bY2);
-                tileNodes.clear();
-                parsingNodes = true;
-                parsingPlacesAndRelations = false;
-                parsingWays = false;
-                input = new FileInputStream(file);
-                brad = new TestBinaryParser();
-                reader = new BlockInputStream(input, brad);
-                timerStart();
-                reader.process(); //collect nodes in tile
-                timerEnd("Reading nodes");
-                System.out.println("Nodes found: " + tileNodes.size());
-                if(tileNodes.size() > 0){
-                    for(int jx = 0; jx < tileWays.length; jx++){
-                        for(int jy = 0; jy < tileWays[0].length; jy++){
-                            tileWays[jx][jy] = new HashMap<>();
-                        }
-                    }
-                    parsingNodes = false;                                   //or just have a jxj array of hashmaps and put it into the appropriate one.
-                    parsingWays = true;
-                    parsingPlacesAndRelations = false;
-                    input = new FileInputStream(file);
-                    brad = new TestBinaryParser();
-                    reader = new BlockInputStream(input, brad);
-                    timerStart();
-                    reader.process(); //collect ways in tile
-                    timerEnd("Reading ways");
-//                        System.out.println("Ways found: " + tileWays.size());
-                } else {
-                    System.out.println("Skipping way read.");
-                }
-
-                for(int xDraw = x; xDraw < x + j; xDraw++){
-                    for(int yDraw = y; yDraw < y + j; yDraw++){
-                        counter++;
-                        System.out.println("Drawing " + counter + " of " + ((bounds.length) * (bounds[0].length)) + " (" + (int) ((counter / ((bounds.length - 1f) * (bounds[0].length - 1f))) * 100) + "%)");
-                        if(tileWays[xDraw - x][yDraw - y].size() == 0){
-                            System.out.println("Nothing to draw!");
-                        } else {
-                            startTime = System.nanoTime();
-                            BufferedImage tile = drawTile(xDraw, yDraw, x, y, maxEdge);
-                            endTime = System.nanoTime();
-                            System.out.print("Draw time: " + (((float) endTime - (float)startTime) / 1000000000));
-                            System.out.print(". Number of ways: " + linesDrawn + ", " + ((linesDrawn + 1) / (((float) endTime - (float)startTime) / 1000000000)) + "w/s");
-
-                            startTime = System.nanoTime();
-                            saveMap(tile, xDraw, yDraw, encoder);
-                            endTime = System.nanoTime();
-                            System.out.println(". Save time: " + (((float) endTime - (float)startTime) / 1000000000));
-                            System.out.println();
-                        }
-                    }
-                }
-            }
-        }
+//        InputStream input = new FileInputStream(file);
+//        BlockReaderAdapter brad = new TestBinaryParser();
+//        BlockInputStream reader = new BlockInputStream(input, brad);
+//
+//        for(int x = 0; x < bounds.length; x++){
+//            for(int y = 0; y < bounds[0].length; y++){
+//                if(!(x == 0 && y == 0)) {
+//                    Double lat, lon;
+//                    if (x == 0) {
+//                        lon = westMost ; //only works in northern hemisphere????
+//                    } else {
+//                        lon = bounds[x - 1][y][1] + interval;
+//                    }
+//                    if (y == 0) {
+//                        lat = northMost;
+//                    } else {
+//                        lat = bounds[x][y - 1][0] - interval;
+//                    }
+//
+//                    bounds[x][y][0] = lat;
+//                    bounds[x][y][1] = lon;
+////                    System.out.print("(" + x + " " + y + " " + bounds[x][y][0] + " " + bounds[x][y][1] + ")");
+//
+////                    drawArray();
+//                }
+//            }
+//        }
+//
+//        counter = 0;
+//        System.out.println("up to " + xDimension);
+//        for(int x = 0; x < xDimension; x = x + j){
+//            for(int y = 0; y < yDimension; y = y + j){
+//                bX1 = x;
+//                bX2 = x + j;
+//                bY1 = y;
+//                bY2 = y + j;
+//                System.out.println("bX1: " + bX1 + " bX2: " + bX2 + " bY1: " + bY1 + " bY2: " + bY2);
+//                tileNodes.clear();
+//                parsingNodes = true;
+//                parsingPlacesAndRelations = false;
+//                parsingWays = false;
+//                input = new FileInputStream(file);
+//                brad = new TestBinaryParser();
+//                reader = new BlockInputStream(input, brad);
+//                timerStart();
+//                reader.process(); //collect nodes in tile
+//                timerEnd("Reading nodes");
+//                System.out.println("Nodes found: " + tileNodes.size());
+//                if(tileNodes.size() > 0){
+//                    for(int jx = 0; jx < tileWays.length; jx++){
+//                        for(int jy = 0; jy < tileWays[0].length; jy++){
+//                            tileWays[jx][jy] = new HashMap<>();
+//                        }
+//                    }
+//                    parsingNodes = false;                                   //or just have a jxj array of hashmaps and put it into the appropriate one.
+//                    parsingWays = true;
+//                    parsingPlacesAndRelations = false;
+//                    input = new FileInputStream(file);
+//                    brad = new TestBinaryParser();
+//                    reader = new BlockInputStream(input, brad);
+//                    timerStart();
+//                    reader.process(); //collect ways in tile
+//                    timerEnd("Reading ways");
+////                        System.out.println("Ways found: " + tileWays.size());
+//                } else {
+//                    System.out.println("Skipping way read.");
+//                }
+//
+//                for(int xDraw = x; xDraw < x + j; xDraw++){
+//                    for(int yDraw = y; yDraw < y + j; yDraw++){
+//                        counter++;
+//                        System.out.println("Drawing " + counter + " of " + ((bounds.length) * (bounds[0].length)) + " (" + (int) ((counter / ((bounds.length - 1f) * (bounds[0].length - 1f))) * 100) + "%)");
+//                        if(tileWays[xDraw - x][yDraw - y].size() == 0){
+//                            System.out.println("Nothing to draw!");
+//                        } else {
+//                            startTime = System.nanoTime();
+//                            BufferedImage tile = drawTile(xDraw, yDraw, x, y, maxEdge);
+//                            endTime = System.nanoTime();
+//                            System.out.print("Draw time: " + (((float) endTime - (float)startTime) / 1000000000));
+//                            System.out.print(". Number of ways: " + linesDrawn + ", " + ((linesDrawn + 1) / (((float) endTime - (float)startTime) / 1000000000)) + "w/s");
+//
+//                            startTime = System.nanoTime();
+//                            saveMap(tile, xDraw, yDraw, encoder);
+//                            endTime = System.nanoTime();
+//                            System.out.println(". Save time: " + (((float) endTime - (float)startTime) / 1000000000));
+//                            System.out.println();
+//                        }
+//                    }
+//                }
+//            }
+//        }
 
 
         combineTiles(tiles);
@@ -570,7 +569,7 @@ public class MyMap2 {
         File inputfile, outputfile;
         BufferedImage map;
         try{
-            for(int z = 2; z < (MAX_LEVEL * 2); z = z * 2){
+            for(int z = 64; z < (MAX_LEVEL * 2); z = z * 2){
                 new File("draw/" + region + "/" + z + "/").mkdirs();
 //                if(Math.max(tiles.length, tiles[0].length))
                 System.out.println("z" + z);
