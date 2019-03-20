@@ -11,6 +11,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Comparator;
 
 public class TestRun {
@@ -42,18 +43,29 @@ public class TestRun {
             fe.mkdirs();
             fe.createNewFile();
 
-
-            startTime = System.nanoTime();
-            MyMap2 map2 = new MyMap2(f, region, 1024, false);
-            map2.draw();
-            endTime = System.nanoTime();
-            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
+//
+//            startTime = System.nanoTime();
+//            MyMap2 map2 = new MyMap2(f, region, 1024, false);
+//            map2.draw();
+//            endTime = System.nanoTime();
+//            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
 
 
             startTime = System.nanoTime();
             graph = new MyGraph(f, region);
             endTime = System.nanoTime();
             System.out.println("Making graph time: " + (((float) endTime - (float)startTime) / 1000000000));
+
+            int edgeCtr = 0;
+            for(ArrayList edges : graph.getFwdGraph()){
+                edgeCtr += edges.size();
+            }
+
+
+            System.out.println("Graph size: " + graph.getFwdGraph().size());
+            System.out.println("Edges: " + edgeCtr);
+            System.out.println("Core size: " + graph.getFwdCore().size());
+            System.out.println("Nodes stored: " + graph.mapRoads.size());
 
 //            System.out.println("Dictionary: " + graph.getDictionary().size());
 

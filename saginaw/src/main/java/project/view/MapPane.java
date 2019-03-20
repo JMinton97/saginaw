@@ -62,6 +62,7 @@ class MapPane extends JPanel
 	private double dougTolerance;
 	private boolean simplifyRoute;
 	private boolean grid;
+	private boolean labels;
 
 	private BufferedImage start, middle, end;
 
@@ -108,6 +109,7 @@ class MapPane extends JPanel
 		simplifyRoute = false;
 
 		grid = false;
+		labels = true;
 
 		try{
 			String filename = "res/icon/start.png";
@@ -213,8 +215,9 @@ class MapPane extends JPanel
             drawRoute(model.getRoute(), (Graphics2D) g);
         }
 
-        drawPlaces();
-
+        if(labels){
+			drawPlaces();
+		}
 
 		if (model.isActive())
 		{
@@ -337,7 +340,7 @@ class MapPane extends JPanel
 			textShape = p.getTextShape();
 			glyphVector = p.getGlyphVector();
 		}else{
-			Font f = new Font("Montserrat-Light", Font.BOLD, 14);
+			Font f = new Font("Montserrat-Lighht", Font.BOLD, 14);
 
 			glyphVector = f.createGlyphVector(g.getFontRenderContext(), p.getName());
 			textShape = glyphVector.getOutline();
@@ -426,6 +429,11 @@ class MapPane extends JPanel
 
 	protected void toggleGrid(){
 		grid = !grid;
+		repaint();
+	}
+
+	protected void toggleLabels(){
+		labels = !labels;
 		repaint();
 	}
 }

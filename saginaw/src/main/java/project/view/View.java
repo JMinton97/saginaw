@@ -28,6 +28,7 @@ public class View extends JFrame
 	private static final long	serialVersionUID	= -6963519874728205328L;
 	private MapPane mapPane;
 	private JPanel infoPanel = null;
+	private SplashPanel splashPanel;
 	private JLabel distance;
 	private JFrame frame;
 	private Model model;
@@ -37,25 +38,39 @@ public class View extends JFrame
 		super("Saginaw v0.1");
 		controller.addView(this);
 		setBounds(100, 10, 1200, 800);
-//		setBackground(Color.MAGENTA);
 		frame = this;
 
-//		try{
-//			final BufferedImage splashImg = ImageIO.read(new File(System.getProperty("user.dir").concat("/res/icon/splash.png")));
-//			SplashPanel splashPanel = new SplashPanel(splashImg);
-//			getContentPane().add(splashPanel);
-//			System.out.println(splashPanel.getWidth());
-//			splashPanel.repaint();
-//			splashPanel.updateUI();
-//			splashPanel.paintImmediately(0, 0, 1200, 800);
-//		}catch(IOException e){
-//			e.printStackTrace();
-//		}
 
 		this.model = model;
 		this.controller = controller;
 
 		validate();
+
+
+		try{
+			final BufferedImage splashImg = ImageIO.read(new File(System.getProperty("user.dir").concat("/res/icon/splash.png")));
+			splashPanel = new SplashPanel(splashImg);
+			getContentPane().add(splashPanel);
+			System.out.println(splashPanel.getWidth());
+			splashPanel.repaint();
+			splashPanel.updateUI();
+			splashPanel.paintImmediately(0, 0, 1200, 800);
+			Graphics g;
+			g = splashPanel.getGraphics();
+			paint(g);
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+
+		this.setVisible(true);
+
+		validate();
+
+		this.paintAll(getGraphics());
+
+		model.startUp();
+
+		startMap();
 
 	}
 
@@ -148,6 +163,15 @@ public class View extends JFrame
 		saveRouteAction.putValue(Action.SMALL_ICON, new ImageIcon(
 				getClass().getResource("/project/icons/export.png")));
 
+		AbstractAction toggleLabelsAction = new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				mapPane.toggleLabels();
+			}
+		};
+		toggleLabelsAction.putValue(Action.SMALL_ICON, new ImageIcon(
+				getClass().getResource("/project/icons/labels.png")));
+
 
 
         ButtonGroup searchMethodGroup = new ButtonGroup();
@@ -157,6 +181,7 @@ public class View extends JFrame
 		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.ALT, "ALT")));
 		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.BIALT, "Bidirectional ALT")));
 		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.CONCURRENT_BIALT, "Concurrent Bidirectional ALT")));
+		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.CONTRACTION_DIJKSTRA, "Contraction Dijkstra")));
 		searchMethods.add(new JRadioButtonMenuItem(new ChangeSearchAction(this, controller, SearchType.CONTRACTION_ALT, "CALT (Contraction-ALT)")));
 
 		for(JRadioButtonMenuItem item : searchMethods){
@@ -195,7 +220,9 @@ public class View extends JFrame
             GraphicsEnvironment ge =
                     GraphicsEnvironment.getLocalGraphicsEnvironment();
             ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, new File("/res/fonts/Montserrat-Regular.ttf")));
+            ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, new File("/res/fonts/Montserrat-Light.ttf")));
         } catch (IOException|FontFormatException e) {
+			e.printStackTrace();
         }
 		distance.setFont(new Font("Montserrat-Regular", Font.BOLD, 20));
 		infoPanel.add(distance);
@@ -205,9 +232,12 @@ public class View extends JFrame
 		infoPanel.add(new JButton(showGridAction));
 		infoPanel.add(new JButton(repaintMapAction));
 		infoPanel.add(new JButton(saveRouteAction));
+		infoPanel.add(new JButton(toggleLabelsAction));
 
 
 		getContentPane().add(infoPanel, BorderLayout.SOUTH);
+
+		this.remove(splashPanel);
 
 //		pack();
 
@@ -303,7 +333,6 @@ class SplashPanel extends JPanel {
 	@Override
 	protected void paintComponent(Graphics g) {
 		System.out.println("PAINT");
-		Thread.dumpStack();
 		super.paintComponent(g);
 		g.drawImage(image, 0, 0, null);
 	}

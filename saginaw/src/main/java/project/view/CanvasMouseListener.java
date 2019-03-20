@@ -102,6 +102,7 @@ class CanvasMouseListener implements MouseInputListener
 		controller.moveMap(x2 - x1, y2 - y1);
 		model.getRoute().endAlteration();
 		model.loadFullRoute();
+		view.repaint();
 	}
 
 	@Override

@@ -35,7 +35,7 @@ public class Route{
         closestNodes = new HashMap<>();
         searcherStack = new Stack<>();
         try{
-            preProcess = new ALTPreProcess(graph, false);
+//            preProcess = new ALTPreProcess(graph, false);
             corePreProcess = new ALTPreProcess(graph, true);
         }catch(IOException e){
             System.out.println("Problem with ALTPreProcess loading.");
@@ -126,7 +126,9 @@ public class Route{
     }
 
     private void alterWayPoint(double[] alterPoint){
+        addedPoints.pop();
         waypoints.set(waypointToMove, alterPoint);
+        addedPoints.push(alterPoint);
         validateSegments();
         calculateRoute();
     }
@@ -186,7 +188,7 @@ public class Route{
         if (waypoints.size() > 1) {
             for(Segment segment : segments){
                 if (!segment.isResolved()) {
-                    System.out.println("UNRESOLVED....");
+//                    System.out.println("UNRESOLVED....");
                     Runnable routeSegmentThread = () -> {
                         int src, dst;
                         if (!closestNodes.containsKey(segment.getStartNode())) {
@@ -219,7 +221,7 @@ public class Route{
                             segment.setHasRoute(false);
                         }
 
-                        System.out.println(searcher.getExplored());
+//                        System.out.println(searcher.getExplored());
 
                         segment.setWayIds(searcher.getRouteAsWays());
                         segment.setResolved(true);

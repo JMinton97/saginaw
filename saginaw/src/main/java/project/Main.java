@@ -53,8 +53,6 @@ public class Main extends JFrame
 				View view = new View(model, controller);
 				view.validate();
 				view.setVisible(true);
-				model.startUp();
-				view.startMap();
 			}
 		});
 

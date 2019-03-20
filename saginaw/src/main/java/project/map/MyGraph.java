@@ -26,7 +26,7 @@ public class MyGraph {
     //    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
 //    public static BTreeMap<Long, double[]> dictionary; //maps a node id to a double array containing the coordinates of the node
     public static ArrayList<double[]> dictionary;
-    private static Map<Long, int[]> mapRoads; //a list of all connections between nodes. Later becomes all graph edges.
+    public static Map<Long, int[]> mapRoads; //a list of all connections between nodes. Later becomes all graph edges.
     private static Map<Long, int[]> coreMapRoads; //a list of all connections between nodes, in the core.
     private static ConcurrentMap<Integer, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a counter of the number of ways each one is part of
     private static boolean parsingNodes;
