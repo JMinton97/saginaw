@@ -35,7 +35,7 @@ public class Route{
         closestNodes = new HashMap<>();
         searcherStack = new Stack<>();
         try{
-//            preProcess = new ALTPreProcess(graph, false);
+            preProcess = new ALTPreProcess(graph, false);
             corePreProcess = new ALTPreProcess(graph, true);
         }catch(IOException e){
             System.out.println("Problem with ALTPreProcess loading.");
@@ -47,7 +47,7 @@ public class Route{
         System.out.println("added");
         waypoints.add(point);
         if(waypoints.size() > 1){
-            segments.add(new Segment(waypoints.get(waypoints.size() - 2), waypoints.get(waypoints.size() - 1)));
+            segments.add(new Segment(waypoints.get(waypoints.size() - 2), waypoints.get(waypoints.size() - 1), graph));
         }
         addedPoints.push(point);
         validateSegments();
@@ -118,7 +118,7 @@ public class Route{
         }else{
             pivoting = true;
             waypoints.add(segmentToPivot + 1, pivotPoint);
-            segments.add(segmentToPivot + 1, new Segment(new double[]{}, new double[]{}));
+            segments.add(segmentToPivot + 1, new Segment(new double[]{}, new double[]{}, graph));
         }
         addedPoints.push(pivotPoint);
         validateSegments();
@@ -176,7 +176,7 @@ public class Route{
 
     public void loadFullRoute(){
         for(Segment segment : segments) {
-            segment.getFullDetailRoute(graph);
+            segment.getFullDetailRoute();
         }
         pivoting = false;
     }
@@ -299,7 +299,11 @@ public class Route{
                 break;
 
             case CONTRACTION_DIJKSTRA:
-//				searcherList.add(new Con)
+				searcherStack.clear();
+                for(int x = 0; x < SEARCHER_COUNT; x++){
+                    searcherStack.add(new ContractionDijkstra(graph));
+                }
+                break;
 
             case CONTRACTION_ALT:
                 searcherStack.clear();

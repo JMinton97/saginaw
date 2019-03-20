@@ -2,6 +2,7 @@ package project.view;
 
 import com.google.common.math.DoubleMath;
 import project.controller.Controller;
+import project.model.GPXExporter;
 import project.model.Model;
 import project.search.SearchType;
 import project.view.actions.*;
@@ -11,9 +12,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -140,6 +139,14 @@ public class View extends JFrame
 		freshSearchAction.putValue(Action.SMALL_ICON, new ImageIcon(
 				getClass().getResource("/project/icons/search.png")));
 
+		AbstractAction saveRouteAction = new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				saveRoute();
+			}
+		};
+		saveRouteAction.putValue(Action.SMALL_ICON, new ImageIcon(
+				getClass().getResource("/project/icons/export.png")));
 
 
 
@@ -197,6 +204,7 @@ public class View extends JFrame
 		infoPanel.add(new JButton(freshSearchAction));
 		infoPanel.add(new JButton(showGridAction));
 		infoPanel.add(new JButton(repaintMapAction));
+		infoPanel.add(new JButton(saveRouteAction));
 
 
 		getContentPane().add(infoPanel, BorderLayout.SOUTH);
@@ -251,7 +259,36 @@ public class View extends JFrame
 		}
 		infoPanel.repaint();
 	}
+
+	protected void saveRoute() {
+		String name = (String)JOptionPane.showInputDialog(frame, "Enter a name for your route: ", "Route Export",
+				JOptionPane.PLAIN_MESSAGE,
+				new ImageIcon(
+						getClass().getResource("/project/icons/export.png")),
+				null,
+				"");
+		JFileChooser fileChooser = new JFileChooser();
+		int choice = fileChooser.showSaveDialog(this);
+		if (choice == JFileChooser.APPROVE_OPTION) {
+			File file = fileChooser.getSelectedFile();
+			if (file == null) {
+				return;
+			}
+			if (!file.getName().toLowerCase().endsWith(".gpx")) {
+				file = new File(file.getParentFile(), file.getName() + ".gpx");
+			}
+			new GPXExporter().makeGPXFile(file, model.getRoute(), name);
+		}
+	}
 }
+
+
+
+
+
+
+
+
 
 class SplashPanel extends JPanel {
 

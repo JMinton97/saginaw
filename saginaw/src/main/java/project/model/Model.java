@@ -217,9 +217,8 @@ public class Model {
 //        System.out.println(zoom);
 		if(zoom.compareTo(BigDecimal.valueOf(0.1)) > 0){
 			zoom = zoom.subtract(BigDecimal.valueOf(0.05));
-		}else{
-//			System.out.println(false);
 		}
+
 		modZoom = Math.pow(2, zoom.doubleValue());
 		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));
 	}
@@ -235,8 +234,6 @@ public class Model {
 
 		if(zoom.add(BigDecimal.valueOf(1)).compareTo(BigDecimal.valueOf(0.1)) > 0){
 			zoom = zoom.subtract(BigDecimal.valueOf(0.05));
-		}else{
-			System.out.println(false);
 		}
 
 		modZoom = Math.pow(2, zoom.doubleValue());
@@ -253,7 +250,7 @@ public class Model {
 	}
 
 	public void zoomOut() {
-		if(zoom.multiply(BigDecimal.valueOf(1.1)).compareTo(BigDecimal.valueOf(10)) < 0){
+		if(zoom.multiply(BigDecimal.valueOf(1.1)).compareTo(BigDecimal.valueOf(11)) < 0){
 			zoom = zoom.add(BigDecimal.valueOf(0.05));
 		}
 
@@ -266,7 +263,7 @@ public class Model {
 		double yDif = zoomPoint[1] - centreCoord.getY();
 
 		double oldZoom = modZoom;
-		if(zoom.multiply(BigDecimal.valueOf(1.1)).compareTo(BigDecimal.valueOf(10)) < 0){
+		if(zoom.multiply(BigDecimal.valueOf(1.1)).compareTo(BigDecimal.valueOf(11)) < 0){
 			zoom = zoom.add(BigDecimal.valueOf(0.05));
 		}
 

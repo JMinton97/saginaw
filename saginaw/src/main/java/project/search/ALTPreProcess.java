@@ -6,6 +6,7 @@ import org.nustaq.serialization.FSTObjectInput;
 import org.nustaq.serialization.FSTObjectOutput;
 import project.map.MyGraph;
 
+import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -20,7 +21,8 @@ public class ALTPreProcess {
     Int2ObjectOpenHashMap distancesTo;
     Int2ObjectOpenHashMap distancesFrom;
 
-    final int NUM_LANDMARKS = 8;
+    final int NUM_LANDMARKS = 10;
+    final double RADIUS = 10;
 
     ArrayList<Integer> landmarks;
 
@@ -108,32 +110,32 @@ public class ALTPreProcess {
         List<Integer> bckNodes;
 
 
-        if(core){
+//        if(core){
             fwd = graph.getFwdCore();
             bck = graph.getBckCore();
 
             fwdNodes = new ArrayList<>(fwd.keySet());
             bckNodes = new ArrayList<>(bck.keySet());
 
-        }else{
+//        }else{
+//
+//            fwd = graph.getFwdCore();
+//            bck = graph.getBckCore();
+//
+//            fwdNodes = new ArrayList<>();
+//            bckNodes = new ArrayList<>();
+//
+//
+//            for(int i = 0; i < fwd.size(); i++){
+//                fwdNodes.add(i);
+//            }
+//
+//            for(int i = 0; i < bck.size(); i++){
+//                bckNodes.add(i);
+//            }
+//        }
 
-            fwd = graph.getFwdCore();
-            bck = graph.getBckCore();
-
-            fwdNodes = new ArrayList<>();
-            bckNodes = new ArrayList<>();
-
-
-            for(int i = 0; i < fwd.size(); i++){
-                fwdNodes.add(i);
-            }
-
-            for(int i = 0; i < bck.size(); i++){
-                bckNodes.add(i);
-            }
-        }
-
-        Random random = new Random();
+        Random random = new Random(10);
 
         size = fwdNodes.size();
 
@@ -188,6 +190,26 @@ public class ALTPreProcess {
             }
         }
 
+//        landmarks = generateCircularLandmarks();
+
+    }
+
+    private ArrayList<Integer> generateCircularLandmarks(){
+        Point2D.Double centre = new Point2D.Double(-1.657300, 53.381509);
+
+        Double x, y;
+        ArrayList<Integer> landmarks = new ArrayList<>();
+
+        for(int z = 0; z < NUM_LANDMARKS; z++){
+            x = -RADIUS * Math.sin(360/NUM_LANDMARKS * z);
+            y = RADIUS * Math.cos(360/NUM_LANDMARKS * z);
+            double[] point = new double[]{centre.getX() + x, centre.getY() + y};
+            System.out.println(point[1] + ", " + point[0]);
+            landmarks.add(graph.findClosest(point));
+            System.out.println(graph.getGraphNodeLocation(landmarks.get(landmarks.size() - 1))[1] + ", " + graph.getGraphNodeLocation(landmarks.get(landmarks.size() - 1))[0]);
+        }
+
+        return landmarks;
     }
 
     public ArrayList<Integer> getLandmarks() {

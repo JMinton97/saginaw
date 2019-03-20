@@ -183,7 +183,7 @@ public class ContractionALT implements Searcher {
 //            System.out.println("First stage: " + explored);
             secondStage();
             if(!routeFound){
-//                System.out.println("No route found.");
+                System.out.println("No route found.");
                 routeFound = false;
             } else {}
         } else {
@@ -435,35 +435,40 @@ public class ContractionALT implements Searcher {
     }
 
     public ArrayList<Integer> getRoute(){
+        int ctr = 0;
         if(routeFound){
             int node = overlapNode;
 //            System.out.println(overlapNode);
             ArrayList<Integer> route = new ArrayList<>();
             try{
-                long way = 0;
                 while(node != start && node != end){
+                    ctr++;
 //                    way = uEdgeTo.get(node);
                     node = uNodeTo.get(node);
-//                    if(node == -1){
-//                        break;
-//                    }
+                    if(node == -1){
+                        break;
+                    }
                     route.add(node);
-//                    System.out.println(node);
+                    if(ctr > getExplored()){
+                        System.out.println("Early cut off");
+                        break;
+                    }
                 }
 
-//                System.out.println("Done to.");
 
                 Collections.reverse(route);
-//                System.out.println(overlapNode);
                 node = overlapNode;
                 while(node != start && node != end){
-//                    way = vEdgeTo.get(node);
+                    ctr++;
                     node = vNodeTo.get(node);
-//                    if(node == -1){
-//                        break;
-//                    }
+                    if(node == -1){
+                        break;
+                    }
                     route.add(node);
-//                    System.out.println(node);
+                    if(ctr > getExplored()){
+                        System.out.println("Early cut off");
+                        break;
+                    }
                 }
 
             }catch(NullPointerException n){
@@ -477,37 +482,41 @@ public class ContractionALT implements Searcher {
     }
 
     public ArrayList<Long> getRouteAsWays(){
-
-//        System.out.println(start + " " + end);
+        int ctr = 0;
         if(routeFound){
             int node = overlapNode;
-//            System.out.println(overlapNode);
             ArrayList<Long> route = new ArrayList<>();
             try{
                 long way = 0;
                 while(node != start && node != end){
+                    ctr++;
                     way = uEdgeTo.get(node);
                     node = uNodeTo.get(node);
-//                    if(node == -1){
-//                        break;
-//                    }
+                    if(node == -1){
+                        break;
+                    }
                     route.add(way);
-//                    System.out.println(node);
+                    if(ctr > getExplored()){
+                        System.out.println("Early cut off");
+                        break;
+                    }
                 }
 
-//                System.out.println("Done to.");
 
                 Collections.reverse(route);
-//                System.out.println(overlapNode);
                 node = overlapNode;
                 while(node != start && node != end){
+                    ctr++;
                     way = vEdgeTo.get(node);
                     node = vNodeTo.get(node);
-//                    if(node == -1){
-//                        break;
-//                    }
+                    if(node == -1){
+                        break;
+                    }
                     route.add(way);
-//                    System.out.println(node);
+                    if(ctr > getExplored()){
+                        System.out.println("Early cut off");
+                        break;
+                    }
                 }
 
             }catch(NullPointerException n){

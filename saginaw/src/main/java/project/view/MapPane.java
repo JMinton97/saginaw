@@ -213,7 +213,7 @@ class MapPane extends JPanel
             drawRoute(model.getRoute(), (Graphics2D) g);
         }
 
-//        drawPlaces();
+        drawPlaces();
 
 
 		if (model.isActive())
@@ -310,27 +310,44 @@ class MapPane extends JPanel
 			for (Place p : model.getMap().getTowns()) {
 				Point2D loc = geoToCanvas(p.getLocation());
 				if(loc.getX() < paneX + 100 && loc.getX() > -100 && loc.getY() < paneY + 100 && loc.getY() > -100){
-					writeTextNicely(p.getName(), loc);
+					writeTextNicely(p, loc);
 				}
 
-			}
-		} else {
-			for(Place p : model.getMap().getCities()){
-				Point2D loc = geoToCanvas(p.getLocation());
-				if(loc.getX() < paneX + 100 && loc.getX() > -100 && loc.getY() < paneY + 100 && loc.getY() > -100){
-					writeTextNicely(p.getName(), loc);
-				}
 			}
 		}
 
+		if (zoom <= 512) {
+			for(Place p : model.getMap().getCities()){
+				Point2D loc = geoToCanvas(p.getLocation());
+				if(loc.getX() < paneX + 100 && loc.getX() > -100 && loc.getY() < paneY + 100 && loc.getY() > -100){
+					writeTextNicely(p, loc);
+				}
+			}
+		}
 	}
 
-	public void writeTextNicely(String text, Point2D location){
-		Graphics2D g = (Graphics2D) image.getGraphics();
-		Font f = new Font("Montserrat-Regular", Font.BOLD, 14);
+	public void writeTextNicely(Place p, Point2D location){
 
-		GlyphVector glyphVector = f.createGlyphVector(g.getFontRenderContext(), text);
+		Shape textShape;
+		GlyphVector glyphVector;
+		Graphics2D g = (Graphics2D) image.getGraphics();
+
+
+		if(p.hasTextShape()){
+			textShape = p.getTextShape();
+			glyphVector = p.getGlyphVector();
+		}else{
+			Font f = new Font("Montserrat-Light", Font.BOLD, 14);
+
+			glyphVector = f.createGlyphVector(g.getFontRenderContext(), p.getName());
+			textShape = glyphVector.getOutline();
+
+			p.setGlyphVector(glyphVector);
+			p.setTextShape(textShape);
+		}
+
 		Rectangle2D box = glyphVector.getVisualBounds();
+
 
 		double x = location.getX() - box.getWidth() / 2;
 		double y = location.getY() - box.getHeight() / 2;
@@ -342,7 +359,7 @@ class MapPane extends JPanel
 
 
 		// get the shape object
-		Shape textShape = glyphVector.getOutline();
+
 
 		// activate anti aliasing for text rendering (if you want it to look nice)
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,

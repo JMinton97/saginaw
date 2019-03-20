@@ -50,7 +50,6 @@ public class MyGraph {
     private long startTime;
     private long endTime;
 
-    private float totalMapDBTime;
 
     private String filePrefix, region;
 
@@ -477,21 +476,16 @@ public class MyGraph {
 
             if(keys.containsKey(entry.getKey())){
                 if(!entry.getValue().equals(keys.get(entry.getKey()))){
-//                        System.out.println(entry.getValue() + " " + keys.get(entry.getKey()));
                     continue;
                 }
             } else {
                 continue;
             }
 
-//            System.out.println("Key is " + checkKey(Long.parseLong("2322558864")));
-
             bypassNode = entry.getKey();
-//            System.out.println("    " + bypassNode);
-//            System.out.println((long) fwdCore.get(bypassNode).get(0)[0] + " " + (long) bckCore.get(bypassNode).get(0)[0]);
+
 
             if(!doubleEquals(checkKey(entry.getKey()), entry.getValue())){
-//                System.out.println("SOMETHING WRONG");
                 System.out.println("Error with " + bypassNode);
                 System.out.println("Expected: " + checkKey(entry.getKey()) + ", actual: " + entry.getValue());
                 System.exit(0);
@@ -504,76 +498,15 @@ public class MyGraph {
             }
 
             HashSet<Integer> alteredNodes = new HashSet<>();
-//            System.out.println(i + "   " + bypassNode);
-//                System.out.println("Got key.");
-//                System.out.println(bypassNode);
+
             if(fwdCore.containsKey(bypassNode)) {
-
-//                ArrayList<double[]> beforeEdges = new ArrayList<>();
-//                beforeEdges.addAll(bckCore.get(bypassNode));
-//                ArrayList<double[]> afterEdges = new ArrayList<>();
-//                afterEdges.addAll(fwdCore.get(bypassNode));
-//
-//                Iterator bckIt = bckCore.get(bypassNode).iterator();
-//                while(bckIt.hasNext()){
-//                    long backNeighbour = (long) ((double[]) bckIt.next())[0];
-//                    for(double[] edge : fwdCore.get(backNeighbour)){
-//                        if(edge[0] == bypassNode){
-//                            fwdCore.get(backNeighbour).remove(edge);
-//                        }
-//                    }
-//                }
-//
-//                Iterator fwdIt = fwdCore.get(bypassNode).iterator();
-//                while(fwdIt.hasNext()){
-//                    long forwardNeighbour = (long) ((double[]) fwdIt.next())[0];
-//                    for(double[] edge : bckCore.get(forwardNeighbour)){
-//                        if(edge[0] == bypassNode){
-//                            bckCore.get(forwardNeighbour).remove(edge);
-//                        }
-//                    }
-//                }
-//
-//                for(double[] afterEdge : afterEdges){
-//                    for(double[] beforeEdge : beforeEdges){
-//                        if(connectedInCore((long) beforeEdge[0], (long) afterEdge[0])){
-//                            for(double[] existingEdges : fwdCore.get((long) beforeEdge[0])){
-//                                if(existingEdges[0] == afterEdge[0]){
-//
-//                                }
-//                            }
-//                        }
-//                        fwdCore.get((long) beforeEdge[0]).add(new double[]{afterEdge[0], afterEdge[1] + beforeEdge[1], beforeEdge[2], beforeEdge[3] + afterEdge[3]});
-//                        bckCore.get((long) afterEdge[0]).add(new double[]{beforeEdge[0], afterEdge[1] + beforeEdge[1], beforeEdge[2], beforeEdge[3] + afterEdge[3]});
-//                    }
-//                }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
                 ArrayList<double[]> beforeEdges = new ArrayList<>();
                 beforeEdges.addAll(bckCore.get(bypassNode));
                 ArrayList<double[]> afterEdges = new ArrayList<>();
                 afterEdges.addAll(fwdCore.get(bypassNode));
-//                System.out.println("Got edges.");
                 Iterator beforeItr = beforeEdges.iterator();
-//                System.out.println(beforeEdges.size() + " " + afterEdges.size());
 
-//                System.out.println(checkKey(bypassNode));
-                int addedEdgesCtr = 0;
-                int notAddedAdgesCtr = 0;
                 while (beforeItr.hasNext()) {
 //                    System.out.println("before edge");
                     double[] beforeEdge = (double[]) beforeItr.next();
@@ -582,77 +515,20 @@ public class MyGraph {
 //                        System.out.println("combo");
                         double[] afterEdge = (double[]) afterItr.next();
                         if ((int) afterEdge[0] == (long) beforeEdge[0]) {    //check we're not making an x to x edge
-//                            System.out.println("No edge added.");
-                            notAddedAdgesCtr++;
-//                            System.out.println(bypassNode);
                             continue;
                         }
-//                        ArrayList<double[]> existingEdges = new ArrayList<>();
-//                        existingEdges.addAll(fwdCore.get((long) beforeEdge[0]));
-////                        System.out.println("Got existing edges.");
-//                        Iterator existingItr = existingEdges.iterator();
-//                        while (existingItr.hasNext()) {           //checking if the shortcut to be added already exists
-//                            double[] edge = (double[]) existingItr.next();
-//                            if (edge[0] == afterEdge[0]) {
-//                                if (beforeEdge[1] + afterEdge[1] < edge[1]) {
-////                                    existingItr.add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], beforeEdge[2], beforeEdge[3] + afterEdge[3]});
-//                                    fwdCore.get((long) beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], beforeEdge[2], beforeEdge[3] + afterEdge[3]});
-//                                    bckCore.get((long) afterEdge[0]).add(new double[]{beforeEdge[0], beforeEdge[1] + afterEdge[1], beforeEdge[2], beforeEdge[3] + afterEdge[3]});   //if shortcut is shorter, add it
-////                                    Iterator fwdIt = fwdCore.get((long) beforeEdge[0]).iterator();
-////                                    Iterator bckIt = bckCore.get((long) afterEdge[0]).iterator();
-////                                    while(fwdIt.hasNext()){
-////                                        if((long) ((double[]) fwdIt.next())[0] == bypassNode){
-////                                            fwdIt.remove();
-////                                        }
-////                                    }
-////                                    while(fwdIt.hasNext()){
-////                                        if((long) ((double[]) fwdIt.next())[0] == bypassNode){
-////                                            bckIt.remove();
-////                                        }
-////                                    }
-//                                    alteredNodes.add((long) afterEdge[0]);
-//                                    alteredNodes.add((long) beforeEdge[0]);
-//                                    if((long) afterEdge[0] == Long.parseLong("2322558864")){
-//                                        System.out.println("Touched in loop at " + bypassNode);
-//                                    }
-//                                    if((long) beforeEdge[0] == Long.parseLong("2322558864")){
-//                                        System.out.println("Touched in loop at " + bypassNode);
-//                                    }
-////                                    System.out.println("Added an edge.");
-////                                    System.out.println("Added shortcuts.");
-////                                    System.out.println("Added shorter edge from " + (long) beforeEdge[0] + " to " + (long) afterEdge[0] + " of length " + (beforeEdge[1] + afterEdge[1]));
-//                                } else {
-//                                    continue INNER;
-//                                }
-//                            }
-//                        }
-//                        Iterator fwdIt = fwdCore.get((long) beforeEdge[0]).iterator();
-//                        Iterator bckIt = bckCore.get((long) afterEdge[0]).iterator();
+
                         long fwdId = joinWays((long) beforeEdge[2], (long) afterEdge[2]);
                         long bckId = joinWays((long) afterEdge[2], (long) beforeEdge[2]);
                         fwdCore.get((int) beforeEdge[0]).add(new double[]{afterEdge[0], beforeEdge[1] + afterEdge[1], fwdId, beforeEdge[3] + afterEdge[3]});   //add shortcut to forward and backward graph
                         bckCore.get((int) afterEdge[0]).add(new double[]{beforeEdge[0], beforeEdge[1] + afterEdge[1], bckId, beforeEdge[3] + afterEdge[3]});
 
 
-//                        while(fwdIt.hasNext()){
-//                            if((long) ((double[]) fwdIt.next())[0] == bypassNode){
-//                                fwdIt.remove();
-//                            }
-//                        }
-//                        while(bckIt.hasNext()){
-//                            if((long) ((double[]) bckIt.next())[0] == bypassNode){
-//                                bckIt.remove();
-//                            }
-//                        }
                         alteredNodes.add((int) afterEdge[0]);
                         alteredNodes.add((int) beforeEdge[0]);
-                        addedEdgesCtr++;
-//                        System.out.println("Added these shortcuts.");
-//                        System.out.println("Added edge from " + (long) beforeEdge[0] + " to " + (long) afterEdge[0] + " of length " + (beforeEdge[1] + afterEdge[1]) + " and hop size " + (beforeEdge[3] + afterEdge[3]));
                     }
                 }
 
-//                System.out.println("Added " + addedEdgesCtr + ". Didn't add " + notAddedAdgesCtr + ".");
 
                 ArrayList<double[]> backwardsEdges = new ArrayList<>();
                 backwardsEdges.addAll(bckCore.get(bypassNode));
@@ -944,7 +820,7 @@ public class MyGraph {
                     foundIt.remove();
                 }
             }
-//            System.out.println(v);
+
             if(fwdCore.containsKey(v)){
                 for(double[] edge : fwdCore.get(v)){
                     int w = (int) edge[0];
@@ -1219,7 +1095,8 @@ public class MyGraph {
                         key = getStringById(w.getKeys(i));
                         value = getStringById(w.getVals(i));
                         if(value.equals("cycleway") ||
-                                (key.equals("route") && value.equals("bicycle"))){
+                                (key.equals("route") && value.equals("bicycle")) ||
+                                (key.equals("bicycle") && value.equals("yes"))){
                             addWay(w, oneWay, lastRef);
                         } else if(key.equals("highway")){
                             if (value.matches("primary|primary_link")){
@@ -1401,7 +1278,6 @@ public class MyGraph {
 
     public ArrayList<Point2D.Double> wayListToNodes(ArrayList<Long> wayList){
         ArrayList<Point2D.Double> points = new ArrayList<>();
-        totalMapDBTime = 0;
         ArrayList<int[]> allIDs = new ArrayList();
         for(Long wayId : wayList) {
             Thread.yield();
@@ -1448,12 +1324,12 @@ public class MyGraph {
     public static long generateNewWayRef(){
         boolean check;
         Random rand = new Random(); //time it with the id as seed, and with no seed!
-        Long restOfWayId;
+        Long newWayRef;
         do {
-            restOfWayId = Math.abs(rand.nextLong());
-            check = ((long) (restOfWayId.doubleValue()) != restOfWayId) || mapRoads.containsKey(restOfWayId);
+            newWayRef = Math.abs(rand.nextLong());
+            check = ((long) (newWayRef.doubleValue()) != newWayRef) || mapRoads.containsKey(newWayRef) || coreMapRoads.containsKey(newWayRef);
         } while(check);
-        return restOfWayId;
+        return newWayRef;
     }
 
     public int findClosest(double[] loc){

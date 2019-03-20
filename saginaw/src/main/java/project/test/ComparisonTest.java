@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.ResourceBundle;
 
 import static java.util.ResourceBundle.clearCache;
 
@@ -14,7 +15,7 @@ public class ComparisonTest {
 
     public long startTime, endTime;
 
-    private static int LOOPS = 200;
+    private static int LOOPS = 250;
 
     public static void main(String[] args) throws InterruptedException {
         long startTime, endTime;
@@ -62,22 +63,30 @@ public class ComparisonTest {
             }
 
 //            removeUnreachables(new Dijkstra(    graph),                     srcs, dsts);
+//            ResourceBundle.clearCache();
 //            clearCache();
 
 //            runTest(new Dijkstra(               graph),                     srcs, dsts);
+//            ResourceBundle.clearCache();
 //            clearCache();
 //            runTest(new BiDijkstra(             graph),                     srcs, dsts);
+//            ResourceBundle.clearCache();
 //            clearCache();
 //            runTest(new ConcurrentBiDijkstra(   graph),                     srcs, dsts);
+//            ResourceBundle.clearCache();
 //            clearCache();
 //            runTest(new ALT(                    graph, altPreProcess),      srcs, dsts);
+//            ResourceBundle.clearCache();
 //            clearCache();
 //            runTest(new BiALT(                  graph, altPreProcess),      srcs, dsts);
+//            ResourceBundle.clearCache();
 //            clearCache();
 //            runTest(new ConcurrentBiALT(        graph, altPreProcess),      srcs, dsts);
+//            ResourceBundle.clearCache();
 //            clearCache();
 //            runTest(new ContractionDijkstra(    graph),                     srcs, dsts);
-            clearCache();
+//            ResourceBundle.clearCache();
+//            clearCache();
             runTest(new ContractionALT(         graph, altPreProcessCore),  srcs, dsts);
 
 

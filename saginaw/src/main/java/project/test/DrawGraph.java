@@ -110,6 +110,7 @@ public class DrawGraph {
     }
 
     public BufferedImage drawSearch(Searcher searcher, MyGraph graph, int j, int level, int src, int dst) throws IOException {
+        System.out.println();
         BufferedImage img = new BufferedImage(1000, 1000, 1);
         Graphics g = img.getGraphics();
         g.setColor(Color.WHITE);
@@ -163,12 +164,13 @@ public class DrawGraph {
             g.setColor(Color.GREEN);
 
             for(Integer landmark : searcher.getALT().getLandmarks()){
+                System.out.println(landmark);
                 loc = graph.getGraphNodeLocation(landmark);
                 x = loc[0];
                 y = loc[1];
                 x = (x - westMost) * xScale;
                 y = (northMost - y) * yScale;
-                System.out.println(x + " " + y);
+//                System.out.println(x + " " + y);
                 g.fillOval((int) x, (int) y, 10, 10);
             }
         }

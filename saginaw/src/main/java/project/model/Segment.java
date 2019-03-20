@@ -14,12 +14,14 @@ public class Segment {
     private boolean resolved;
     private double distance;
     private boolean hasRoute;
+    private MyGraph graph;
 
 
-    public Segment(double[] startNode, double[] endNode){
+    public Segment(double[] startNode, double[] endNode, MyGraph graph){
         this.startNode = startNode;
         this.endNode = endNode;
         resolved = false;
+        this.graph = graph;
     }
 
     public void setPoints(ArrayList<Point2D.Double> points){
@@ -62,7 +64,7 @@ public class Segment {
         return resolved;
     }
 
-    public void getFullDetailRoute(MyGraph graph){
+    public void getFullDetailRoute(){
         if(hasRoute){
             points.clear();
             points.addAll(graph.wayListToNodes(wayIds));
