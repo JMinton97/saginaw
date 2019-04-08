@@ -9,6 +9,8 @@ package project.search;
  *
  ******************************************************************************/
 
+//this class is freely available online, and used for testing purposes only (see Dijkstra testing in report)
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
