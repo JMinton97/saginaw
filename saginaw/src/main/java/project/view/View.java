@@ -170,7 +170,7 @@ public class View extends JFrame
 			}
 		};
 		toggleLabelsAction.putValue(Action.SMALL_ICON, new ImageIcon(
-				getClass().getResource("/project/icons/labels.png")));
+				getClass().getResource("/project/icons/export.png")));
 
 
 

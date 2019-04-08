@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Random;
 
 public class TestRun {
 
@@ -20,7 +21,7 @@ public class TestRun {
     public static void main(String[] args) throws InterruptedException{
 
         long startTime, endTime;
-        String region = "britain";
+        String region = "wales";
         String mapDir = System.getProperty("user.dir").concat("/res/");
         File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 
@@ -42,17 +43,31 @@ public class TestRun {
             fe.createNewFile();
 
 
-            startTime = System.nanoTime();
-            SMap map2 = new SMap(f, region, 1024, false);
-            map2.draw();
-            endTime = System.nanoTime();
-            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
+//            startTime = System.nanoTime();
+//            SMap map2 = new SMap(f, region, 1024, false);
+//            map2.draw();
+//            endTime = System.nanoTime();
+//            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
 
 
             startTime = System.nanoTime();
             graph = new Graph(f, region);
             endTime = System.nanoTime();
             System.out.println("Making graph time: " + (((float) endTime - (float)startTime) / 1000000000));
+
+            Random r = new Random();
+            long avgTime = 0;
+
+            for(int x = 0; x < 100; x++){
+                int j = r.nextInt(graph.getDictionary().size());
+                startTime = System.nanoTime();
+                graph.getTree().nearest(graph.getDictionary().get(j), graph.getDictionary());
+                endTime = System.nanoTime();
+                avgTime += (endTime - startTime);
+            }
+
+            System.out.println("Tree time: " + (avgTime / 100) / 1000000);
+
 
             System.exit(0);
 

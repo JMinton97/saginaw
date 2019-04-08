@@ -874,30 +874,30 @@ public class Graph {
                     System.out.println("Remove  " + remove);
                 }
 //            System.out.println(nodes.size());
-                timerStart();
+//                timerStart();
                 for(int i = 0; i <= 20; i++){
 //                    System.out.println(size);
                     int r = rand.nextInt((size--));
                     medians.add(new Pair<>(nodes.remove(r), r));
                 }
                 median = timerEnd(median);
-                timerStart();
+//                timerStart();
                 if(vertical){
                     Collections.sort(medians, new SortByLat());
 
                 } else {
                     Collections.sort(medians, new SortByLong());
                 }
-                sort = timerEnd(sort);
+//                sort = timerEnd(sort);
                 vertical = !vertical;
-                timerStart();
+//                timerStart();
                 tree.insert(medians.get(10).getKey(), dictionary.get(graphNodeMappings.get(medians.get(10).getKey())));
 //                System.out.println(dictionary.get(medians.get(10).getKey())[0] + " " + dictionary.get(medians.get(10).getKey())[1]);
                 for(int x = 1; x < 5; x++){
                     tree.insert(medians.get(10 + x).getKey(), dictionary.get(graphNodeMappings.get(medians.get(10 + x).getKey())));
                     tree.insert(medians.get(10 - x).getKey(), dictionary.get(graphNodeMappings.get(medians.get(10 - x).getKey())));
                 }
-                insert = timerEnd(insert);
+//                insert = timerEnd(insert);
 //            System.out.println(medians.get(5).getValue());
 //            timerStart();
 //            nodes.remove((int) medians.get(2).getValue());
@@ -1397,6 +1397,10 @@ public class Graph {
         } catch(NullPointerException n){}
         return false;
 
+    }
+
+    public Tree getTree(){
+        return tree;
     }
 
     private boolean doubleEquals(Double a, Double b){

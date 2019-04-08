@@ -145,7 +145,7 @@ public class Tree implements Serializable{
                         nearestId = node.getId();
                     }
                     if (p[x] - minDist >= node.getPoint()[x]) {
-                        System.out.println("hmmm");
+//                        System.out.println("hmmm");
                         find(p, node.getRight(), !vertical, dictionary);
                     }
 
@@ -160,7 +160,7 @@ public class Tree implements Serializable{
                         nearestId = node.getId();
                     }
                     if (p[x] + minDist < node.getPoint()[x]) {
-                        System.out.println("hmmm");
+//                        System.out.println("hmmm");
                         find(p, node.getRight(), !vertical, dictionary);
                     }
                 }
