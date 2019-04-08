@@ -10,7 +10,7 @@ import java.awt.event.MouseEvent;
 /**
  * User: Alan P. Sexton Date: 21/06/13 Time: 00:52
  */
-class CanvasMouseListener implements MouseInputListener
+class MapMouseListener implements MouseInputListener
 
 {
 	Model		model;
@@ -24,7 +24,7 @@ class CanvasMouseListener implements MouseInputListener
 	boolean		mouseDown	= false;
 	boolean draggingMap = true;
 
-	public CanvasMouseListener(Model model, View view, Controller controller)
+	public MapMouseListener(Model model, View view, Controller controller)
 	{
 		this.model = model;
 		this.view = view;

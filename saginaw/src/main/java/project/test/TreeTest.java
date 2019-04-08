@@ -1,19 +1,53 @@
 package project.test;
 
+import org.junit.Assert;
+import org.junit.Test;
 import project.kdtree.Tree;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Random;
+
 public class TreeTest {
-    public static void main(String[] args) {
+
+    @Test
+    public void TestTree() {
         Tree tree = new Tree(20);
-        tree.insert(74, new double[]{5, 6});
-        tree.insert(63, new double[]{7, 4});
-        tree.insert(65, new double[]{8, 1});
-        tree.insert(66, new double[]{4, 3});
 
-//        System.out.println(tree.nearest(new double[]{-5, -5}));
+        Random r = new Random();
 
-//        tree.print();
+        tree.insert(0, new double[]{5, 6});
+        ArrayList<double[]> dictionary = new ArrayList<double[]>();
+        for(int x = 0; x < 1000; x++){
+            double[] loc = new double[]{r.nextInt(100), r.nextInt(100)};
+            tree.insert(x, loc);
+            dictionary.add(loc);
+        }
 
-//        System.out.println(tree.contains(new double[]{4, 3}));
+        double[] findLoc = new double[]{75, 25};
+
+        Integer found = tree.nearest(findLoc, dictionary).getKey();
+
+        Integer actualClosest = -1;
+        double[] closestNode = new double[]{Integer.MAX_VALUE, Integer.MAX_VALUE};
+
+        for(int x = 0; x < 1000; x++){
+            if(distance(findLoc, dictionary.get(x)) < distance(findLoc, closestNode)){
+                closestNode = dictionary.get(x);
+                actualClosest = x;
+            }
+        }
+
+
+        Integer foundClosest = tree.nearest(findLoc, dictionary).getKey();
+        System.out.println(dictionary.get(actualClosest)[0] + "," + dictionary.get(actualClosest)[1] + " " + dictionary.get(foundClosest)[0] + "," + dictionary.get(foundClosest)[1]);
+        Assert.assertEquals(distance(closestNode, findLoc), distance(dictionary.get(foundClosest), findLoc), 0);
+    }
+
+    //Credit to https://medium.com/allthingsdata/java-implementation-of-haversine-formula-for-distance-calculation-between-two-points-a3af9562ff1
+    public static double distance(double[] nodeA, double[] nodeB){
+        double xDist = Math.abs(nodeA[0] - nodeB[0]);
+        double yDist = Math.abs(nodeA[1] - nodeB[1]);
+        return Math.sqrt(Math.pow(xDist, 2) + Math.pow(yDist, 2));
     }
 }

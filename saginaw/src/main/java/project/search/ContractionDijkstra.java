@@ -1,14 +1,9 @@
 package project.search;
 
-import gnu.trove.map.hash.THashMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import javafx.util.Pair;
-import org.mapdb.BTreeMap;
-import project.map.MyGraph;
+import project.map.Graph;
 
 import java.util.*;
 
@@ -27,13 +22,13 @@ public class ContractionDijkstra implements Searcher {
     private double bestSeen;
     private int bestPathNode;
     private int explored;
-    private MyGraph graph;
+    private Graph graph;
     private boolean routeFound;
     private int start, end;
     private String name = "cbdijkstra";
 
 
-    public ContractionDijkstra(MyGraph graph) {
+    public ContractionDijkstra(Graph graph) {
         int size = graph.getFwdGraph().size();
 
         coreSQ = new PriorityQueue<>(new DistanceComparator());
@@ -173,7 +168,7 @@ public class ContractionDijkstra implements Searcher {
                 routeFound = false;
             } else {}
         } else {
-            System.out.println("NO SECOND STAGE");
+//            System.out.println("NO SECOND STAGE");
         }
 
 //        System.out.println("Ended search");

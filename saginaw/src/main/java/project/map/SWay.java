@@ -3,9 +3,9 @@ package project.map;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MyWay {
+public class SWay {
 
-    public MyWay(long[] wayNodes){
+    public SWay(long[] wayNodes){
         this.wayNodes = wayNodes;
     }
 
@@ -19,7 +19,7 @@ public class MyWay {
 
     private double length;
 
-    public MyWay(){}
+    public SWay(){}
 
     public long[] getWayNodes() {
         return wayNodes;

@@ -31,7 +31,7 @@ import java.util.*;
 
 public class Model {
 	private BufferedImage image = null;
-	private MyMap2 map;
+	private SMap map;
 	private List<Rectangle> rects = new ArrayList<Rectangle>();
 	private String region = "britain";
 	String mapDir = System.getProperty("user.dir").concat("/res/");
@@ -54,15 +54,15 @@ public class Model {
 	public void startUp(){
 		x = 1;
 		y = 1;
-		baseScale = BigDecimal.valueOf(MyMap2.scale);
+		baseScale = BigDecimal.valueOf(SMap.scale);
 		zoom = BigDecimal.valueOf(2);
 		modZoom = Math.pow(2, zoom.doubleValue());
 		level = (int) Math.pow(2, Math.floor(zoom.doubleValue()));
 
 		File f = new File(mapDir.concat(region).concat(".osm.pbf"));
 		try {
-			route = new Route(new MyGraph(f, region));
-			map = new MyMap2(f, region, imageEdge, false);
+			route = new Route(new Graph(f, region));
+			map = new SMap(f, region, imageEdge, false);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -245,8 +245,6 @@ public class Model {
 		double scaleDif = oldZoom - modZoom;
 		centreCoord.x += (xDif * (scaleDif / oldZoom));
 		centreCoord.y += (yDif * (scaleDif / oldZoom));
-
-
 	}
 
 	public void zoomOut() {
@@ -284,7 +282,7 @@ public class Model {
 		return imageEdge;
 	}
 
-	public MyMap2 getMap(){
+	public SMap getMap(){
 		return map;
 	}
 

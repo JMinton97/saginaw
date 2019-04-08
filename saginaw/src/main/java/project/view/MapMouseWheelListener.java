@@ -6,14 +6,14 @@ import project.model.Model;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 
-public class CanvasMouseWheelListener implements MouseWheelListener
+public class MapMouseWheelListener implements MouseWheelListener
 {
 
     Model model;
     View view;
     Controller controller;
 
-    public CanvasMouseWheelListener(Model model, View view, Controller controller)
+    public MapMouseWheelListener(Model model, View view, Controller controller)
     {
         this.model = model;
         this.view = view;

@@ -4,73 +4,61 @@ package project.search;
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import project.map.Graph;
+
 
 import java.util.*;
 
-public class ALT implements Searcher {
+public class RemovalDijkstra implements Searcher {
+
+    public int src, dst;
+
+    private Graph graph;
 
     private Int2DoubleOpenHashMap distTo;
     private Int2LongOpenHashMap edgeTo;
     private Int2IntOpenHashMap nodeTo;
-    private PriorityQueue<DijkstraEntry> pq;
-    private int startNode, endNode;
-    public int explored;
-    private Graph graph;
-    private ArrayList<Integer> landmarks;
-    private Int2ObjectOpenHashMap distancesTo;
-    private Int2ObjectOpenHashMap distancesFrom;
-    private boolean routeFound;
-    private double[] dTV, dFV;
-    private ArrayList<Integer> relaxedNodes;
-    private String name = "alt";
-    private ALTPreProcess alt;
+    private HashMap<Integer, Double> keyMap;
 
-    public ALT(Graph graph, ALTPreProcess altPreProcess){
-        this.graph = graph;
-        landmarks = new ArrayList<>();
-        this.landmarks = altPreProcess.landmarks;
-        this.distancesFrom = altPreProcess.distancesFrom;
-        this.distancesTo = altPreProcess.distancesTo;
+    private IndexMinPQ<Double> pq;
+    public int explored;
+    private ArrayList<Integer> relaxedNodes;
+
+    private boolean routeFound;
+    private String name = "dijkstra";
+
+    public RemovalDijkstra(Graph graph) {
 
         distTo = new Int2DoubleOpenHashMap();
         edgeTo = new Int2LongOpenHashMap();
         nodeTo = new Int2IntOpenHashMap();
 
-        pq = new PriorityQueue();
+        this.graph = graph;
 
-        this.alt = altPreProcess;
+        Comparator<DijkstraEntry> comparator = new DistanceComparator();
+        pq = new IndexMinPQ<>(graph.getFwdGraph().size());
+        keyMap = new HashMap<>();
 
     }
 
     public void search(int src, int dst){
 
-        dTV = (double[]) distancesTo.get(dst);
-        dFV = (double[]) distancesFrom.get(dst);
-
-        pq = new PriorityQueue();
-
-        this.startNode = src;
-        this.endNode = dst;
-
-        distTo.put(src, 0.0);
-
-        Comparator<DijkstraEntry> comparator = new DistanceComparator();
-        pq = new PriorityQueue<>(comparator);
-
-        pq.add(new DijkstraEntry(src, 0.0));
-
         explored = 0;
+
+        this.dst = dst;
+        this.src = src;
 
         relaxedNodes = new ArrayList<>();
 
+        distTo.put(src, 0.0);
+        pq = new IndexMinPQ<>(graph.getFwdGraph().size());
+        pq.insert(src, 0.0);
+
         while(!pq.isEmpty()){
-//            System.out.println("search");
             explored++;
-            int v = pq.poll().getNode();
+            int v = pq.delMin();
             relaxedNodes.add(v);
-            if(v == endNode){
+            if(v == dst){
                 routeFound = true;
                 return;
             }
@@ -79,35 +67,26 @@ public class ALT implements Searcher {
             }
         }
 
-//        System.out.println("No route found.");
         routeFound = false;
+        System.out.println("No route found here.");
+
     }
 
     private void relax(int v, double[] edge){
         int w = (int) edge[0];
-//        System.out.println(w);
         double weight = edge[1];
         double distToV = distTo.getOrDefault(v, Double.MAX_VALUE);
         if (distTo.getOrDefault(w, Double.MAX_VALUE) > (distToV + weight)){
-//            System.out.println(distTo.getOrDefault(w, Double.MAX_VALUE) + " > " + (distToV + weight));
             distTo.put(w, distToV + weight);
             edgeTo.put(w, (long) edge[2]); //should be 'nodeBefore'
             nodeTo.put(w, v);
-            pq.add(new DijkstraEntry(w, distToV + weight + lowerBound(w))); //inefficient?
+            if(pq.contains(w)){
+                pq.decreaseKey(w, distToV + weight);
+            } else {
+                pq.insert(w, distToV + weight);
+            }
+            keyMap.put(w, distToV + weight);
         }
-    }
-
-
-    public double lowerBound(int u){
-        double max = 0;
-        double[] dTU, dFU;
-        dTU = (double[]) distancesTo.get(u);
-        dFU = (double[]) distancesFrom.get(u);
-
-        for(int l = 0; l < landmarks.size(); l++){
-            max = Math.max(max, Math.max(dTU[l] - dTV[l], dFV[l] - dFU[l]));
-        }
-        return max;
     }
 
     public class DistanceComparator implements Comparator<DijkstraEntry>{
@@ -123,11 +102,11 @@ public class ALT implements Searcher {
     }
 
     public ArrayList<Integer> getRoute(){
-        if(routeFound) {
+        if(routeFound){
             ArrayList<Integer> route = new ArrayList<>();
-            int node = endNode;
+            int node = dst;
             route.add(node);
-            while (node != startNode) {
+            while(node != src){
                 node = nodeTo.get(node);
                 route.add(node);
             }
@@ -143,8 +122,8 @@ public class ALT implements Searcher {
             ArrayList<Long> route = new ArrayList<>();
             try{
                 long way = 0;
-                int node = endNode;
-                while(node != startNode){
+                int node = dst;
+                while(node != dst){
                     way = edgeTo.get(node);
                     node = nodeTo.get(node);
                     route.add(way);
@@ -154,22 +133,22 @@ public class ALT implements Searcher {
                 System.out.println("ERROR");
             }
             return route;
-        } else {
+        }else{
             return new ArrayList<>();
         }
+
+    }
+
+
+    public double getDist(){
+        return distTo.get(dst);
     }
 
     public void clear(){
         distTo.clear();
         edgeTo.clear();
         nodeTo.clear();
-        pq.clear();
         routeFound = false;
-
-    }
-
-    public double getDist(){
-        return distTo.get(endNode);
     }
 
     public int getExplored(){
@@ -180,7 +159,6 @@ public class ALT implements Searcher {
         return routeFound;
     }
 
-    @Override
     public ArrayList<ArrayList<Integer>> getRelaxedNodes() {
         ArrayList<ArrayList<Integer>> relaxedNodes = new ArrayList();
         relaxedNodes.add(this.relaxedNodes);
@@ -191,7 +169,10 @@ public class ALT implements Searcher {
         return name;
     }
 
-    public ALTPreProcess getALT() {return alt;}
+    @Override
+    public ALTPreProcess getALT() {
+        return null;
+    }
 }
 
 

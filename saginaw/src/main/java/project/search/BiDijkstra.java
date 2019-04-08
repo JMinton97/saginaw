@@ -1,11 +1,10 @@
 package project.search;
 
-import gnu.trove.map.hash.THashMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import org.mapdb.BTreeMap;
-import project.map.MyGraph;
+import project.map.Graph;
 
 import java.util.*;
 
@@ -24,11 +23,11 @@ public class BiDijkstra implements Searcher {
     private double bestSeen;
     private int explored;
     private long startNode, endNode;
-    private MyGraph graph;
+    private Graph graph;
     private boolean routeFound;
     private String name = "bidijkstra";
 
-    public BiDijkstra(MyGraph graph) {
+    public BiDijkstra(Graph graph) {
         int size = graph.getFwdGraph().size();
 
         uDistTo = new Int2DoubleOpenHashMap();
@@ -74,6 +73,7 @@ public class BiDijkstra implements Searcher {
         while(!(uPq.isEmpty()) && !(vPq.isEmpty())){ //check
 //            System.out.println("searching");
             explored += 2;
+//            System.out.println(explored);
             int v1 = uPq.poll().getNode();
             for (double[] e : graph.fwdAdj(v1)){
                 relax(v1, e, true);

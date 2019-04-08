@@ -1,6 +1,6 @@
 package project.model;
 
-import project.map.MyGraph;
+import project.map.Graph;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -14,10 +14,10 @@ public class Segment {
     private boolean resolved;
     private double distance;
     private boolean hasRoute;
-    private MyGraph graph;
+    private Graph graph;
 
 
-    public Segment(double[] startNode, double[] endNode, MyGraph graph){
+    public Segment(double[] startNode, double[] endNode, Graph graph){
         this.startNode = startNode;
         this.endNode = endNode;
         resolved = false;

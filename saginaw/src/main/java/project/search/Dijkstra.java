@@ -1,21 +1,19 @@
 package project.search;
 
 
-import gnu.trove.map.hash.THashMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
-import project.map.MyGraph;
+import project.map.Graph;
 
 
-import java.lang.reflect.Array;
 import java.util.*;
 
 public class Dijkstra implements Searcher {
 
     public int src, dst;
 
-    private MyGraph graph;
+    private Graph graph;
 
     private Int2DoubleOpenHashMap distTo;
     private Int2LongOpenHashMap edgeTo;
@@ -28,7 +26,7 @@ public class Dijkstra implements Searcher {
     private boolean routeFound;
     private String name = "dijkstra";
 
-    public Dijkstra(project.map.MyGraph graph) {
+    public Dijkstra(Graph graph) {
 
         distTo = new Int2DoubleOpenHashMap();
         edgeTo = new Int2LongOpenHashMap();

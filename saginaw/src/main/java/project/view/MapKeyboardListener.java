@@ -5,12 +5,12 @@ import project.controller.Controller;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
-public class CanvasKeyboardListener implements KeyListener {
+public class MapKeyboardListener implements KeyListener {
 
     Controller controller;
     View view;
 
-    public CanvasKeyboardListener(View view, Controller controller){
+    public MapKeyboardListener(View view, Controller controller){
         this.view = view;
         this.controller = controller;
     }

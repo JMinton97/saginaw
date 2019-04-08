@@ -1,8 +1,7 @@
 package project.kdtree;
 
 import javafx.util.Pair;
-import org.mapdb.BTreeMap;
-import project.map.MyGraph;
+import project.map.Graph;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -137,7 +136,7 @@ public class Tree implements Serializable{
                 }
                 if (p[x] >= node.getPoint()[x]) { //search left
                     find(p, node.getLeft(), !vertical, dictionary);
-                    double d = MyGraph.haversineDistance(p, node.getPoint());
+                    double d = Graph.haversineDistance(p, node.getPoint());
 //                    System.out.println(d);
                     if (minDist > d) {
 //                        System.out.println("yeah!");
@@ -146,11 +145,13 @@ public class Tree implements Serializable{
                         nearestId = node.getId();
                     }
                     if (p[x] - minDist >= node.getPoint()[x]) {
+                        System.out.println("hmmm");
                         find(p, node.getRight(), !vertical, dictionary);
                     }
+
                 } else {
                     find(p, node.getRight(), !vertical, dictionary);
-                    double d = MyGraph.haversineDistance(p, node.getPoint());
+                    double d = Graph.haversineDistance(p, node.getPoint());
 //                    System.out.println(d);
                     if (minDist > d) {
 //                        System.out.println("yeah!");
@@ -159,6 +160,7 @@ public class Tree implements Serializable{
                         nearestId = node.getId();
                     }
                     if (p[x] + minDist < node.getPoint()[x]) {
+                        System.out.println("hmmm");
                         find(p, node.getRight(), !vertical, dictionary);
                     }
                 }

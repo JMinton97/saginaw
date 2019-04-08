@@ -5,7 +5,7 @@ import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.mapdb.BTreeMap;
-import project.map.MyGraph;
+import project.map.Graph;
 
 import java.util.*;
 
@@ -20,7 +20,7 @@ public class BiALT implements Searcher {
     private PriorityQueue<DijkstraEntry> uPq;
     private PriorityQueue<DijkstraEntry> vPq;
     private int start, end;
-    private MyGraph graph;
+    private Graph graph;
     private ArrayList<Integer> landmarks;
     private Int2ObjectOpenHashMap distancesTo;
     private Int2ObjectOpenHashMap distancesFrom;
@@ -33,8 +33,9 @@ public class BiALT implements Searcher {
     private boolean routeFound;
     private String name = "bialt";
     private ALTPreProcess alt;
+    private double[] forDTV, forDFV, backDTV, backDFV;
 
-    public BiALT(MyGraph graph, ALTPreProcess altPreProcess) {
+    public BiALT(Graph graph, ALTPreProcess altPreProcess) {
         this.graph = graph;
         landmarks = new ArrayList<>();
 
@@ -83,6 +84,11 @@ public class BiALT implements Searcher {
         double competitor;
 
         explored = 0;
+
+        backDTV = (double[]) distancesTo.get(start);
+        backDFV = (double[]) distancesFrom.get(start);
+        forDTV = (double[]) distancesTo.get(end);
+        forDFV = (double[]) distancesFrom.get(end);
 
         OUTER: while(!(uPq.isEmpty()) && !(vPq.isEmpty())) { //check
 //            System.out.println("loop");
@@ -177,13 +183,10 @@ public class BiALT implements Searcher {
 
         double[] forDTU = (double[]) distancesTo.get(u);
         double[] forDFU = (double[]) distancesFrom.get(u);
-        double[] forDTV = (double[]) distancesTo.get(end);
-        double[] forDFV = (double[]) distancesFrom.get(end);
 
         double[] backDTU = (double[]) distancesTo.get(u);
         double[] backDFU = (double[]) distancesFrom.get(u);
-        double[] backDTV = (double[]) distancesTo.get(start);
-        double[] backDFV = (double[]) distancesFrom.get(start);
+
 
         for(int l = 0; l < landmarks.size(); l++){
             maxForward = Math.max(maxForward, Math.max(forDTU[l] - forDTV[l], forDFV[l] - forDFU[l]));
@@ -194,9 +197,9 @@ public class BiALT implements Searcher {
         }
 
         if(forwards){
-            return (maxForward - maxBackward) / 2;
+            return ((maxForward - maxBackward) / 2);
         } else {
-            return (maxBackward - maxForward) / 2;
+            return ((maxBackward - maxForward) / 2);
         }
     }
 

@@ -2,7 +2,7 @@ package project.view;
 
 import project.controller.Controller;
 import project.douglas.DouglasPeucker;
-import project.map.MyMap2;
+import project.map.SMap;
 import project.map.Place;
 import project.model.Model;
 import project.model.Route;
@@ -12,9 +12,7 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 
 import java.awt.*;
-import java.awt.font.FontRenderContext;
 import java.awt.font.GlyphVector;
-import java.awt.font.TextLayout;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
@@ -24,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.awt.event.MouseEvent;
 
 /**
  * User: Alan P. Sexton Date: 20/06/13 Time: 18:00
@@ -39,9 +36,9 @@ class MapPane extends JPanel
 	private Model				model;
 	private View				view;
 
-	private CanvasMouseListener	mouseListener;
-	private CanvasMouseWheelListener mouseWheelListener;
-	private CanvasKeyboardListener keyListener;
+	private MapMouseListener mouseListener;
+	private MapMouseWheelListener mouseWheelListener;
+	private MapKeyboardListener keyListener;
 
 	private BufferedImage image;
 
@@ -92,10 +89,10 @@ class MapPane extends JPanel
 	{
 		this.view = view;
 		this.model = model;
-		mouseListener = new CanvasMouseListener(this.model, this.view,
+		mouseListener = new MapMouseListener(this.model, this.view,
 				controller);
-		mouseWheelListener = new CanvasMouseWheelListener(this.model, this.view, controller);
-		keyListener = new CanvasKeyboardListener(view, controller);
+		mouseWheelListener = new MapMouseWheelListener(this.model, this.view, controller);
+		keyListener = new MapKeyboardListener(view, controller);
 		addMouseListener(mouseListener);
 		addMouseWheelListener(mouseWheelListener);
 		addKeyListener(keyListener);
@@ -128,7 +125,7 @@ class MapPane extends JPanel
 		xDimension = model.getMap().getTileWidth();
 		yDimension = model.getMap().getTileHeight();
 		this.scale = model.getScale().doubleValue();
-		for(int l = 1; l < (MyMap2.MAX_LEVEL); l *= 2){
+		for(int l = 1; l < (SMap.MAX_LEVEL); l *= 2){
 			tileGrid = new Tile[(int) Math.ceil(xDimension / (double) l)][(int) Math.ceil(yDimension / (double) l)];
 			TileManager tm = new TileManager(tileGrid, this);
 			if(l == 1){
@@ -136,7 +133,6 @@ class MapPane extends JPanel
 				t.setPriority(Thread.MIN_PRIORITY);
 				t.start();
 			}
-//			System.out.println(l + " is " +  (int) Math.ceil(xDimension / (double) l) + ", " + (int) Math.ceil(yDimension / (double) l));
 			for(int x = 0; x < tileGrid.length; x++){
 				for(int y = 0; y < tileGrid[0].length; y++){
 					tileGrid[x][y] = new Tile((l * x), (l * y), l, scale, imageEdge, model.getRegion());
@@ -146,7 +142,6 @@ class MapPane extends JPanel
 				}
 			}
 			layers.put(l, tileGrid);
-//			System.out.println();
 		}
 
 		dougTolerance = 1;
@@ -170,8 +165,6 @@ class MapPane extends JPanel
 		topLeft = new Point2D.Double((centre.getX() - (((paneX / 2) * zoom) / scale)), (centre.getY() + (((paneY / 2) * zoom) / scale)));
 		bottomRight = new Point2D.Double((centre.getX() + (((paneX / 2) * zoom) / scale)), (centre.getY() - (((paneY / 2) * zoom) / scale)));
 
-//		System.out.println("MapPane zoom: " + zoom);
-
 		g.setColor(new Color(153, 204, 255));
 		g.fillRect(0, 0, paneX, paneY);
 
@@ -190,12 +183,8 @@ class MapPane extends JPanel
 		LOOP: for(int x = 0; x < tileGrid.length; x++){
 			for(int y = 0; y < tileGrid[0].length; y++){
 				if(tileGrid[x][y].overlaps(topLeft, bottomRight)){
-//					System.out.println("VISIBLE " + x + " " + y);
-					flag = true;
 					t = tileGrid[x][y];
-//					System.out.println(topLeft + " " + bottomRight);
 					p = geoToCanvas(t.getTopLeft());
-//					System.out.println(p);
 					g.drawImage(t.getImage(), (int) p.getX(), (int) p.getY(), (int) (imageEdge / (zoom / modifier)), (int) (imageEdge / (zoom / modifier)), null);
 					if(grid){
 						g.setColor(Color.RED);
@@ -286,10 +275,6 @@ class MapPane extends JPanel
             }
             x++;
 		}
-
-		long endTime = System.nanoTime();
-//		System.out.println("drawRoute: " + (((float) endTime - (float)startTime) / 1000000000));
-//		System.out.print(System.nanoTime());
 	}
 
 	public void drawMarkers(Graphics2D g){
@@ -329,6 +314,7 @@ class MapPane extends JPanel
 		}
 	}
 
+	//code in this method was adapted from https://stackoverflow.com/a/35222059/3032936
 	public void writeTextNicely(Place p, Point2D location){
 
 		Shape textShape;
@@ -354,17 +340,11 @@ class MapPane extends JPanel
 
 		double x = location.getX() - box.getWidth() / 2;
 		double y = location.getY() - box.getHeight() / 2;
-		// create a glyph vector from your text
 
 		AffineTransform transform = g.getTransform();
 		transform.translate(x, y);
 		g.transform(transform);
 
-
-		// get the shape object
-
-
-		// activate anti aliasing for text rendering (if you want it to look nice)
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
 				RenderingHints.VALUE_ANTIALIAS_ON);
 		g.setRenderingHint(RenderingHints.KEY_RENDERING,
@@ -372,9 +352,9 @@ class MapPane extends JPanel
 
 		g.setColor(Color.WHITE);
 		g.setStroke(new BasicStroke(3.0f));
-		g.draw(textShape); // draw outline
+		g.draw(textShape);
 		g.setColor(Color.BLACK);
-		g.fill(textShape); // fill the shape
+		g.fill(textShape);
 
 	}
 

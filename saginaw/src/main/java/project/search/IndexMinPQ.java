@@ -1,4 +1,4 @@
-package project.map;
+package project.search;
 
 /******************************************************************************
  *  Compilation:  javac IndexMinPQ.java

@@ -1,6 +1,6 @@
 package project.test;
 
-import project.map.MyGraph;
+import project.map.Graph;
 import project.search.*;
 
 import java.io.File;
@@ -27,7 +27,7 @@ public class VisualiseSearch {
             e.printStackTrace();
         }
 
-        MyGraph graph;
+        Graph graph;
 
         try {
 
@@ -36,9 +36,18 @@ public class VisualiseSearch {
             fe.createNewFile();
 
             startTime = System.nanoTime();
-            graph = new MyGraph(f, region);
+            graph = new Graph(f, region);
             endTime = System.nanoTime();
             System.out.println("Making graph time: " + (((float) endTime - (float) startTime) / 1000000000));
+
+
+            DrawGraph draw = new DrawGraph(region);
+
+            draw.drawGraph(graph, graph.getDictionary());
+            draw.drawCore(graph, graph.getDictionary());
+
+//            System.exit(0);
+
 
             ALTPreProcess altPreProcess = new ALTPreProcess(graph, false);
             ALTPreProcess altPreProcessCore = new ALTPreProcess(graph, true);
@@ -56,7 +65,7 @@ public class VisualiseSearch {
                 dsts.add(randomDst);
             }
 
-            DrawGraph draw = new DrawGraph(region);
+
 
             ArrayList<Searcher> searchers = new ArrayList<>();
 
@@ -65,6 +74,7 @@ public class VisualiseSearch {
             searchers.add(new ContractionDijkstra(  graph));
             searchers.add(new ALT(                  graph, altPreProcess));
             searchers.add(new BiALT(                graph, altPreProcess));
+            searchers.add(new ParallelBiALT(      graph, altPreProcess));
             searchers.add(new ContractionALT(       graph, altPreProcessCore));
 
             Iterator srcIt = srcs.iterator();

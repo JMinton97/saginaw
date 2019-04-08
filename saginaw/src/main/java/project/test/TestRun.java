@@ -1,12 +1,10 @@
 package project.test;
 
 import javafx.util.Pair;
-import project.map.MyGraph;
-import project.map.MyMap2;
+import project.map.Graph;
+import project.map.SMap;
 import project.search.*;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +32,7 @@ public class TestRun {
             e.printStackTrace();
         }
 
-        MyGraph graph;
+        Graph graph;
         int src, dst, src1, dst1, src2, dst2;
 
         try {
@@ -43,18 +41,20 @@ public class TestRun {
             fe.mkdirs();
             fe.createNewFile();
 
-//
-//            startTime = System.nanoTime();
-//            MyMap2 map2 = new MyMap2(f, region, 1024, false);
-//            map2.draw();
-//            endTime = System.nanoTime();
-//            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
+
+            startTime = System.nanoTime();
+            SMap map2 = new SMap(f, region, 1024, false);
+            map2.draw();
+            endTime = System.nanoTime();
+            System.out.println("Total map drawing time: " + (((float) endTime - (float)startTime) / 1000000000));
 
 
             startTime = System.nanoTime();
-            graph = new MyGraph(f, region);
+            graph = new Graph(f, region);
             endTime = System.nanoTime();
             System.out.println("Making graph time: " + (((float) endTime - (float)startTime) / 1000000000));
+
+            System.exit(0);
 
             int edgeCtr = 0;
             for(ArrayList edges : graph.getFwdGraph()){
@@ -81,7 +81,7 @@ public class TestRun {
 
 //            BiDijkstra biDijkstra = new BiDijkstra(graph);
 
-//            ConcurrentBiALT cBiAlt = new ConcurrentBiALT(graph, altPreProcess);
+//            ParallelBiALT cBiAlt = new ParallelBiALT(graph, altPreProcess);
 
             boolean loop = true;
 
@@ -116,13 +116,13 @@ public class TestRun {
                 }
             }
 
-            BufferedImage coreImg = new DrawGraph(region).draw(graph.getFwdCore(), graph.getDictionary());
-            try {
-                // retrieve image
-                File outputfile = new File("core-" + region + ".png");
-                ImageIO.write(coreImg, "png", outputfile);
-            } catch (IOException e) {
-            }
+//            BufferedImage coreImg = new DrawGraph(region).draw(graph.getFwdCore(), graph.getDictionary());
+//            try {
+//                // retrieve image
+//                File outputfile = new File("core-" + region + ".png");
+//                ImageIO.write(coreImg, "png", outputfile);
+//            } catch (IOException e) {
+//            }
 
 //            BufferedImage graphImg = new DrawGraph(region).draw(graph.getFwdGraph(), graph.getDictionary());
 //            try {
@@ -215,13 +215,13 @@ public class TestRun {
 //            System.out.println(graph.getFwdGraph().containsKey(dst));
 //            System.out.println(graph.getFwdGraph().containsKey(pvt));
 //
-//            ConcurrentBiALT concurrentBiALT = new ConcurrentBiALT(graph, altPreProcess);
+//            ParallelBiALT concurrentBiALT = new ParallelBiALT(graph, altPreProcess);
 //            concurrentBiALT.search(src, dst);
 //
 ////            System.exit(0);
 //
-//            ConcurrentBiALT aCon = new ConcurrentBiALT(graph, altPreProcess, concurrentBiALT, true);
-//            ConcurrentBiALT bCon = new ConcurrentBiALT(graph, altPreProcess, concurrentBiALT, false);
+//            ParallelBiALT aCon = new ParallelBiALT(graph, altPreProcess, concurrentBiALT, true);
+//            ParallelBiALT bCon = new ParallelBiALT(graph, altPreProcess, concurrentBiALT, false);
 //
 //            System.out.println();
 //
@@ -240,8 +240,8 @@ public class TestRun {
 ////            BiDijkstra biDijkstra = new BiDijkstra(graph);
 //            ALT ALT = new ALT(graph, altPreProcess);
 //            BiALT biALT = new BiALT(graph, altPreProcess);
-//            ConcurrentBiDijkstra concurrentBiDijkstra = new ConcurrentBiDijkstra(graph);
-////            ConcurrentBiALT concurrentBiALT = new ConcurrentBiALT(graph, altPreProcess);
+//            ParallelBiDijkstra concurrentBiDijkstra = new ParallelBiDijkstra(graph);
+////            ParallelBiALT concurrentBiALT = new ParallelBiALT(graph, altPreProcess);
 //
 //            long avgDijkstra = 0, avgBiDijkstra = 0, avgAStar = 0, avgBiAStar = 0, avgConcurrentBiDijkstra = 0, avgConcurrentBiAStar = 0;
 //            long avgDijkstraEpS = 0, avgBiDijkstraEpS = 0, avgAStarEpS = 0, avgBiAStarEpS = 0, avgConcurrentBiDijkstraEpS = 0, avgConcurrentBiAStarEpS = 0;
@@ -277,7 +277,7 @@ public class TestRun {
 //                endTime = System.nanoTime();
 //                avgConcurrentBiDijkstra += ((float) endTime - (float) startTime) / 100000000;
 //                avgConcurrentBiDijkstraEpS += concurrentBiDijkstra.getExplored() / (((float) endTime - (float) startTime) / 100000000);
-//                System.out.println("ConcurrentBiDijkstra:   " + ((float) endTime - (float) startTime) / 100000000);
+//                System.out.println("ParallelBiDijkstra:   " + ((float) endTime - (float) startTime) / 100000000);
 //                System.out.println("Explored: " + concurrentBiDijkstra.getExplored());
 ////                System.out.println(concurrentBiDijkstra.getDist());
 //
@@ -305,7 +305,7 @@ public class TestRun {
 //                endTime = System.nanoTime();
 //                avgConcurrentBiAStar += ((float) endTime - (float) startTime) / 100000000;
 //                avgConcurrentBiAStarEpS += concurrentBiALT.getExplored() / (((float) endTime - (float) startTime) / 100000000);
-//                System.out.println("ConcurrentBiALT:      " + ((float) endTime - (float) startTime) / 100000000);
+//                System.out.println("ParallelBiALT:      " + ((float) endTime - (float) startTime) / 100000000);
 //                System.out.println("Explored: " + concurrentBiALT.getExplored());
 //
 ////                System.out.println(concurrentBiALT.getDist());
@@ -317,14 +317,14 @@ public class TestRun {
 //                System.out.println("Concurrent BiDijkstra:  " + avgConcurrentBiDijkstra / x);
 //                System.out.println("ALT:                  " + avgAStar / x);
 //                System.out.println("BiALT:                " + avgBiAStar / x);
-//                System.out.println("ConcurrentBiALT:      " + avgConcurrentBiAStar / x);
+//                System.out.println("ParallelBiALT:      " + avgConcurrentBiAStar / x);
 //                System.out.println();
 //                System.out.println("Dijkstra EpS:               " + avgDijkstraEpS / x);
 //                System.out.println("BiDijkstra EpS:             " + avgBiDijkstraEpS / x);
 //                System.out.println("Concurrent BiDijkstra EpS:  " + avgConcurrentBiDijkstraEpS / x);
 //                System.out.println("ALT EpS:                  " + avgAStarEpS / x);
 //                System.out.println("BiALT EpS:                " + avgBiAStarEpS / x);
-//                System.out.println("ConcurrentBiALT EpS:      " + avgConcurrentBiAStarEpS / x);
+//                System.out.println("ParallelBiALT EpS:      " + avgConcurrentBiAStarEpS / x);
 //                System.out.println();
 //                System.out.println();
 //                System.out.println();

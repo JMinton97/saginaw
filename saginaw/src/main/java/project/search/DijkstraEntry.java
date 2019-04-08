@@ -1,6 +1,6 @@
 package project.search;
 
-public class DijkstraEntry {
+public class DijkstraEntry implements Comparable<DijkstraEntry>{
     private int node;
     private double distance;
 
@@ -23,5 +23,10 @@ public class DijkstraEntry {
 
     public double getDistance() {
         return distance;
+    }
+
+    @Override
+    public int compareTo(DijkstraEntry o) {
+        return Double.compare(this.distance, o.getDistance());
     }
 }

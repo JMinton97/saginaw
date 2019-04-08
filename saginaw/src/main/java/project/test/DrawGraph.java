@@ -1,8 +1,6 @@
 package project.test;
 
-import org.mapdb.BTreeMap;
-import project.map.MyGraph;
-import project.search.ALTPreProcess;
+import project.map.Graph;
 import project.search.Searcher;
 
 import javax.imageio.ImageIO;
@@ -11,13 +9,12 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 
 public class DrawGraph {
     private String region;
     private double northMost, southMost, eastMost, westMost, xScale, yScale;
-    private HashMap<Long, ArrayList<double[]>> graph;
+    private ArrayList<ArrayList<double[]>> graph;
 
     public DrawGraph(String region){
         this.region = region;
@@ -51,6 +48,11 @@ public class DrawGraph {
             westMost = -0.7;
             southMost = 51.2;   //LONDON
             eastMost = 0.49;
+        } else if (region == "stratford") {
+            northMost = 52.214004;
+            westMost = -1.767409;
+            southMost = 52.166644;   //LONDON
+            eastMost = -1.649358;
         }
 
         double height, width;
@@ -75,24 +77,26 @@ public class DrawGraph {
 
     }
 
-    public BufferedImage draw(Map<Integer, ArrayList<double[]>> graph, ArrayList<double[]> dictionary){
+    public BufferedImage drawGraph(Graph graph, ArrayList<double[]> dictionary){
         BufferedImage img = new BufferedImage(1000, 1000, 1);
         Graphics2D g = img.createGraphics();
-        this.graph = (HashMap) graph;
-        g.setStroke(new BasicStroke(1));
-        g.setPaint(new Color(102, 178, 255));
-        for(Map.Entry<Integer, ArrayList<double[]>> v : graph.entrySet()){
+        this.graph = graph.getFwdGraph();
+        g.setPaint(new Color(255, 255, 255));
+        g.fillRect(0, 0, 1000, 1000);
+        g.setStroke(new BasicStroke(4));
+        g.setPaint(new Color(0, 0, 0));
+        int n = 0;
+        for(ArrayList<double[]> v : this.graph){
 //            System.out.println(n);
-            int n = v.getKey();
-            double[] loc = dictionary.get(n);
+            double[] loc = graph.getGraphNodeLocation(n);
             double x = loc[0];
             double y = loc[1];
             x = (x - westMost) * xScale;
             y = (northMost - y) * yScale;
 //            System.out.println(x + " " + y);
 
-            for(double[] edge : v.getValue()){
-                loc = dictionary.get((int) edge[0]);
+            for(double[] edge : v){
+                loc = graph.getGraphNodeLocation((int) edge[0]);
                 double tx = loc[0];
                 double ty = loc[1];
                 tx = (tx - westMost) * xScale;
@@ -104,12 +108,65 @@ public class DrawGraph {
                 }
             }
 
+            n++;
 
         }
+
+        File outputfile =  new File("full.png");
+        try {
+            ImageIO.write(img, "png", outputfile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return img;
     }
 
-    public BufferedImage drawSearch(Searcher searcher, MyGraph graph, int j, int level, int src, int dst) throws IOException {
+    public BufferedImage drawCore(Graph sGraph, ArrayList<double[]> dictionary){
+        BufferedImage img = new BufferedImage(1000, 1000, 1);
+        Graphics2D g = img.createGraphics();
+        Map<Integer, ArrayList<double[]>> graph = sGraph.getFwdCore();
+        g.setPaint(new Color(255, 255, 255));
+        g.fillRect(0, 0, 1000, 1000);
+        g.setStroke(new BasicStroke(4));
+        g.setPaint(new Color(0, 0, 0));
+
+        for(Integer n : graph.keySet()){
+            double[] loc = sGraph.getGraphNodeLocation(n);
+            double x = loc[0];
+            double y = loc[1];
+            x = (x - westMost) * xScale;
+            y = (northMost - y) * yScale;
+//            System.out.println(x + " " + y);
+
+            for(double[] edge : graph.get(n)){
+                loc = sGraph.getGraphNodeLocation((int) edge[0]);
+                double tx = loc[0];
+                double ty = loc[1];
+                tx = (tx - westMost) * xScale;
+                ty = (northMost - ty) * yScale;
+                try{
+                    g.drawLine((int) x, (int) y, (int) tx, (int) ty);
+                } catch(ArrayIndexOutOfBoundsException e){
+                    continue;
+                }
+            }
+
+            n++;
+
+        }
+
+        File outputfile =  new File("core.png");
+        try {
+            ImageIO.write(img, "png", outputfile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return img;
+    }
+
+    public BufferedImage drawSearch(Searcher searcher, Graph graph, int j, int level, int src, int dst) throws IOException {
         System.out.println();
         BufferedImage img = new BufferedImage(1000, 1000, 1);
         Graphics g = img.getGraphics();

@@ -22,20 +22,19 @@ import project.kdtree.Tree;
 //import project.search.Dijkstra;
 import project.search.DijkstraEntry;
 
-public class MyGraph {
+public class Graph {
     //    public static ArrayList<MyNode> mapNodes = new ArrayList<MyNode>();
 //    public static BTreeMap<Long, double[]> dictionary; //maps a node id to a double array containing the coordinates of the node
     public static ArrayList<double[]> dictionary;
     public static Map<Long, int[]> mapRoads; //a list of all connections between nodes. Later becomes all graph edges.
     private static Map<Long, int[]> coreMapRoads; //a list of all connections between nodes, in the core.
     private static ConcurrentMap<Integer, Integer> allWayNodes; //maps the nodes contained in the extracted ways to a counter of the number of ways each one is part of
-    private static boolean parsingNodes;
-//    private static HashSet<Long> junctions;
+    private static boolean parsingNodes; //flag used when parsing to indicate whether to parse nodes or ways
     private static ArrayList<ArrayList<double[]>> fwdGraph;
     private static ArrayList<ArrayList<double[]>> bckGraph;
     private static Map<Integer, ArrayList<double[]>> fwdCore;
     private static Map<Integer, ArrayList<double[]>> bckCore;
-    private static HashMap<Integer, Double> keys = new HashMap<>();
+    private static HashMap<Integer, Double> keys = new HashMap<>(); //holds the keys in
     private Pair<ArrayList, ArrayList> graph;
     private Tree tree;
     private int bypassNode;
@@ -56,7 +55,7 @@ public class MyGraph {
     Set<long[]> edges = new HashSet<>();
     int noOfEdges;
 
-    public MyGraph(File file, String region) throws IOException {
+    public Graph(File file, String region) throws IOException {
 
         this.region = region;
 
@@ -80,8 +79,6 @@ public class MyGraph {
 
         makeDictionary(file);
 
-//        File fwdGraphDir = new File(filePrefix.concat("fwdGraph.ser"));
-//        File bckGraphDir = new File(filePrefix.concat("bckGraph.ser"));
         File fwdGraphDir = new File(filePrefix.concat("fwdGraph.ser"));
         File bckGraphDir = new File(filePrefix.concat("bckGraph.ser"));
         File treeDir = new File(filePrefix.concat("tree.ser"));
@@ -176,7 +173,6 @@ public class MyGraph {
                     objectOut.flush();
                 }catch(IOException e){
                     e.printStackTrace();
-                    System.out.println("AHAFIUHDSFIUHSDFIUHDF");
                 }
                 timerEnd("Writing core");
             }
@@ -326,12 +322,10 @@ public class MyGraph {
         System.out.println("Adding connections");
         int counter = 0;
         for(Map.Entry<Long, int[]> way : edges.entrySet()){ //iterate through every edge and add neighbours to graph vertices accordingly
-//            System.out.println(nodeInt2Long.get(way.getValue()[0]) + " to " + nodeInt2Long.get(way.getValue()[way.getValue().length - 1]) + " by " + way.getKey());
             counter++;
             if((counter % 200000) == 0){
                 System.out.println(((double) counter / (double) noOfEdges) * 100);
             }
-//            System.out.println(way.getWayId());
 
             int[] wayNodes = way.getValue();
             int fstVert, lstVert;
@@ -357,25 +351,10 @@ public class MyGraph {
                 }
 
                 if(fstVert != lstVert){
-
-//                    if(fwdGraph.size() - 1 < fstVert){
-//                        fwdGraph.add(new ArrayList<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
-//                    }
-//                    if(bckGraph.size() - 1 < lstVert){
-//                        bckGraph.add(new ArrayList<>()); //because cul-de-sacs don't count as junctions so haven't been added yet.
-//                    }
                     double length = lengthOfEdge(wayNodes);
-//                    double length = 0;
                     fwdGraph.get(fstVert).add(new double[]{(double) lstVert, length, way.getKey().doubleValue(), 1}); //edge array stores target of edge, length of edge,
                     bckGraph.get(lstVert).add(new double[]{(double) fstVert, length, way.getKey().doubleValue(), 1}); //wayId of edge, and hop number (for contraction)
 
-                    //check if the double[] list ever contains two edges going to same vertex
-
-//                double[] xy = dictionary.get(fstVert);
-//                System.out.println(xy[0] + " " + xy[1]);
-//                if(!tree.contains(xy)){
-//                    tree.insert(fstVert, xy);
-//                }
                 }
             }
         }
@@ -401,8 +380,6 @@ public class MyGraph {
         Comparator<Pair<Integer, Double>> comp = new KeyComparator(); //maybe we can use
         PriorityQueue<Pair<Integer, Double>> heap = new PriorityQueue<>(comp);
         keys = new HashMap<>(fwdGraph.size());
-        boolean stopFlag = true;
-
         fwdCore = new HashMap<>();
         bckCore = new HashMap<>();
 
@@ -450,11 +427,6 @@ public class MyGraph {
         for (Map.Entry<Integer, ArrayList<double[]>> nodeEntry : fwdCore.entrySet()) {
 
             i++;
-
-//            if (i % 1000 == 0) {
-//                System.out.println(i);
-//            }
-
             edgeCounter = nodeEntry.getValue().size() + edgeCounter;
             int node = nodeEntry.getKey();
             vertexHeapAdd(node, heap);
@@ -467,9 +439,7 @@ public class MyGraph {
 
         while (!heap.isEmpty()) {
             i++;
-//            System.out.println(i);
             if (i % 500000 == 0) {
-//                    System.out.println(i + " " + fwdCore.size() + " " + totalHeapTime + " " + totalNonHeapTime + " " + sdf.format(cal.getTime()));
                 System.out.println(i + " " + (100 * ((float) fwdCore.size() / (float) originalSize)) + "%. Heap size " + heap.size());
             }
             Pair<Integer, Double> entry = heap.poll();
@@ -508,11 +478,9 @@ public class MyGraph {
                 Iterator beforeItr = beforeEdges.iterator();
 
                 while (beforeItr.hasNext()) {
-//                    System.out.println("before edge");
                     double[] beforeEdge = (double[]) beforeItr.next();
                     Iterator afterItr = afterEdges.iterator();
                     INNER: while (afterItr.hasNext()) {
-//                        System.out.println("combo");
                         double[] afterEdge = (double[]) afterItr.next();
                         if ((int) afterEdge[0] == (long) beforeEdge[0]) {    //check we're not making an x to x edge
                             continue;
@@ -541,11 +509,9 @@ public class MyGraph {
                         double[] returnEdge = (double[]) it.next();
                         if (returnEdge[0] == bypassNode) {
                             it.remove();
-//                            System.out.println("removed edge.");
                         }
                     }
                 }
-//                System.out.println("Removed bckgraph.");
 
                 for (double[] awayEdge : bckCore.get(bypassNode)) {
                     Iterator it = fwdCore.get((int) awayEdge[0]).iterator();
@@ -553,19 +519,13 @@ public class MyGraph {
                         double[] returnEdge = (double[]) it.next();
                         if (returnEdge[0] == bypassNode) {
                             it.remove();
-//                            System.out.println("removed edge.");
                         }
-//                        System.out.println("Removed fwdgraph.");
                     }
                 }
-
-//                System.out.println("Before removes.");
 
                 fwdCore.remove(bypassNode);
                 bckCore.remove(bypassNode);
                 keys.remove(bypassNode);
-//                System.out.println();
-
 
                 for (double[] backwardsEdge : backwardsEdges) {
                     int node = (int) backwardsEdge[0];
@@ -581,7 +541,6 @@ public class MyGraph {
                             vertexHeapAdd((int) forForEdge[0], heap);
                         }
                     }
-//                    System.out.println(node);
                     vertexHeapAdd(node, heap);
                 }
 
@@ -599,19 +558,8 @@ public class MyGraph {
                             vertexHeapAdd((int) backBackEdge[0], heap);
                         }
                     }
-//                    System.out.println(node);
                     vertexHeapAdd(node, heap);
                 }
-//                System.out.println();
-
-//                System.out.println(alteredNodes);
-
-
-//                for(long node : alteredNodes){
-////                    System.out.println("heap add");
-//                    vertexHeapAdd(node, heap);
-//                }
-//                System.out.println("Done heap add");
             }
         }
 
@@ -647,6 +595,10 @@ public class MyGraph {
             edgeReduce(nodeEntry.getKey());
         }
 
+        for (Map.Entry<Integer, ArrayList<double[]>> nodeEntry : bckCore.entrySet()) {
+            edgeReduce(nodeEntry.getKey());
+        }
+
         edgeCounter = 0;
 
         for (Map.Entry<Integer, ArrayList<double[]>> nodeEntry : fwdCore.entrySet()) {
@@ -657,6 +609,7 @@ public class MyGraph {
 
 
         System.out.println("Final size: " + fwdCore.size() + " " + bckCore.size());
+        System.out.println("Full size: " + fwdGraph.size() + " " + bckGraph.size());
     }
 
     private Double checkKey(int node){
@@ -958,18 +911,79 @@ public class MyGraph {
         timerEnd("Making tree");
     }
 
-//    public void print(){ //print graph contents
-//        for(long vert : graph.keySet()){
-//            Set<double[]> neighbours = graph.get(vert);
-//            ArrayList<Long> neighbourNodes = new ArrayList<>();
-//            for(double[] neighbour : neighbours){
-//                neighbourNodes.add((long) neighbour[0]);
-//            }
-////            System.out.println("Node: " + vert + " Neighbours: " + neighbourNodes.toString());
-//        }
-//
-//        System.out.println(graph.size());
-//    }
+    public void makeCoreTree(){
+
+        long median = 0;
+        long sort = 0;
+        long insert = 0;
+        long remove = 0;
+
+        timerStart();
+        tree = new Tree(120);
+        ArrayList<Integer> nodes = new ArrayList<>();
+        for(int i : fwdCore.keySet()){
+            nodes.add(i);
+        }
+        System.out.println("done");
+        Random rand = new Random();
+        boolean vertical = true;
+        int counter = 0;
+        int sizeStart = nodes.size();
+        int size = sizeStart;
+        ArrayList<Pair<Integer, Integer>> medians = new ArrayList<>();
+        TREE: while(!nodes.isEmpty()){
+            if(size < 21){
+                for(int n : nodes){
+                    tree.insert(n, dictionary.get(graphNodeMappings.get(n)));
+                    break TREE;
+                }
+            } else {
+//                System.out.println();
+                if((counter % 1000) == 0){
+                    System.out.println(((double) counter / (double) sizeStart) * 100);
+                    System.out.println();
+                    System.out.println("Median  " + median);
+                    System.out.println("Sort    " + sort);
+                    System.out.println("Insert  " + insert);
+                    System.out.println("Remove  " + remove);
+                }
+//            System.out.println(nodes.size());
+                timerStart();
+                for(int i = 0; i <= 20; i++){
+//                    System.out.println(size);
+                    int r = rand.nextInt((size--));
+                    medians.add(new Pair<>(nodes.remove(r), r));
+                }
+                median = timerEnd(median);
+                timerStart();
+                if(vertical){
+                    Collections.sort(medians, new SortByLat());
+
+                } else {
+                    Collections.sort(medians, new SortByLong());
+                }
+                sort = timerEnd(sort);
+                vertical = !vertical;
+                timerStart();
+                tree.insert(medians.get(10).getKey(), dictionary.get(graphNodeMappings.get(medians.get(10).getKey())));
+//                System.out.println(dictionary.get(medians.get(10).getKey())[0] + " " + dictionary.get(medians.get(10).getKey())[1]);
+                for(int x = 1; x < 5; x++){
+                    tree.insert(medians.get(10 + x).getKey(), dictionary.get(graphNodeMappings.get(medians.get(10 + x).getKey())));
+                    tree.insert(medians.get(10 - x).getKey(), dictionary.get(graphNodeMappings.get(medians.get(10 - x).getKey())));
+                }
+                insert = timerEnd(insert);
+//            System.out.println(medians.get(5).getValue());
+//            timerStart();
+//            nodes.remove((int) medians.get(2).getValue());
+//            remove = timerEnd(remove);
+//            size--;
+                medians.clear();
+//            System.out.println(medians.size());
+                counter = counter + 21;
+            }
+        }
+        timerEnd("Making tree");
+    }
 
     private double lengthOfEdge(int[] edge){
         double length = 0;
@@ -982,6 +996,7 @@ public class MyGraph {
         return length;
     }
 
+    //Credit to https://medium.com/allthingsdata/java-implementation-of-haversine-formula-for-distance-calculation-between-two-points-a3af9562ff1
     public static double haversineDistance(double[] nodeA, double[] nodeB){
         double rad = 6371000; //radius of earth in metres
         double aLatRadians = Math.toRadians(nodeA[1]); //0 = latitude, 1 = longitude
@@ -1074,9 +1089,7 @@ public class MyGraph {
 
         @Override
         protected void parseWays(List<Way> ways) {
-//            System.out.println("Parsing way");
             if(!parsingNodes){
-//                System.out.println("Parsing ways.");
                 long lastRef = 0;
                 for (Way w : ways) {
                     lastRef += w.getId();
@@ -1095,8 +1108,8 @@ public class MyGraph {
                         key = getStringById(w.getKeys(i));
                         value = getStringById(w.getVals(i));
                         if(value.equals("cycleway") ||
-                                (key.equals("route") && value.equals("bicycle")) ||
-                                (key.equals("bicycle") && value.equals("yes"))){
+                                (key.equals("route") && value.equals("bicycle"))
+                                || (key.equals("bicycle") && value.equals("yes"))){
                             addWay(w, oneWay, lastRef);
                         } else if(key.equals("highway")){
                             if (value.matches("primary|primary_link")){
@@ -1148,8 +1161,6 @@ public class MyGraph {
                 fwdCtr++;
                 bckCtr--;
             }
-//            System.out.println(Arrays.toString(fwdWay));
-//            System.out.println(Arrays.toString(bckWay));
 
             if(oneWay){
                 mapRoads.put(wayId, fwdWay);
@@ -1170,29 +1181,9 @@ public class MyGraph {
     }
 
     private void splitWays(Map<Long, int[]> ways, boolean strip){
-//        DB db3 = DBMaker
-//                .fileDB("files//edges.db")
-//                .fileMmapEnable()
-//                .checksumHeaderBypass()
-//                .closeOnJvmShutdown()
-//                .make();
-//
-//        Map<Long, long[]> edges = db3.treeMap("set", Serializer.LONG, Serializer.LONG_ARRAY).createOrOpen();
-
-//        if(edges.isEmpty()){
-            for(Map.Entry<Long, int[]> w : ways.entrySet()){
-                splitWay(w.getKey(), w.getValue(), strip);
-            }
-//        } else {
-//            System.out.println("edges found; skipping split");
-//        }
-    }
-
-    private long[] stripWay(long[] way){
-        long[] newNodes = new long[2];
-        newNodes[0] = way[0];
-        newNodes[1] = way[way.length - 1];
-        return way;
+        for(Map.Entry<Long, int[]> w : ways.entrySet()){
+            splitWay(w.getKey(), w.getValue(), strip);
+        }
     }
 
     private void splitWay(Long id, int[] nodes, boolean strip){

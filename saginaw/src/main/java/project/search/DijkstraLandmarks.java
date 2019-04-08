@@ -2,14 +2,11 @@ package project.search;
 
 
 import gnu.trove.map.hash.THashMap;
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import project.map.MyGraph;
+import project.map.Graph;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 public class DijkstraLandmarks {
     long pollTimeStart, pollTimeEnd, totalPollTime, addTimeStart, addTimeEnd, totalAddTime, relaxTimeStart, relaxTimeEnd, totalRelaxTime, putTimeStart, putTimeEnd, totalPutTime;
@@ -19,7 +16,7 @@ public class DijkstraLandmarks {
     public int explored;
     ArrayList<Integer> landmarks;
 
-    public DijkstraLandmarks(project.map.MyGraph graph, ArrayList<Integer> startNodes, boolean forwards, boolean core){
+    public DijkstraLandmarks(Graph graph, ArrayList<Integer> startNodes, boolean forwards, boolean core){
 
         distTo = new Int2ObjectOpenHashMap<double[]>();
         pq = new PriorityQueue();
@@ -79,7 +76,7 @@ public class DijkstraLandmarks {
         }
     }
 
-    public void DijkstraAlgorithm(MyGraph graph, int startNode, int index, boolean forwards, boolean core){
+    public void DijkstraAlgorithm(Graph graph, int startNode, int index, boolean forwards, boolean core){
 
         double[] distToStart = (double[]) distTo.get(startNode);
         distToStart[index] = 0.0;

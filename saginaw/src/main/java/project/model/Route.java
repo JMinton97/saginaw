@@ -1,6 +1,6 @@
 package project.model;
 
-import project.map.MyGraph;
+import project.map.Graph;
 import project.search.*;
 
 import java.awt.geom.Point2D;
@@ -19,14 +19,14 @@ public class Route{
     private boolean pivoting;
     private boolean startPivot;
     private boolean startMoveWaypoint;
-    private MyGraph graph;
+    private Graph graph;
     private HashMap<double[], Integer> closestNodes;
     private Stack<Searcher> searcherStack;
     private ALTPreProcess preProcess, corePreProcess;
 
     private final int SEARCHER_COUNT = 4;
 
-    public Route(MyGraph graph) {
+    public Route(Graph graph) {
         this.graph = graph;
         waypoints = new ArrayList<>();
         segments = new ArrayList<>();
@@ -35,7 +35,7 @@ public class Route{
         closestNodes = new HashMap<>();
         searcherStack = new Stack<>();
         try{
-//            preProcess = new ALTPreProcess(graph, false);
+            preProcess = new ALTPreProcess(graph, false);
             corePreProcess = new ALTPreProcess(graph, true);
         }catch(IOException e){
             System.out.println("Problem with ALTPreProcess loading.");
@@ -63,7 +63,7 @@ public class Route{
         double distFromLine, distFromPoint;
 
         for(double[] waypoint : waypoints){
-            distFromPoint = MyGraph.haversineDistance(pivotPoint, waypoint);
+            distFromPoint = Graph.haversineDistance(pivotPoint, waypoint);
             if(distFromPoint < minDist){
                 minDist = distFromPoint;
                 minWayPoint = waypoints.indexOf(waypoint);
@@ -79,7 +79,7 @@ public class Route{
             for(Segment segment : segments){
                 if(segment.hasRoute()){
                     for(Point2D.Double point : segment.getPoints()){
-                        distFromLine = MyGraph.haversineDistance(pivotPoint, new double[]{point.getX(), point.getY()});
+                        distFromLine = Graph.haversineDistance(pivotPoint, new double[]{point.getX(), point.getY()});
                         if(distFromLine < minDist){
                             minDist = distFromLine;
                             minSegment = segmentNum;
@@ -194,12 +194,14 @@ public class Route{
                         if (!closestNodes.containsKey(segment.getStartNode())) {
                             src = graph.findClosest(segment.getStartNode());
                             closestNodes.put(segment.getStartNode(), src);
+                            System.out.println("Added at " + src);
                         } else {
                             src = closestNodes.get(segment.getStartNode());
                         }
                         if (!closestNodes.containsKey(segment.getEndNode())) {
                             dst = graph.findClosest(segment.getEndNode());
                             closestNodes.put(segment.getEndNode(), dst);
+                            System.out.println("Added at " + dst);
                         } else {
                             dst = closestNodes.get(segment.getEndNode());
                         }
@@ -275,7 +277,7 @@ public class Route{
             case CONCURRENT_BIDIJKSTRA:
                 searcherStack.clear();
                 for(int x = 0; x < SEARCHER_COUNT; x++){
-                    searcherStack.add(new ConcurrentBiDijkstra(graph));
+                    searcherStack.add(new ParallelBiDijkstra(graph));
                 }
                 break;
 
@@ -296,7 +298,7 @@ public class Route{
             case CONCURRENT_BIALT:
                 searcherStack.clear();
                 for(int x = 0; x < SEARCHER_COUNT; x++){
-                    searcherStack.add(new ConcurrentBiALT(graph, preProcess));
+                    searcherStack.add(new ParallelBiALT(graph, preProcess));
                 }
                 break;
 

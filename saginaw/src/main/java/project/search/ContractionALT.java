@@ -1,14 +1,10 @@
 package project.search;
 
-import gnu.trove.map.hash.THashMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import javafx.util.Pair;
-import org.mapdb.BTreeMap;
-import project.map.MyGraph;
+import project.map.Graph;
 
 import java.util.*;
 
@@ -27,7 +23,7 @@ public class ContractionALT implements Searcher {
     private double bestSeen;
     private int bestPathNode;
     private int explored;
-    private MyGraph graph;
+    private Graph graph;
     private ArrayList<Integer> landmarks;
     private Int2ObjectOpenHashMap distancesTo;
     private Int2ObjectOpenHashMap distancesFrom;
@@ -39,7 +35,7 @@ public class ContractionALT implements Searcher {
     private ALTPreProcess alt;
 
 
-    public ContractionALT(MyGraph graph, ALTPreProcess altPreProcess) {
+    public ContractionALT(Graph graph, ALTPreProcess altPreProcess) {
         int size = graph.getFwdGraph().size();
 
         coreSQ = new PriorityQueue<>(new DistanceComparator());
@@ -126,12 +122,8 @@ public class ContractionALT implements Searcher {
                             } else {
                                 overlapNode = bestPathNode;
                             }
-//                            System.out.println(bestSeen);
-//                            System.out.println(coreSQ.peek().getDistance());
-//                            System.out.println(coreTQ.peek().getDistance());
                             if(bestSeen < (coreSQ.peek().getDistance() + coreTQ.peek().getDistance())){
                                 routeFound = true;
-//                                System.out.println("break stage 1");
                                 break STAGE1;
                             }
                         }
@@ -164,12 +156,8 @@ public class ContractionALT implements Searcher {
                             } else {
                                 overlapNode = bestPathNode;
                             }
-//                            System.out.println(bestSeen);
-//                            System.out.println(coreSQ.peek().getDistance());
-//                            System.out.println(coreTQ.peek().getDistance());
                             if(bestSeen < (coreSQ.peek().getDistance() + coreTQ.peek().getDistance())){
                                 routeFound = true;
-//                                System.out.println("break stage 1");
                                 break STAGE1;
                             }
                         }
@@ -180,18 +168,14 @@ public class ContractionALT implements Searcher {
 
         if(!routeFound){
             //do second stage to get overlap, otherwise we continue below
-//            System.out.println("First stage: " + explored);
             secondStage();
             if(!routeFound){
-                System.out.println("No route found.");
+//                System.out.println("No route found.");
                 routeFound = false;
             } else {}
         } else {
             System.out.println("NO SECOND STAGE");
         }
-
-//        System.out.println("Ended search");
-
     }
 
     private void relax(int x, double[] edge, boolean u){
@@ -205,10 +189,6 @@ public class ContractionALT implements Searcher {
                 uNodeTo.put(w, x); //should be 'nodeBefore'
                 uEdgeTo.put(w, (long) wayId);
                 uPq.add(new DijkstraEntry(w, distToX + weight)); //inefficient?
-            }else{
-//                if(uDistTo.get(x) == null){
-//                    System.out.println("AAAGHHGHH");
-//                }
             }
             uRelaxed.add(x);
         } else {
@@ -218,10 +198,6 @@ public class ContractionALT implements Searcher {
                 vNodeTo.put(w, x); //should be 'nodeBefore'
                 vEdgeTo.put(w, (long) wayId);
                 vPq.add(new DijkstraEntry(w, distToX + weight)); //inefficient?
-            }else {
-//                if (vDistTo.get(x) == null) {
-//                    System.out.println("AAAGHHGHH");
-//                }
             }
             vRelaxed.add(x);
         }
@@ -241,8 +217,6 @@ public class ContractionALT implements Searcher {
         backDTV = (double[]) distancesTo.get(proxyStart);
         backDFV = (double[]) distancesFrom.get(proxyStart);
 
-//        System.out.println("stage 2");
-
         Runnable s = () -> {
             while(!coreSQ.isEmpty() && !Thread.currentThread().isInterrupted()){
                 explored++;
@@ -251,9 +225,7 @@ public class ContractionALT implements Searcher {
                     if(!Thread.currentThread().isInterrupted()) {
                         relaxALT(v1, e, true);
                         if (vRelaxed.contains((int) e[0])) {
-//                            System.out.println("uDistTo.get(v1) " + uDistTo.get(v1));
-//                            System.out.println("e[1] " + e[1]);
-//                            System.out.println("vDistTo.get((int) e[0]) " + vDistTo.get((int) e[0]));
+
                             double competitor = (uDistTo.get(v1) + e[1] + vDistTo.get((int) e[0]));
                             if (bestSeen > competitor) {
                                 bestSeen = competitor;
@@ -264,16 +236,6 @@ public class ContractionALT implements Searcher {
                             if ((uDistTo.get(v1) + vDistTo.get(v1)) < bestSeen) {
                                 overlapNode = v1;
                             } else {
-//                                System.out.println("u ALTERNATE");
-//                                System.out.println("u bestPathNode: " + bestPathNode);
-//                                System.out.println("u uNode to " + uNodeTo.get(bestPathNode));
-//                                System.out.println("u bestPathNode: " + bestPathNode);
-//                                System.out.println("u uDist to " + uDistTo.get(bestPathNode));
-//                                System.out.println("u bestPathNode: " + bestPathNode);
-//                                System.out.println("u vNode to " + vNodeTo.get(bestPathNode));
-//                                System.out.println("u bestPathNode: " + bestPathNode);
-//                                System.out.println("u vDist to " + vDistTo.get(bestPathNode));
-//                                System.out.println("u bestPathNode: " + bestPathNode);
                                 overlapNode = bestPathNode;
                             }
                             routeFound = true;
@@ -292,9 +254,6 @@ public class ContractionALT implements Searcher {
                     if(!Thread.currentThread().isInterrupted()) {
                         relaxALT(v2, e, false);
                         if (uRelaxed.contains((int) e[0])) {
-//                            System.out.println("vDistTo.get(v2) " + vDistTo.get(v2));
-//                            System.out.println("e[1] " + e[1]);
-//                            System.out.println("uDistTo.get((int) e[0]) " + uDistTo.get((int) e[0]));
                             double competitor = (vDistTo.get(v2) + e[1] + uDistTo.get((int) e[0]));
                             if (bestSeen > competitor) {
                                 bestSeen = competitor;
@@ -305,16 +264,6 @@ public class ContractionALT implements Searcher {
                             if ((uDistTo.get(v2) + vDistTo.get(v2)) < bestSeen) {
                                 overlapNode = v2;
                             } else {
-//                                System.out.println("v ALTERNATE");
-//                                System.out.println("v bestPathNode: " + bestPathNode);
-//                                System.out.println("v uNode to " + uNodeTo.get(bestPathNode));
-//                                System.out.println("v bestPathNode: " + bestPathNode);
-//                                System.out.println("v uDist to " + uDistTo.get(bestPathNode));
-//                                System.out.println("v bestPathNode: " + bestPathNode);
-//                                System.out.println("v vNode to " + vNodeTo.get(bestPathNode));
-//                                System.out.println("v bestPathNode: " + bestPathNode);
-//                                System.out.println("v vDist to " + vDistTo.get(bestPathNode));
-//                                System.out.println("v bestPathNode: " + bestPathNode);
                                 overlapNode = bestPathNode;
                             }
                             routeFound = true;
@@ -346,37 +295,29 @@ public class ContractionALT implements Searcher {
             double distToX = uDistTo.getOrDefault(x, Double.MAX_VALUE);
             if (uDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
                 uDistTo.put(w, distToX + weight);
-                uNodeTo.put(w, x); //should be 'nodeBefore'
-                uEdgeTo.put(w, (long) wayId); //should be 'nodeBefore'
+                uNodeTo.put(w, x);
+                uEdgeTo.put(w, (long) wayId);
                 coreSQ.add(new DijkstraEntry(w, distToX + weight + lowerBound(w, true))); //inefficient?
             }
             uRelaxed.add(x);
-//            if(uDistTo.get(x) == null){
-//                System.out.println("problem");
-//            }
         } else {
             double distToX = vDistTo.getOrDefault(x, Double.MAX_VALUE);
             if (vDistTo.getOrDefault(w, Double.MAX_VALUE) > (distToX + weight)){
                 vDistTo.put(w, distToX + weight);
-                vNodeTo.put(w, x); //should be 'nodeBefore'
-                vEdgeTo.put(w, (long) wayId); //should be 'nodeBefore'
+                vNodeTo.put(w, x);
+                vEdgeTo.put(w, (long) wayId);
                 coreTQ.add(new DijkstraEntry(w, distToX + weight + lowerBound(w, false))); //inefficient?
             }
             vRelaxed.add(x);
-//            if(vDistTo.get(x) == null){
-//                System.out.println("problem");
-//            }
         }
     }
 
     public double lowerBound(int u, boolean forwards){
-//        System.out.println();
         double maxForward = 0;
         double maxBackward = 0;
 
         double[] forDTU = (double[]) distancesTo.get(u);
         double[] forDFU = (double[]) distancesFrom.get(u);
-
 
         double[] backDTU = (double[]) distancesTo.get(u);
         double[] backDFU = (double[]) distancesFrom.get(u);
@@ -385,20 +326,14 @@ public class ContractionALT implements Searcher {
             maxForward = Math.max(maxForward, Math.max(forDTU[l] - forDTV[l], forDFV[l] - forDFU[l]));
         }
 
-//        System.out.println("MAXBACKWARD " + maxBackward);
         for(int l = 0; l < landmarks.size(); l++){
             maxBackward = Math.max(maxBackward, Math.max(backDTU[l] - backDTV[l], backDFV[l] - backDFU[l]));
-//            System.out.println("A " + backDTU[l] + " " + backDTV[l] + " " + backDFV[l] + " " + backDFU[l]);
-//            System.out.println("B " + Math.max(backDTU[l] - backDTV[l], backDFV[l] - backDFU[l]));
         }
-//        System.out.println("C " + maxBackward);
 
         if(forwards){
-//            System.out.println("D " + (maxForward - maxBackward) / 2);
-            return (maxForward - maxBackward) / 2;
+            return ((maxForward - maxBackward) / 2);
         } else {
-//            System.out.println("D " + (maxForward - maxBackward) / 2);
-            return (maxBackward - maxForward) / 2;
+            return ((maxBackward - maxForward) / 2);
         }
     }
 
@@ -418,32 +353,14 @@ public class ContractionALT implements Searcher {
         }
     }
 
-    private double haversineDistance(long a, long b, BTreeMap<Long, double[]> dictionary){
-        double[] nodeA = dictionary.get(a);
-        double[] nodeB = dictionary.get(b);
-        double rad = 6371000; //radius of earth in metres
-        double aLatRadians = Math.toRadians(nodeA[0]); //0 = latitude, 1 = longitude
-        double bLatRadians = Math.toRadians(nodeB[0]);
-        double deltaLatRadians = Math.toRadians(nodeB[0] - nodeA[0]);
-        double deltaLongRadians = Math.toRadians(nodeB[1] - nodeA[1]);
-
-        double x = Math.sin(deltaLatRadians/2) * Math.sin(deltaLatRadians/2) +
-                Math.cos(aLatRadians) * Math.cos(bLatRadians) *
-                        Math.sin(deltaLongRadians/2) * Math.sin(deltaLongRadians/2);
-        double y = 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
-        return rad * y;
-    }
-
     public ArrayList<Integer> getRoute(){
         int ctr = 0;
         if(routeFound){
             int node = overlapNode;
-//            System.out.println(overlapNode);
             ArrayList<Integer> route = new ArrayList<>();
             try{
                 while(node != start && node != end){
                     ctr++;
-//                    way = uEdgeTo.get(node);
                     node = uNodeTo.get(node);
                     if(node == -1){
                         break;

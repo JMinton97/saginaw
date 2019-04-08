@@ -21,7 +21,7 @@ import java.util.List;
 
 //import org.mapdb.*;
 
-public class MyMap2 {
+public class SMap {
     private static double northMost, westMost, southMost, eastMost;
     private double spaceModifierX;
     private double spaceModifierY;
@@ -34,7 +34,7 @@ public class MyMap2 {
     public static int bX1, bX2, bY1, bY2;
     public long startTime, endTime;
     public static HashMap<Long, double[]> tileNodes;
-    public static HashMap<Long, MyWay>[][] tileWays;
+    public static HashMap<Long, SWay>[][] tileWays;
     public static HashMap<Long, Integer> allRelations;
     private int xDimension, yDimension;
     public static final int scale = 80000; //pixels per degree!
@@ -50,7 +50,7 @@ public class MyMap2 {
     private String region;
 
 
-    public MyMap2(File file) throws IOException {
+    public SMap(File file) throws IOException {
         parsingNodes = true;
         InputStream input = new FileInputStream(file);
         BlockReaderAdapter brad = new TestBinaryParser();
@@ -59,7 +59,7 @@ public class MyMap2 {
         timerEnd("Testing");
     }
 
-    public MyMap2(File file, String region, int maxEdge, boolean alreadyFiled) throws IOException {
+    public SMap(File file, String region, int maxEdge, boolean alreadyFiled) throws IOException {
 
         this.maxEdge = maxEdge; //max edge length of an image
 
@@ -322,28 +322,28 @@ public class MyMap2 {
 
         linesDrawn = 0;
 
-        HashMap<Long, MyWay> subTileWays = tileWays[x - xO][y - yO];
+        HashMap<Long, SWay> subTileWays = tileWays[x - xO][y - yO];
         System.out.println("This many ways stored: " + subTileWays.size());
 
-        for(MyWay w : subTileWays.values()){
+        for(SWay w : subTileWays.values()){
             if(w.getType() == WayType.CITY){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
         } //URBAN AREAS
 
-        for(MyWay w : subTileWays.values()){
+        for(SWay w : subTileWays.values()){
             if(w.getType() == WayType.GREEN){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
         } //GREENS
 
-        for(MyWay w : subTileWays.values()){
+        for(SWay w : subTileWays.values()){
             if(w.getType() == WayType.MOOR){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
         } //MOORS
 
-        for(MyWay w : subTileWays.values()){
+        for(SWay w : subTileWays.values()){
             if(w.getType() == WayType.TREE){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
@@ -351,37 +351,37 @@ public class MyMap2 {
 
 
 
-        for(MyWay w : subTileWays.values()){
+        for(SWay w : subTileWays.values()){
             if(w.getType() == WayType.WATERWAY){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
         } //RIVERS
 
-        for(MyWay w : subTileWays.values()){
+        for(SWay w : subTileWays.values()){
             if(w.getType() == WayType.WATERBODY){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
         } //LAKES
 
-        for(MyWay w : subTileWays.values()){
+        for(SWay w : subTileWays.values()){
             if(w.getType() == WayType.RAILWAY){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
         } //RAILWAYS
 
-//        for(MyWay w : subTileWays){
+//        for(SWay w : subTileWays){
 //            if(w.getType() == WayType.ROAD){
 //                drawWay(w, mapGraphics, false, axis, tileNodes);
 //            }
 //        } //ROADS UNDER
 
-        for(MyWay w : subTileWays.values()){
+        for(SWay w : subTileWays.values()){
             if(w.getType() == WayType.ROAD){
                 drawWay(w, mapGraphics, false, axis, tileNodes);
             }
         } //ROADS OVER
 
-//        for(MyWay w : subTileWays){
+//        for(SWay w : subTileWays){
 //            if(w.getType() == WayType.CYCLE){
 //                drawWay(w, mapGraphics, false, axis, tileNodes);
 //            }
@@ -393,7 +393,7 @@ public class MyMap2 {
     }
 
 
-    private void drawWay(MyWay way, Graphics2D mapGraphics, boolean underlay, double[] bound, HashMap<Long, double[]> dictionary) {
+    private void drawWay(SWay way, Graphics2D mapGraphics, boolean underlay, double[] bound, HashMap<Long, double[]> dictionary) {
 //        System.out.println("Drawing way " + way.getKey()[0]);
         Color wayColor = Color.WHITE;
         Color inColor;
@@ -703,7 +703,7 @@ public class MyMap2 {
                                 for (int k = 0; k < r.getMemidsCount(); k++) { //SMALLER THAN OR EQUAL TO OR NOT?
                                     lastRef += (r.getMemids(k));
                                     if (getStringById(r.getRolesSid(k)).equals("outer")){
-                                        System.out.println("OUTER: " + lastRef + " " + r.getId());
+//                                        System.out.println("OUTER: " + lastRef + " " + r.getId());
                                         allRelations.put(lastRef, relationType);
                                     }
                                 }
@@ -783,11 +783,11 @@ public class MyMap2 {
                     }while(exitFlag == false);
                     if(saveTown){
                         towns.add(new Place(name, parseLon(lastLon), parseLat(lastLat)));
-                        System.out.println(name);
+//                        System.out.println(name);
                     }
                     if(saveCity) {
                         cities.add(new Place(name, parseLon(lastLon), parseLat(lastLat)));
-                        System.out.println(name);
+//                        System.out.println(name);
                     }
                 }
             }
@@ -820,7 +820,7 @@ public class MyMap2 {
                             if(allRelations.containsKey(w.getId())){
 //                                System.out.println("yup, " + w.getId());
                                 int wayType = allRelations.get(w.getId());
-                                MyWay tempWay = buildMyWay(w);
+                                SWay tempWay = buildMyWay(w);
                                 switch(wayType){
                                     case 0: //grass
                                         tempWay.setType(WayType.GREEN);
@@ -856,34 +856,34 @@ public class MyMap2 {
                                 value = getStringById(w.getVals(i));
                                 if(key.equals("highway")){
                                     if(value.matches("motorway|motorway_link")){
-                                        MyWay tempWay = buildMyWay(w);
+                                        SWay tempWay = buildMyWay(w);
                                         tempWay.setType(WayType.ROAD);
                                         tempWay.setRoadType(RoadType.MOTORWAY);
                                         tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                     } else if (value.matches("trunk|trunk_link")){
-                                        MyWay tempWay = buildMyWay(w);
+                                        SWay tempWay = buildMyWay(w);
                                         tempWay.setType(WayType.ROAD);
                                         tempWay.setRoadType(RoadType.TRUNK);
                                         tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                     } else if (value.matches("primary|primary_link")){
-                                        MyWay tempWay = buildMyWay(w);
+                                        SWay tempWay = buildMyWay(w);
                                         tempWay.setType(WayType.ROAD);
                                         tempWay.setRoadType(RoadType.PRIMARY);
                                         tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                     } else if (value.matches("secondary|secondary_link")){
-                                        MyWay tempWay = buildMyWay(w);
+                                        SWay tempWay = buildMyWay(w);
                                         tempWay.setType(WayType.ROAD);
                                         tempWay.setRoadType(RoadType.SECONDARY);
                                         tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                     } else if (value.matches("tertiary|unclassified|residential|service|tertiary_link|road")){
-                                        MyWay tempWay = buildMyWay(w);
+                                        SWay tempWay = buildMyWay(w);
                                         tempWay.setType(WayType.ROAD);
                                         tempWay.setRoadType(RoadType.ROAD);
                                         tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                     }
                                 }
                                 if(key.equals("railway")){
-                                    MyWay tempWay = buildMyWay(w);
+                                    SWay tempWay = buildMyWay(w);
                                     tempWay.setType(WayType.RAILWAY);
                                     tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
@@ -895,40 +895,40 @@ public class MyMap2 {
                                         || value.equals("recreation_ground")
                                         || value.equals("conservation")
                                         || value.equals("park")){
-                                    MyWay tempWay = buildMyWay(w);
+                                    SWay tempWay = buildMyWay(w);
                                     tempWay.setType(WayType.GREEN);
                                     tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
                                 if((key.equals("natural") && (value.equals("moor") || value.equals("heath")))){
-                                    MyWay tempWay = buildMyWay(w);
+                                    SWay tempWay = buildMyWay(w);
                                     tempWay.setType(WayType.MOOR);
                                     tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
                                 if(key.equals("waterway") && (value.matches("river|stream|canal"))){
-                                    MyWay tempWay = buildMyWay(w);
+                                    SWay tempWay = buildMyWay(w);
                                     tempWay.setType(WayType.WATERWAY);
                                     tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
                                 if((key.equals("natural") && value.equals("water"))
                                         || value.matches("reservoir|basin")){
-                                    MyWay tempWay = buildMyWay(w);
+                                    SWay tempWay = buildMyWay(w);
                                     tempWay.setType(WayType.WATERBODY);
                                     tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
                                 if((key.equals("natural") && value.equals("wood"))
                                         || (key.equals("landuse") && value.equals("forest"))){
-                                    MyWay tempWay = buildMyWay(w);
+                                    SWay tempWay = buildMyWay(w);
                                     tempWay.setType(WayType.TREE);
                                     tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
                                 if(key.equals("cycleway") || value.equals("cycleway") ||
                                         (key.equals("route") && value.equals("bicycle"))){
-                                    MyWay tempWay = buildMyWay(w);
+                                    SWay tempWay = buildMyWay(w);
                                     tempWay.setType(WayType.CYCLE);
                                     tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
                                 if(key.equals("landuse") && (value.equals("residential") || value.equals("retail") || value.equals("school") || value.equals("industrial"))){
-                                    MyWay tempWay = buildMyWay(w);
+                                    SWay tempWay = buildMyWay(w);
                                     tempWay.setType(WayType.CITY);
                                     tileWays[(int) data[2]][(int) data[3]].put(lastRef, tempWay);
                                 }
@@ -939,8 +939,8 @@ public class MyMap2 {
             }
         }
 
-        private MyWay buildMyWay(Way w){
-            MyWay tempWay = new MyWay();
+        private SWay buildMyWay(Way w){
+            SWay tempWay = new SWay();
             long id = w.getId();
             tempWay.setWayId(id);
             long lastRef = 0;
