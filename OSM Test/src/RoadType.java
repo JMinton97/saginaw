@@ -1,3 +1,0 @@
-public enum RoadType {
-    MOTORWAY, TRUNK, PRIMARY, SECONDARY, ROAD, PATH
-}

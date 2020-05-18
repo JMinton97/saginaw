@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="osmpbf">
-    <CLASSES>
-      <root url="jar://$USER_HOME$/Desktop/FYP/OSM-binary-master/osmpbf.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
