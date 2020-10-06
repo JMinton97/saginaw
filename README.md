@@ -10,6 +10,10 @@ A desktop route-finding and visualising program developed for an undergraduate f
 
 ![Creating a route](saginaw/res/gifs/clip1.gif?raw=true)
 
+![Viewing a route](saginaw/res/gifs/clip2.gif?raw=true)
+
+![Zooming out](saginaw/res/gifs/clip3.gif?raw=true)
+
 Saginaw [_sag-uh-naw_]: a town in east-central Michigan on an arm of Lake Huron. Referenced in the 1968 Paul Simon song _America_; "it took me four days to hitch-hike from Saginaw..."
 
 ![Project cover image](saginaw/res/icon/splash.png?raw=true)
